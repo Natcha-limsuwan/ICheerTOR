@@ -1,0 +1,140 @@
+@import "tailwindcss";
+
+/*
+ * ────────────────────────────────────────────────────────────────────
+ * I Cheer TOR — Design Tokens (from DESIGN.md)
+ *
+ * Primary:    #0047AB  (Cobalt Blue)
+ * Secondary:  #F5A623  (Amber)
+ * Background: #F8F9FC
+ * Surface:    #FFFFFF
+ * Text:       #1A1A2E / #64748B
+ * Spacing:    8px rhythm  ·  12-column grid
+ * Radius:     10px cards  ·  8px inputs
+ * Typography: Inter
+ * ────────────────────────────────────────────────────────────────────
+ */
+
+:root {
+  --color-primary: #0047AB;
+  --color-primary-light: #3369BB;
+  --color-primary-dark: #003380;
+  --color-secondary: #F5A623;
+  --color-secondary-light: #FFD380;
+  --color-error: #DC3545;
+  --color-success: #28A745;
+  --color-warning: #F5A623;
+  --color-info: #17A2B8;
+
+  --color-background: #F8F9FC;
+  --color-surface: #FFFFFF;
+  --color-text-primary: #1A1A2E;
+  --color-text-secondary: #64748B;
+  --color-border: #E2E8F0;
+
+  --radius-card: 10px;
+  --radius-input: 8px;
+  --radius-button: 8px;
+  --radius-dialog: 12px;
+
+  --sidebar-width: 260px;
+  --topbar-height: 64px;
+
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+}
+
+/* ─── Base resets ──────────────────────────────────────────────────── */
+
+html {
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+}
+
+/* ─── Custom utility classes ──────────────────────────────────────── */
+
+.bg-background { background-color: var(--color-background); }
+.bg-surface { background-color: var(--color-surface); }
+.text-foreground { color: var(--color-text-primary); }
+.text-muted { color: var(--color-text-secondary); }
+.border-default { border-color: var(--color-border); }
+
+/* ─── Card base ───────────────────────────────────────────────────── */
+
+.card {
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ─── Gradient backgrounds ────────────────────────────────────────── */
+
+.gradient-primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+}
+
+.gradient-hero {
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-primary-dark) 50%,
+    #001a4d 100%
+  );
+}
+
+/* ─── Confidence badge colours ────────────────────────────────────── */
+
+.confidence-high { color: var(--color-success); }
+.confidence-medium { color: var(--color-warning); }
+.confidence-low { color: var(--color-error); }
+
+/* ─── Scrollbar styling ───────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+/* ─── Animations ──────────────────────────────────────────────────── */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

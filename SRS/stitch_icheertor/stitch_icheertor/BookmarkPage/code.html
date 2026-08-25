@@ -1,0 +1,459 @@
+<!DOCTYPE html><html lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>รายการที่บันทึกไว้ - TORRADAR</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-variant": "#dde2f3",
+                      "on-background": "#161c27",
+                      "primary": "#00327d",
+                      "inverse-on-surface": "#ecf0ff",
+                      "on-secondary-container": "#40607e",
+                      "on-secondary-fixed": "#001d33",
+                      "surface-dim": "#d4daea",
+                      "error-container": "#ffdad6",
+                      "on-tertiary-container": "#a2c2e2",
+                      "primary-fixed": "#dae2ff",
+                      "tertiary": "#173953",
+                      "surface-container-lowest": "#ffffff",
+                      "inverse-surface": "#2a303d",
+                      "outline": "#737784",
+                      "inverse-primary": "#b1c5ff",
+                      "on-primary-fixed": "#001946",
+                      "on-surface": "#161c27",
+                      "background": "#f9f9ff",
+                      "surface-container": "#e8eeff",
+                      "tertiary-fixed": "#cde5ff",
+                      "on-error": "#ffffff",
+                      "surface": "#f9f9ff",
+                      "surface-bright": "#f9f9ff",
+                      "on-primary-container": "#a5bdff",
+                      "on-tertiary-fixed": "#001d32",
+                      "outline-variant": "#c3c6d5",
+                      "on-primary": "#ffffff",
+                      "primary-container": "#0047ab",
+                      "error": "#ba1a1a",
+                      "tertiary-fixed-dim": "#aacaea",
+                      "on-primary-fixed-variant": "#00419e",
+                      "on-tertiary-fixed-variant": "#294964",
+                      "on-surface-variant": "#434653",
+                      "on-secondary-fixed-variant": "#284966",
+                      "primary-fixed-dim": "#b1c5ff",
+                      "secondary-container": "#badbfe",
+                      "surface-container-highest": "#dde2f3",
+                      "on-tertiary": "#ffffff",
+                      "secondary-fixed-dim": "#a9caec",
+                      "surface-container-high": "#e3e8f9",
+                      "secondary-fixed": "#cee5ff",
+                      "secondary": "#41617f",
+                      "tertiary-container": "#30506b",
+                      "on-secondary": "#ffffff",
+                      "surface-container-low": "#f1f3ff",
+                      "surface-tint": "#2559bd",
+                      "on-error-container": "#93000a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "sidebar-width": "260px",
+                      "container-margin": "32px",
+                      "base": "4px",
+                      "card-padding": "20px"
+              },
+              "fontFamily": {
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "36px",
+                              {
+                                      "lineHeight": "44px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+    </style>
+</head>
+<body class="flex min-h-screen">
+<!-- Top Navigation (Mobile) - Hidden on md and up -->
+<header class="flex md:hidden justify-between items-center w-full px-gutter h-16 sticky top-0 z-50 bg-surface dark:bg-inverse-surface shadow-sm">
+<div class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary">iCheerTOR</div>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-primary dark:text-inverse-primary cursor-pointer active:opacity-80">notifications</span>
+<span class="material-symbols-outlined text-primary dark:text-inverse-primary cursor-pointer active:opacity-80">account_circle</span>
+</div>
+</header>
+<!-- Side Navigation (Web) -->
+<nav class="hidden md:flex flex-col w-sidebar-width h-full fixed left-0 top-0 py-8 px-4 bg-surface-container-low dark:bg-inverse-surface border-r border-outline-variant/20 z-40">
+<div class="mb-8 px-4">
+<h1 class="font-headline-lg text-headline-lg font-black text-primary dark:text-inverse-primary">iCheerTOR</h1>
+<p class="font-label-md text-label-md text-on-surface-variant dark:text-outline-variant mt-1">การจัดซื้อจัดจ้างซอฟต์แวร์</p>
+</div>
+<ul class="flex flex-col gap-2 flex-grow font-body-md text-body-md"><li class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all cursor-pointer active:scale-95 duration-150">
+<span class="material-symbols-outlined">dashboard</span>
+                แดชบอร์ด
+            </li>
+<li class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all cursor-pointer active:scale-95 duration-150">
+<span class="material-symbols-outlined">group</span>
+                ทีมของฉัน
+            </li>
+<li class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all cursor-pointer active:scale-95 duration-150">
+<span class="material-symbols-outlined">notifications</span>
+                การแจ้งเตือน
+            </li>
+<li class="flex items-center gap-3 px-4 py-3 rounded-lg text-primary dark:text-inverse-primary font-bold border-l-4 border-primary bg-primary/5 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all cursor-pointer active:scale-95 duration-150">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bookmark</span>
+                รายการที่บันทึกไว้
+            </li></ul>
+<div class="mt-auto px-4 pt-4 border-t border-outline-variant/20 flex items-center justify-between">
+<span class="font-body-md text-body-md text-on-surface-variant">ภาษาไทย</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">account_circle</span>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-sidebar-width p-4 md:p-8 max-w-[1440px] w-full mx-auto">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-background">รายการที่บันทึกไว้</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 max-w-2xl">โครงการที่คุณกำลังติดตามและจัดระเบียบไว้ในที่เดียว</p>
+</div>
+<div class="flex items-center gap-3">
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant/30 flex p-1 shadow-sm">
+<button class="p-2 bg-primary/10 text-primary rounded-md flex items-center justify-center cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[20px]">view_list</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-md flex items-center justify-center cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[20px]">grid_view</span>
+</button>
+</div>
+<div class="relative">
+<select class="appearance-none bg-surface-container-lowest border border-outline-variant/30 text-on-surface-variant font-body-md text-body-md rounded-lg py-2.5 pl-4 pr-10 shadow-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer">
+<option>บันทึกล่าสุด</option>
+<option>ปิดรับเร็วสุด</option>
+<option>ความเข้ากันสูงสุด</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">arrow_drop_down</span>
+</div>
+<button class="bg-primary-container text-on-primary rounded-lg py-2.5 px-4 font-label-md text-label-md flex items-center gap-2 hover:bg-primary-fixed-variant transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    สร้างรายการใหม่
+                </button>
+</div>
+</div>
+<div class="flex flex-col lg:flex-row gap-8">
+<!-- Left Slim Sidebar (Folders) -->
+<div class="w-full lg:w-64 flex-shrink-0">
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 p-4 sticky top-24">
+<h3 class="font-label-md text-label-md text-on-surface-variant mb-4 uppercase tracking-wider">โฟลเดอร์</h3>
+<ul class="space-y-1">
+<li class="">
+<a class="flex items-center justify-between py-2 px-3 bg-primary/5 text-primary rounded-lg font-body-md text-body-md transition-colors" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]">folder</span>
+<span class="">รายการทั้งหมด</span>
+</div>
+<span class="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-label-sm text-label-sm">4</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center justify-between py-2 px-3 text-on-surface hover:bg-surface-container rounded-lg font-body-md text-body-md transition-colors" href="#">
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">folder_special</span>
+<span class="text-on-surface">เป้าหมาย Q1</span>
+</div>
+<span class="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded-full font-label-sm text-label-sm">2</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center justify-between py-2 px-3 text-on-surface hover:bg-surface-container rounded-lg font-body-md text-body-md transition-colors" href="#">
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">folder_open</span>
+<span class="text-on-surface">อาจจะสนใจภายหลัง</span>
+</div>
+<span class="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded-full font-label-sm text-label-sm">2</span>
+</a>
+</li>
+</ul>
+<div class="mt-6 pt-4 border-t border-outline-variant/20">
+<button class="w-full py-2 px-3 text-secondary font-label-md text-label-md flex items-center gap-2 hover:bg-surface-container rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[20px]">create_new_folder</span>
+                            เพิ่มโฟลเดอร์
+                        </button>
+</div>
+</div>
+</div>
+<!-- Main Cards Area (List View) -->
+<div class="flex-1 space-y-4">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_2px_4px_rgba(26,32,44,0.05)] border border-outline-variant/10 p-5 hover:shadow-[0_10px_15px_rgba(26,32,44,0.1)] transition-shadow group">
+<div class="flex items-start justify-between gap-4">
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-2">
+<span class="bg-[#A7C7E7] text-[#001946] px-3 py-1 rounded-full font-label-sm text-label-sm uppercase tracking-wide">ร่าง TOR</span>
+<span class="flex items-center gap-1 text-green-700 bg-green-50 px-2 py-1 rounded-md font-label-sm text-label-sm border border-green-200">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                                    Match 92%
+                                </span>
+</div>
+<h3 class="font-headline-md text-headline-md text-primary mb-1 group-hover:text-primary-container transition-colors">ระบบฐานข้อมูลประชากร กทม.</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">account_balance</span>
+                                กรุงเทพมหานคร (กทม.)
+                            </p>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-outline-variant/20">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1">งบประมาณ</p>
+<p class="font-body-md text-body-md font-semibold text-on-surface">฿15,000,000</p>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1">สถานะเวลา</p>
+<p class="font-body-md text-body-md font-semibold text-red-600 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">timer</span>
+                                        เหลือ 2 วัน
+                                    </p>
+</div>
+<div class="col-span-2 flex items-end justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-md transition-colors" title="เพิ่มโน้ต">
+<span class="material-symbols-outlined text-[20px]">note_add</span>
+</button>
+<button class="border border-[#6F8FAF] text-[#40607e] hover:bg-surface-container px-4 py-1.5 rounded-lg font-label-md text-label-md transition-colors">
+                                        ดูรายละเอียด
+                                    </button>
+</div>
+</div>
+</div>
+<button class="text-primary hover:text-primary-container transition-colors shrink-0">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">bookmark</span>
+</button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_2px_4px_rgba(26,32,44,0.05)] border border-outline-variant/10 p-5 hover:shadow-[0_10px_15px_rgba(26,32,44,0.1)] transition-shadow group">
+<div class="flex items-start justify-between gap-4">
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-2">
+<span class="bg-[#A7C7E7] text-[#001946] px-3 py-1 rounded-full font-label-sm text-label-sm uppercase tracking-wide">เปิดประมูล</span>
+<span class="flex items-center gap-1 text-green-700 bg-green-50 px-2 py-1 rounded-md font-label-sm text-label-sm border border-green-200">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                                    Match 85%
+                                </span>
+</div>
+<h3 class="font-headline-md text-headline-md text-primary mb-1 group-hover:text-primary-container transition-colors">แอปพลิเคชันจัดการขยะอัจฉริยะ</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">account_balance</span>
+                                กรมควบคุมมลพิษ
+                            </p>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-outline-variant/20">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1">งบประมาณ</p>
+<p class="font-body-md text-body-md font-semibold text-on-surface">฿8,500,000</p>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1">สถานะเวลา</p>
+<p class="font-body-md text-body-md font-semibold text-amber-600 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">timer</span>
+                                        เหลือ 8 วัน
+                                    </p>
+</div>
+<div class="col-span-2 flex items-end justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-md transition-colors" title="เพิ่มโน้ต">
+<span class="material-symbols-outlined text-[20px]">note_add</span>
+</button>
+<button class="border border-[#6F8FAF] text-[#40607e] hover:bg-surface-container px-4 py-1.5 rounded-lg font-label-md text-label-md transition-colors">
+                                        ดูรายละเอียด
+                                    </button>
+</div>
+</div>
+</div>
+<button class="text-primary hover:text-primary-container transition-colors shrink-0">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">bookmark</span>
+</button>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_2px_4px_rgba(26,32,44,0.05)] border border-outline-variant/10 p-5 hover:shadow-[0_10px_15px_rgba(26,32,44,0.1)] transition-shadow group">
+<div class="flex items-start justify-between gap-4">
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-2">
+<span class="bg-surface-variant text-on-surface-variant px-3 py-1 rounded-full font-label-sm text-label-sm uppercase tracking-wide">รอประกาศผล</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-primary mb-1 group-hover:text-primary-container transition-colors">แพลตฟอร์มการศึกษาออนไลน์สำหรับโรงเรียนสังกัด กทม.</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">account_balance</span>
+                                สำนักการศึกษา กรุงเทพมหานคร
+                            </p>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-outline-variant/20">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1">งบประมาณ</p>
+<p class="font-body-md text-body-md font-semibold text-on-surface">฿22,000,000</p>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1">สถานะเวลา</p>
+<p class="font-body-md text-body-md font-semibold text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">event_available</span>
+                                        ปิดรับแล้ว
+                                    </p>
+</div>
+<div class="col-span-2 flex items-end justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-md transition-colors" title="ดูโน้ต">
+<span class="material-symbols-outlined text-[20px] text-amber-500" style="font-variation-settings: 'FILL' 1;">sticky_note_2</span>
+</button>
+<button class="border border-[#6F8FAF] text-[#40607e] hover:bg-surface-container px-4 py-1.5 rounded-lg font-label-md text-label-md transition-colors">
+                                        ดูรายละเอียด
+                                    </button>
+</div>
+</div>
+</div>
+<button class="text-primary hover:text-primary-container transition-colors shrink-0">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">bookmark</span>
+</button>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_2px_4px_rgba(26,32,44,0.05)] border border-outline-variant/10 p-5 hover:shadow-[0_10px_15px_rgba(26,32,44,0.1)] transition-shadow group">
+<div class="flex items-start justify-between gap-4">
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-2">
+<span class="bg-[#A7C7E7] text-[#001946] px-3 py-1 rounded-full font-label-sm text-label-sm uppercase tracking-wide">ร่าง TOR</span>
+<span class="flex items-center gap-1 text-green-700 bg-green-50 px-2 py-1 rounded-md font-label-sm text-label-sm border border-green-200">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                                    Match 78%
+                                </span>
+</div>
+<h3 class="font-headline-md text-headline-md text-primary mb-1 group-hover:text-primary-container transition-colors">ระบบจราจร AI อัจฉริยะ เขตปทุมวัน</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">account_balance</span>
+                                สำนักการจราจรและขนส่ง
+                            </p>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-outline-variant/20">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1">งบประมาณ</p>
+<p class="font-body-md text-body-md font-semibold text-on-surface">฿45,000,000</p>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1">สถานะเวลา</p>
+<p class="font-body-md text-body-md font-semibold text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">timer</span>
+                                        เหลือ 25 วัน
+                                    </p>
+</div>
+<div class="col-span-2 flex items-end justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-md transition-colors" title="เพิ่มโน้ต">
+<span class="material-symbols-outlined text-[20px]">note_add</span>
+</button>
+<button class="border border-[#6F8FAF] text-[#40607e] hover:bg-surface-container px-4 py-1.5 rounded-lg font-label-md text-label-md transition-colors">
+                                        ดูรายละเอียด
+                                    </button>
+</div>
+</div>
+</div>
+<button class="text-primary hover:text-primary-container transition-colors shrink-0">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">bookmark</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Empty State Example (Hidden by default, shown for demonstration) -->
+<div class="mt-12 bg-surface-container-lowest rounded-xl border border-outline-variant/20 border-dashed p-12 flex flex-col items-center justify-center text-center opacity-50">
+<span class="material-symbols-outlined text-[64px] text-outline-variant mb-4">bookmark_border</span>
+<h4 class="font-headline-md text-headline-md text-on-surface mb-2">ยังไม่มีรายการที่บันทึกไว้ในโฟลเดอร์นี้</h4>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">คลิกไอคอนบุ๊กมาร์กบนโอกาสการจัดซื้อเพื่อบันทึกมาไว้ที่นี่</p>
+<button class="bg-[#0047AB] text-white rounded-lg py-2 px-6 font-label-md text-label-md hover:bg-primary transition-colors shadow-sm">
+                เลือกดูโอกาสทั้งหมด
+             </button>
+</div>
+</main>
+
+
+
+
+</body></html>

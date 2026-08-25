@@ -1,0 +1,284 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>CivicProcure - Alerts</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-container": "#30506b",
+                      "surface-container-low": "#f1f3ff",
+                      "secondary-container": "#badbfe",
+                      "on-background": "#161c27",
+                      "inverse-surface": "#2a303d",
+                      "on-tertiary-fixed-variant": "#294964",
+                      "on-secondary-container": "#40607e",
+                      "surface-container-lowest": "#ffffff",
+                      "on-error": "#ffffff",
+                      "on-primary": "#ffffff",
+                      "error": "#ba1a1a",
+                      "surface-tint": "#2559bd",
+                      "tertiary-fixed-dim": "#aacaea",
+                      "primary-fixed-dim": "#b1c5ff",
+                      "surface-dim": "#d4daea",
+                      "inverse-primary": "#b1c5ff",
+                      "tertiary": "#173953",
+                      "on-primary-fixed-variant": "#00419e",
+                      "on-secondary-fixed": "#001d33",
+                      "tertiary-fixed": "#cde5ff",
+                      "surface-container": "#e8eeff",
+                      "on-error-container": "#93000a",
+                      "secondary-fixed": "#cee5ff",
+                      "secondary-fixed-dim": "#a9caec",
+                      "on-primary-fixed": "#001946",
+                      "on-secondary": "#ffffff",
+                      "background": "#f9f9ff",
+                      "outline": "#737784",
+                      "surface": "#f9f9ff",
+                      "on-primary-container": "#a5bdff",
+                      "on-secondary-fixed-variant": "#284966",
+                      "on-surface": "#161c27",
+                      "on-tertiary": "#ffffff",
+                      "surface-bright": "#f9f9ff",
+                      "outline-variant": "#c3c6d5",
+                      "on-tertiary-container": "#a2c2e2",
+                      "on-tertiary-fixed": "#001d32",
+                      "primary": "#00327d",
+                      "inverse-on-surface": "#ecf0ff",
+                      "surface-container-high": "#e3e8f9",
+                      "surface-container-highest": "#dde2f3",
+                      "primary-fixed": "#dae2ff",
+                      "error-container": "#ffdad6",
+                      "secondary": "#41617f",
+                      "surface-variant": "#dde2f3",
+                      "on-surface-variant": "#434653",
+                      "primary-container": "#0047ab"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "base": "4px",
+                      "gutter": "24px",
+                      "container-margin": "32px",
+                      "sidebar-width": "260px",
+                      "card-padding": "20px"
+              },
+              "fontFamily": {
+                      "headline-lg": ["Inter"],
+                      "label-md": ["Inter"],
+                      "display-lg": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "label-sm": ["Inter"],
+                      "body-md": ["Inter"],
+                      "body-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-lg": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: theme('colors.background'); color: theme('colors.on-background'); }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .nav-item.active .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+    </style>
+</head>
+<body class="bg-background min-h-screen antialiased flex text-on-surface">
+<!-- SideNavBar -->
+<nav class="bg-surface-container-lowest dark:bg-surface-container-low fixed left-0 top-0 h-full w-[260px] shadow-sm dark:shadow-none flex flex-col py-base z-50">
+<div class="px-6 py-4 flex items-center gap-3">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-lg">domain</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim tracking-tight">iCheerTOR</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Procurement Oversight</p>
+</div>
+</div>
+<ul class="mt-8 flex-1 px-3 space-y-1"><li class="">
+<a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-surface-container-highest transition-colors active:scale-[0.98] duration-200 font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined text-xl">dashboard</span> แดชบอร์ด
+                </a>
+</li>
+
+<li class="">
+<a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-surface-container-highest transition-colors active:scale-[0.98] duration-200 font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined text-xl">group</span> ทีมของฉัน
+                </a>
+</li>
+<li class="">
+<a class="nav-item active flex items-center gap-3 px-3 py-2.5 rounded-lg text-primary dark:text-primary-fixed-dim border-l-4 border-primary dark:border-primary-fixed-dim font-bold bg-primary/5 transition-colors active:scale-[0.98] duration-200 font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined text-xl">notifications</span> การแจ้งเตือน
+                </a>
+</li>
+<li class="">
+<a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-surface-container-highest transition-colors active:scale-[0.98] duration-200 font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined text-xl">bookmark</span> รายการที่บันทึกไว้
+                </a>
+</li></ul>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 ml-sidebar-width flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-surface-dim fixed top-0 right-0 w-[calc(100%-260px)] z-40 border-b border-outline-variant/20 dark:border-outline/20 flex justify-between items-center h-16 px-gutter">
+<div class="flex items-center gap-4 flex-1 max-w-xl">
+<h2 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim mr-4 whitespace-nowrap">iCheerTOR</h2>
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-full py-2 pl-10 pr-4 font-body-md text-body-md focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="Search procurement data..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-1.5 px-3 py-2 text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-all rounded-full hover:bg-surface-container active:opacity-80 font-label-md text-label-md" data-nav="language-switcher">
+<span class="material-symbols-outlined text-[20px]">language</span>
+<span class="">TH</span>
+<span class="material-symbols-outlined text-[16px]">expand_more</span>
+</button><button class="p-2 text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-all rounded-full hover:bg-surface-container active:opacity-80">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-all rounded-full hover:bg-surface-container active:opacity-80">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-secondary-container overflow-hidden border border-outline-variant/30 cursor-pointer ml-2">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a person looking forward, brightly lit in a modern office environment with soft focus in the background, signaling a corporate or government tech persona." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBegUQuE8U8OQSoDPCOYaL2WoRF6GkN3p-KX4hlROZ8H7RieuxC4sT1j6ku-O8bfANeaVgx8XopodwR_RClhqYIQHrBY-vOxMKDO7LUMgof0nZ8EhPWBKUXv895zbFwciQGVrqk1m8Cnt87-npWUt2OGP510cnJn_WWVJX6p39ruZGU69ThMITAEZlUMEkEglX5cjDvlHo60NhGExD15CIWrNrr0iJg-LXtuHwW9zq9KJkifXZJz3RocQ">
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 mt-16 p-container-margin overflow-y-auto">
+<!-- Page Header & Toggles -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<h1 class="font-display-lg text-display-lg text-primary mb-2">การแจ้งเตือน</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">จัดการการอัปเดตการติดตามการจัดซื้อจัดจ้างและการประชาพิจารณ์ที่ใช้งานอยู่ของคุณ</p>
+</div>
+<div class="flex items-center gap-3 bg-surface-container-lowest rounded-full p-1 shadow-[0px_2px_4px_rgba(26,32,44,0.05)] border border-outline-variant/20">
+<button class="px-4 py-1.5 rounded-full bg-primary-container text-on-primary font-label-md text-label-md transition-colors">แดชบอร์ด</button>
+<button class="px-4 py-1.5 rounded-full text-on-surface-variant hover:bg-surface-container font-label-md text-label-md transition-colors">เว็บฮุค</button>
+<button class="px-4 py-1.5 rounded-full text-on-surface-variant hover:bg-surface-container font-label-md text-label-md transition-colors">อีเมล</button>
+</div>
+</div>
+<!-- Two Column Layout -->
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Left Column: Notification Feed -->
+<div class="col-span-12 lg:col-span-8 space-y-4">
+<!-- Notification Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-card-padding shadow-[0px_2px_4px_rgba(26,32,44,0.05)] border border-outline-variant/20 flex items-start gap-4 hover:shadow-[0px_4px_8px_rgba(26,32,44,0.08)] transition-shadow">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-headline-md text-headline-md text-on-surface">รายการที่ตรงกันใหม่: ระบบจัดการจราจร</h3>
+<span class="font-label-sm text-label-sm text-on-surface-variant shrink-0">2 ชั่วโมงที่แล้ว</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4">โอกาสในการจัดซื้อจัดจ้างใหม่ที่ตรงกับตัวกรอง "IoT Traffic" ของคุณถูกโพสต์โดยกรมการขนส่ง</p>
+<button class="px-4 py-2 bg-primary-container text-on-primary rounded-lg font-label-md text-label-md hover:bg-primary-container/90 transition-colors">ดูโอกาส</button>
+</div>
+</div>
+<!-- Notification Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-card-padding shadow-[0px_2px_4px_rgba(26,32,44,0.05)] border border-outline-variant/20 flex items-start gap-4 hover:shadow-[0px_4px_8px_rgba(26,32,44,0.08)] transition-shadow">
+<div class="w-10 h-10 rounded-full bg-tertiary-container/10 flex items-center justify-center text-tertiary-container shrink-0">
+<span class="material-symbols-outlined">gavel</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-headline-md text-headline-md text-on-surface">เปิดรับฟังความคิดเห็นสาธารณะ: WiFi โรงเรียนอัจฉริยะ</h3>
+<span class="font-label-sm text-label-sm text-on-surface-variant shrink-0">เมื่อวานนี้</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4">ร่างขอบเขตของงาน (TOR) สำหรับ WiFi โรงเรียนทั่วเมืองเปิดให้แสดงความคิดเห็นสาธารณะในอีก 7 วันข้างหน้า</p>
+<button class="px-4 py-2 border border-outline rounded-lg text-primary font-label-md text-label-md hover:bg-surface-container transition-colors">ตรวจสอบร่าง</button>
+</div>
+</div>
+<!-- Notification Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-card-padding shadow-[0px_2px_4px_rgba(26,32,44,0.05)] border border-outline-variant/20 flex items-start gap-4 hover:shadow-[0px_4px_8px_rgba(26,32,44,0.08)] transition-shadow">
+<div class="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center text-error shrink-0">
+<span class="material-symbols-outlined">timer</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-headline-md text-headline-md text-on-surface">ใกล้ถึงกำหนดเวลา: โครงร่างโฮสติ้งคลาวด์</h3>
+<span class="font-label-sm text-label-sm text-on-surface-variant shrink-0">2 วันที่แล้ว</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4">กำหนดเวลาส่งข้อเสนอสำหรับข้อตกลงโครงร่างโฮสติ้งคลาวด์จะปิดในอีก 48 ชั่วโมง</p>
+<button class="px-4 py-2 bg-primary-container text-on-primary rounded-lg font-label-md text-label-md hover:bg-primary-container/90 transition-colors">ดูรายละเอียด</button>
+</div>
+</div>
+</div>
+<!-- Right Column: Public Hearing Watch Panel -->
+<div class="col-span-12 lg:col-span-4">
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_2px_4px_rgba(26,32,44,0.05)] border border-outline-variant/20 overflow-hidden sticky top-24">
+<div class="bg-surface-container-low px-card-padding py-4 border-b border-outline-variant/20 flex justify-between items-center">
+<h3 class="font-headline-md text-headline-md text-primary font-bold">เฝ้าระวังการประชาพิจารณ์</h3>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">visibility</span>
+</div>
+<div class="p-card-padding space-y-4">
+<!-- Watch Item 1 (Normal) -->
+<div class="border-b border-outline-variant/20 pb-4 last:border-0 last:pb-0">
+<h4 class="font-body-lg text-body-lg font-semibold text-on-surface mb-1 leading-tight">API ยืนยันตัวตนดิจิทัล</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-2">กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม</p>
+<div class="flex justify-between items-center mb-3">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-secondary bg-secondary-container/50 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[12px]">schedule</span> เหลือ 5 วัน
+                                    </span>
+</div>
+<button class="w-full py-1.5 border border-outline rounded-lg text-primary font-label-md text-label-md hover:bg-surface-container transition-colors">ตรวจสอบและคัดค้าน</button>
+</div>
+<!-- Watch Item 2 (Red Flag) -->
+<div class="bg-error-container/20 -mx-card-padding px-card-padding py-4 border-y border-error/20">
+<div class="flex items-start gap-2 mb-1">
+<span class="material-symbols-outlined text-error text-sm mt-0.5">warning</span>
+<h4 class="font-body-lg text-body-lg font-semibold text-on-error-container leading-tight">อัปเกรดระบบกล้องวงจรปิด ระยะที่ 2</h4>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-2 ml-6">กรุงเทพมหานคร</p>
+<div class="flex justify-between items-center mb-3 ml-6">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-error bg-error/10 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[12px]">schedule</span> เหลือ 2 วัน
+                                    </span>
+<span class="font-label-sm text-label-sm text-error font-bold">ความเสี่ยงสูง</span>
+</div>
+<button class="w-full py-1.5 border border-error/50 bg-error/5 rounded-lg text-error font-label-md text-label-md hover:bg-error/10 transition-colors ml-6 w-[calc(100%-24px)]">ตรวจสอบและคัดค้าน</button>
+</div>
+<!-- Watch Item 3 (Normal) -->
+<div class="pt-4 border-t border-outline-variant/20">
+<h4 class="font-body-lg text-body-lg font-semibold text-on-surface mb-1 leading-tight">ออกแบบพอร์ทัลข้อมูลเปิดใหม่</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-2">สำนักงานพัฒนารัฐบาลดิจิทัล</p>
+<div class="flex justify-between items-center mb-3">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-secondary bg-secondary-container/50 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[12px]">schedule</span> เหลือ 12 วัน
+                                    </span>
+</div>
+<button class="w-full py-1.5 border border-outline rounded-lg text-primary font-label-md text-label-md hover:bg-surface-container transition-colors">ตรวจสอบและคัดค้าน</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+
+
+
+
+
+</body></html>

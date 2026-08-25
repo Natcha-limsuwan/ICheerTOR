@@ -1,0 +1,457 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Opportunity Detail - BKK Procurement</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#ffffff",
+                        "primary-fixed-dim": "#b1c5ff",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "error": "#ba1a1a",
+                        "tertiary": "#173953",
+                        "surface-tint": "#2559bd",
+                        "background": "#f9f9ff",
+                        "on-secondary-fixed-variant": "#284966",
+                        "tertiary-fixed": "#cde5ff",
+                        "outline": "#737784",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-container": "#a2c2e2",
+                        "primary-container": "#0047ab",
+                        "primary": "#00327d",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed": "#001d32",
+                        "on-secondary-fixed": "#001d33",
+                        "primary-fixed": "#dae2ff",
+                        "on-primary-fixed": "#001946",
+                        "secondary-container": "#badbfe",
+                        "on-background": "#161c27",
+                        "surface": "#f9f9ff",
+                        "tertiary-container": "#30506b",
+                        "surface-dim": "#d4daea",
+                        "secondary": "#41617f",
+                        "surface-container-high": "#e3e8f9",
+                        "surface-bright": "#f9f9ff",
+                        "on-surface-variant": "#434653",
+                        "surface-container-highest": "#dde2f3",
+                        "surface-container": "#e8eeff",
+                        "outline-variant": "#c3c6d5",
+                        "inverse-on-surface": "#ecf0ff",
+                        "on-primary-container": "#a5bdff",
+                        "surface-container-low": "#f1f3ff",
+                        "on-tertiary-fixed-variant": "#294964",
+                        "on-primary-fixed-variant": "#00419e",
+                        "on-error-container": "#93000a",
+                        "on-surface": "#161c27",
+                        "secondary-fixed-dim": "#a9caec",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-primary": "#b1c5ff",
+                        "on-secondary-container": "#40607e",
+                        "secondary-fixed": "#cee5ff",
+                        "surface-variant": "#dde2f3",
+                        "inverse-surface": "#2a303d",
+                        "tertiary-fixed-dim": "#aacaea"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-margin": "32px",
+                        "gutter": "24px",
+                        "card-padding": "20px",
+                        "sidebar-width": "260px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex">
+<!-- SideNavBar -->
+<nav aria-label="Sidebar" class="hidden md:flex flex-col bg-surface-container-lowest fixed left-0 top-0 h-full w-[260px] shadow-sm z-20 py-6">
+<div class="px-6 mb-8 flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-container text-3xl" style="font-variation-settings: &quot;FILL&quot; 1;">account_balance</span>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">iCheerTOR</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">ระบบตรวจสอบการจัดซื้อจัดจ้าง</p>
+</div>
+</div>
+<div class="flex-1 px-4 space-y-1 overflow-y-auto"><!-- Dashboard -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-primary-container/5 transition-colors transition-all duration-200 ease-in-out group bg-primary-container/10 text-primary font-bold border-l-4 border-primary" href="#">
+<span class="material-symbols-outlined group-hover:text-primary-container transition-colors text-primary">dashboard</span>
+                แดชบอร์ด
+            </a>
+<!-- My Team Profile -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-primary-container/5 transition-colors transition-all duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary-container transition-colors">group</span>
+                ทีมของฉัน
+            </a>
+<!-- Notifications -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-primary-container/5 transition-colors transition-all duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary-container transition-colors">notifications</span>
+                การแจ้งเตือน
+            </a>
+<!-- Saved/Bookmark -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg font-body-md text-body-md text-on-surface-variant hover:bg-primary-container/5 transition-colors transition-all duration-200 ease-in-out group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary-container transition-colors">bookmark</span>
+                รายการที่บันทึกไว้
+            </a></div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col md:ml-[260px] min-h-screen">
+<!-- TopNavBar -->
+<header class="bg-surface fixed top-0 right-0 left-[260px] h-16 border-b border-outline-variant/20 z-10 flex justify-between items-center px-container-margin w-[calc(100%-260px)]">
+<div class="flex items-center gap-4 w-96">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="w-full pl-9 pr-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:ring-2 focus:ring-secondary-container/30 transition-all duration-150 ease-linear" placeholder="ค้นหาโครงการ..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-6">
+<span class="font-label-md text-label-md text-on-surface-variant hidden lg:block">iCheerTOR</span>
+<button class="flex items-center gap-1 px-3 h-10 rounded-full text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-high font-label-md text-label-md"><span class="material-symbols-outlined text-[20px]">language</span><span class="">TH</span><span class="material-symbols-outlined text-[16px]">expand_more</span></button><button class="p-2 rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-label-md text-label-md shadow-sm">
+                    JD
+                </div>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 pt-24 pb-12 px-container-margin max-w-[1440px] mx-auto w-full">
+<!-- Breadcrumbs -->
+<nav class="flex items-center gap-2 mb-6 font-body-md text-body-md text-on-surface-variant">
+<a class="hover:text-primary-container transition-colors" href="#">แดชบอร์ด<br></a>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span class="text-on-surface">แพลตฟอร์มบูรณาการข้อมูลเมืองอัจฉริยะ</span>
+</nav>
+<!-- Header Section -->
+<section class="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-8">
+<div class="space-y-4">
+<div class="flex flex-wrap items-center gap-3">
+<span class="inline-flex items-center gap-1 bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full font-label-sm text-label-sm uppercase tracking-wider">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+                            เปิดรับข้อเสนอ
+                        </span>
+<span class="inline-flex items-center gap-1 text-error font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+                            เหลือ 2 วัน
+                        </span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface leading-tight">แพลตฟอร์มบูรณาการข้อมูลเมืองอัจฉริยะ</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined">domain</span>
+                        กรุงเทพมหานคร (กทม.)
+                    </p>
+</div>
+<div class="flex items-center gap-3 shrink-0"><button class="px-4 py-2.5 rounded-lg border border-outline text-primary font-label-md text-label-md hover:bg-surface-container-high transition-colors flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">open_in_new</span>ไปที่เว็บหลัก</button>
+<button class="px-4 py-2.5 rounded-lg border border-outline text-primary font-label-md text-label-md hover:bg-surface-container-high transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                        ส่งออกเป็น PDF
+                    </button>
+<button class="px-6 py-2.5 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md hover:bg-primary shadow-sm hover:shadow-md transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: &quot;FILL&quot; 1;">bookmark</span>
+                        บันทึก / ติดตาม
+                    </button>
+</div>
+</section>
+<!-- Summary Bar (Bento style metrics) -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-card-padding shadow-sm border border-outline-variant/10 flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-surface-container rounded-full opacity-50"></div>
+<span class="font-label-md text-label-md text-on-surface-variant mb-1 relative z-10">ระยะเวลาเปิดรับข้อเสนอ</span>
+<p class="font-headline-md text-headline-md text-on-surface relative z-10">20 ต.ค. - 5 พ.ย. 2023</p>
+<p class="font-label-sm text-label-sm text-outline mt-2 relative z-10">ประกาศเมื่อ: 15 ต.ค. 2023</p>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-card-padding shadow-sm border border-outline-variant/10 flex flex-col justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant mb-1">งบประมาณที่จัดสรร</span>
+<p class="font-headline-md text-headline-md text-primary-container flex items-end gap-1">
+                        ฿45,000,000
+                    </p>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-card-padding shadow-sm border border-outline-variant/10 flex flex-col justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant mb-1">ราคากลาง</span>
+<p class="font-headline-md text-headline-md text-on-surface flex items-end gap-1">
+                        ฿42,500,000
+                    </p>
+</div>
+<!-- Card 4: Match Score -->
+<div class="bg-gradient-to-br from-primary-container to-tertiary-container rounded-xl p-card-padding shadow-sm flex items-center justify-between text-on-primary">
+<div>
+<span class="font-label-md text-label-md text-on-primary/80 mb-1 block">คะแนนความเหมาะสมของทีม</span>
+<p class="font-label-sm text-label-sm text-on-primary/60 max-w-[120px]">อิงตามความสามารถในโปรไฟล์ของคุณ</p>
+</div>
+<div class="w-16 h-16 rounded-full border-4 border-on-primary/20 flex items-center justify-center relative">
+<!-- Simulated circular progress -->
+<svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 36 36">
+<path class="text-primary-fixed" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="92, 100" stroke-width="3"></path>
+</svg>
+<span class="font-headline-md text-headline-md font-bold">92%</span>
+</div>
+</div>
+</section>
+<!-- Main Layout Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+<!-- Left Column: Primary Content -->
+<div class="lg:col-span-8 flex flex-col gap-gutter">
+<!-- Background & Objectives -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-card-padding border border-outline-variant/10">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-4 flex items-center gap-2 border-b border-outline-variant/20 pb-3">
+<span class="material-symbols-outlined text-primary-container">lightbulb</span>
+                            ความเป็นมาและวัตถุประสงค์
+                        </h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                            กรุงเทพมหานคร (กทม.) กำลังริเริ่มการพัฒนาแพลตฟอร์มบูรณาการข้อมูลเมืองอัจฉริยะที่ครอบคลุม โครงการนี้มีเป้าหมายเพื่อรวบรวมข้อมูลจากเซ็นเซอร์ IoT ของเมือง, กล้องวงจรปิดจราจร, และเครือข่ายสาธารณูปโภค ให้อยู่ในแดชบอร์ดการวางแผนเมืองแบบรวมศูนย์และพร้อมใช้งานสูง วัตถุประสงค์หลักคือเพื่อเพิ่มประสิทธิภาพการตัดสินใจข้ามแผนกและให้ข้อมูลสถานการณ์แบบเรียลไทม์สำหรับเจ้าหน้าที่บริหารจัดการเมือง
+                        </p>
+</article>
+<!-- Scope of Work -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-card-padding border border-outline-variant/10">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-4 flex items-center gap-2 border-b border-outline-variant/20 pb-3">
+<span class="material-symbols-outlined text-primary-container">format_list_bulleted</span>
+                            ขอบเขตงาน (Scope of Work)
+                        </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+<div class="flex items-start gap-3 bg-surface p-4 rounded-lg">
+<div class="w-8 h-8 rounded bg-primary-container/10 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary-container text-sm">api</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface">การพัฒนา API</h4>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm mt-1">จุดเชื่อมต่อ RESTful และ GraphQL สำหรับการนำเข้าข้อมูลเซ็นเซอร์</p>
+</div>
+</div>
+<div class="flex items-start gap-3 bg-surface p-4 rounded-lg">
+<div class="w-8 h-8 rounded bg-primary-container/10 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary-container text-sm">monitoring</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface">การแสดงผลข้อมูลผ่านแดชบอร์ด</h4>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm mt-1">การทำแผนที่เชิงพื้นที่และแสดงกราฟข้อมูลแบบเรียลไทม์</p>
+</div>
+</div>
+<div class="flex items-start gap-3 bg-surface p-4 rounded-lg">
+<div class="w-8 h-8 rounded bg-primary-container/10 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary-container text-sm">database</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface">การเพิ่มประสิทธิภาพฐานข้อมูล</h4>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm mt-1">การตั้งค่าฐานข้อมูลอนุกรมเวลาที่มีอัตราการส่งผ่านข้อมูลสูง</p>
+</div>
+</div>
+<div class="flex items-start gap-3 bg-surface p-4 rounded-lg">
+<div class="w-8 h-8 rounded bg-primary-container/10 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary-container text-sm">security</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface">การตรวจสอบความปลอดภัย</h4>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm mt-1">การนำระบบควบคุมการเข้าถึงตามบทบาท (RBAC) มาใช้</p>
+</div>
+</div>
+</div>
+</article>
+<!-- Qualifications Checklist -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-card-padding border border-outline-variant/10">
+<div class="flex items-center justify-between border-b border-outline-variant/20 pb-3 mb-4">
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container">fact_check</span>
+                                การตรวจสอบคุณสมบัติ
+                            </h3>
+<span class="font-label-sm text-label-sm text-outline">TOR เทียบกับโปรไฟล์ทีม</span>
+</div>
+<div class="w-full">
+<!-- Row 1 -->
+<div class="flex items-center justify-between py-3 border-b border-outline-variant/10 last:border-0 hover:bg-surface-container-low transition-colors px-2 rounded">
+<span class="font-body-md text-body-md text-on-surface">การรับรองมาตรฐาน ISO 27001</span>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-primary-container bg-primary-fixed px-2 py-0.5 rounded-sm">ผ่านการตรวจสอบ</span>
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="flex items-center justify-between py-3 border-b border-outline-variant/10 last:border-0 hover:bg-surface-container-low transition-colors px-2 rounded">
+<span class="font-body-md text-body-md text-on-surface">ประสบการณ์การทำงานกับ API ของกทม. (&gt;2 โครงการ)</span>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-primary-container bg-primary-fixed px-2 py-0.5 rounded-sm">3 โครงการ</span>
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="flex items-center justify-between py-3 border-b border-outline-variant/10 last:border-0 hover:bg-surface-container-low transition-colors px-2 rounded">
+<span class="font-body-md text-body-md text-on-surface">เป็นนิติบุคคลที่จดทะเบียนในประเทศไทย</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+</div>
+</div>
+<!-- Row 4 -->
+<div class="flex items-center justify-between py-3 hover:bg-surface-container-low transition-colors px-2 rounded">
+<span class="font-body-md text-body-md text-on-surface">ทุนจดทะเบียนขั้นต่ำ: 10 ล้านบาท</span>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-outline bg-surface-variant px-2 py-0.5 rounded-sm">ต้องอัปเดตข้อมูล</span>
+<span class="material-symbols-outlined text-outline">error</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Budget & Evaluation Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Budget Breakdown -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-card-padding border border-outline-variant/10">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-4 flex items-center gap-2 border-b border-outline-variant/20 pb-3">
+<span class="material-symbols-outlined text-primary-container">account_balance_wallet</span>
+                                การแจกแจงงบประมาณ
+                            </h3>
+<div class="space-y-3 mt-4">
+<div class="flex justify-between items-center text-body-md text-on-surface-variant">
+<span class="">การพัฒนาซอฟต์แวร์</span>
+<span class="font-label-md text-on-surface">฿25,000,000</span>
+</div>
+<div class="flex justify-between items-center text-body-md text-on-surface-variant">
+<span class="">ฮาร์ดแวร์ / โครงสร้างพื้นฐาน</span>
+<span class="font-label-md text-on-surface">฿12,000,000</span>
+</div>
+<div class="flex justify-between items-center text-body-md text-on-surface-variant">
+<span class="">การบำรุงรักษา (3 ปี)</span>
+<span class="font-label-md text-on-surface">฿5,500,000</span>
+</div>
+<div class="pt-3 border-t border-outline-variant/20 flex justify-between items-center">
+<span class="font-label-md text-on-surface">ราคากลางรวม</span>
+<span class="font-headline-md text-primary-container">฿42,500,000</span>
+</div>
+</div>
+</article>
+<!-- Evaluation Criteria -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-card-padding border border-outline-variant/10 flex flex-col justify-center">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-4 flex items-center gap-2 border-b border-outline-variant/20 pb-3">
+<span class="material-symbols-outlined text-primary-container">analytics</span>
+                                น้ำหนักเกณฑ์การประเมิน
+                            </h3>
+<div class="mt-2 space-y-6">
+<div class="flex justify-between items-end mb-2">
+<div>
+<p class="font-headline-md text-primary-container">70%</p>
+<p class="font-label-sm text-outline">คะแนนด้านเทคนิค</p>
+</div>
+<div class="text-right">
+<p class="font-headline-md text-secondary">30%</p>
+<p class="font-label-sm text-outline">คะแนนด้านราคา</p>
+</div>
+</div>
+<!-- Visual Gauge Bar -->
+<div class="h-4 w-full rounded-full overflow-hidden flex bg-surface-variant shadow-inner">
+<div class="h-full bg-primary-container" style="width: 70%"></div>
+<div class="h-full bg-secondary opacity-80" style="width: 30%"></div>
+</div>
+<p class="font-body-md text-on-surface-variant text-sm italic">
+                                    ใช้เกณฑ์การประเมินแบบ Quality-Cost Based Selection (QCBS)
+                                </p>
+</div>
+</article>
+</div>
+</div>
+<!-- Right Column: Sidebar Panels -->
+<aside class="lg:col-span-4 space-y-gutter">
+<!-- Red Flag Analysis (Glassmorphism inspired high-alert) -->
+<div class="bg-error-container/40 backdrop-blur-md rounded-xl p-card-padding border-l-4 border-error shadow-sm relative overflow-hidden">
+<!-- Decorative background icon -->
+<span class="material-symbols-outlined absolute -right-6 -bottom-6 text-error/10 text-9xl">warning</span>
+<div class="relative z-10">
+<h3 class="font-headline-md text-headline-md text-on-error-container mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: &quot;FILL&quot; 1;">flag</span>
+                                การวิเคราะห์ความเสี่ยง (Red Flag)
+                            </h3>
+<p class="font-body-md text-on-error-container/80 text-sm mb-4">
+                                ระบบวิเคราะห์ TOR อัตโนมัติของเราตรวจพบความเสี่ยงที่อาจเกิดขึ้น ซึ่งต้องการการตรวจสอบทางกฎหมายหรือทางเทคนิค
+                            </p>
+<ul class="space-y-4">
+<li class="bg-surface-container-lowest/60 rounded-lg p-3 border border-error/20 flex items-start gap-3">
+<span class="material-symbols-outlined text-error text-sm mt-0.5">gavel</span>
+<div>
+<span class="font-label-md text-on-error-container block">เกณฑ์การตรวจรับไม่ชัดเจน</span>
+<span class="font-body-md text-sm text-on-error-container/80">ข้อ 4.2 ขาดตัวชี้วัดที่ชัดเจนสำหรับการทดสอบภาระงาน (load-testing) ของระบบนำเข้าข้อมูล IoT</span>
+</div>
+</li>
+<li class="bg-surface-container-lowest/60 rounded-lg p-3 border border-error/20 flex items-start gap-3">
+<span class="material-symbols-outlined text-error text-sm mt-0.5">timer</span>
+<div>
+<span class="font-label-md text-on-error-container block">ระยะเวลาดำเนินการสั้น</span>
+<span class="font-body-md text-sm text-on-error-container/80">ข้อ 7.1 กำหนดให้ระบบเปิดใช้งานภายใน 90 วัน ซึ่งกระชั้นชิดมากสำหรับการจัดซื้อฮาร์ดแวร์ที่เกี่ยวข้อง</span>
+</div>
+</li>
+<li class="bg-surface-container-lowest/60 rounded-lg p-3 border border-error/20 flex items-start gap-3">
+<span class="material-symbols-outlined text-error text-sm mt-0.5">attach_money</span>
+<div>
+<span class="font-label-md text-on-error-container block">คำเตือนข้อจำกัดด้านงบประมาณ</span>
+<span class="font-body-md text-sm text-on-error-container/80">งบประมาณที่จัดสรรต่ำกว่าค่าเฉลี่ยราคากลางในอดีต 5% สำหรับโครงการขนาดใกล้เคียงกัน</span>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<!-- Additional Context Card (Placeholder for visual balance) -->
+<div class="bg-surface-container-low rounded-xl p-card-padding border border-outline-variant/20 shadow-sm">
+<h4 class="font-label-md text-on-surface mb-3 uppercase tracking-wide">เจ้าหน้าที่พัสดุ</h4>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-label-md">
+                                ST
+                            </div>
+<div>
+<p class="font-label-md text-on-surface">สมชาย ทองคำ</p>
+<p class="font-body-md text-sm text-on-surface-variant">ผู้อำนวยการสำนักไอที, กทม.</p>
+</div>
+</div>
+<button class="w-full mt-4 py-2 border border-outline rounded-lg text-primary font-label-md hover:bg-surface-container transition-colors">
+                            ขอคำชี้แจง
+                        </button>
+</div>
+</aside>
+</div>
+</main>
+</div>
+
+
+
+
+
+
+
+
+
+
+</body></html>

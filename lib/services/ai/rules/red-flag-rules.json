@@ -1,0 +1,39 @@
+[
+  {
+    "ruleId": "RF-001",
+    "name": "Narrow vendor spec",
+    "description": "Qualification names a specific brand or product",
+    "severity": "critical",
+    "recommendedAction": "พิจารณายื่นความคิดเห็นในช่วงรับฟังความคิดเห็น เสนอให้ระบุคุณสมบัติทั่วไปแทนการระบุยี่ห้อ"
+  },
+  {
+    "ruleId": "RF-002",
+    "name": "High min contract value",
+    "description": "Min contract value requirement > 2× the median for the category",
+    "severity": "warning",
+    "threshold": 0.8,
+    "recommendedAction": "พิจารณายื่นความคิดเห็นในช่วงรับฟังความคิดเห็น เสนอให้ลดมูลค่าขั้นต่ำลงเพื่อเปิดโอกาสการแข่งขัน"
+  },
+  {
+    "ruleId": "RF-003",
+    "name": "Compressed timeline",
+    "description": "Submission deadline < 15 days from posting date",
+    "severity": "warning",
+    "thresholdDays": 15,
+    "recommendedAction": "เสนอให้ขยายระยะเวลายื่นข้อเสนอเพื่อให้ผู้ประกอบการมีเวลาเตรียมตัวเพียงพอ"
+  },
+  {
+    "ruleId": "RF-004",
+    "name": "Rare certification",
+    "description": "Required certification held by < 5% of registered vendors",
+    "severity": "warning",
+    "recommendedAction": "ตรวจสอบว่าการกำหนดมาตรฐานนี้จำเป็นต่อการดำเนินงานจริงหรือไม่"
+  },
+  {
+    "ruleId": "RF-005",
+    "name": "Budget outlier",
+    "description": "Median price > 1.5× or < 0.5× the category average",
+    "severity": "info",
+    "recommendedAction": "ราคากลางอาจไม่สอดคล้องกับอัตราตลาด พิจารณาตรวจสอบเพิ่มเติม"
+  }
+]
