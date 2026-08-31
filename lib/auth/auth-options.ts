@@ -11,6 +11,7 @@ import User from "@/lib/db/models/user";
  * Subsequent sign-ins retrieve the existing document.
  */
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -30,26 +31,22 @@ export const authConfig: NextAuthConfig = {
       try {
         await connectDB();
 
-        // Parse admin emails from env (comma-separated)
-        const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+        const existing = await User.findOne({ googleId: account.providerAccountId });
+
+        const bootstrapEmails = (process.env.ADMIN_EMAILS ?? "")
           .split(",")
           .map((e) => e.trim().toLowerCase())
           .filter(Boolean);
-
-        const isAdmin = adminEmails.includes(
-          (user.email ?? "").toLowerCase(),
-        );
-
-        const existing = await User.findOne({ googleId: account.providerAccountId });
+        const isBootstrapDeveloper = bootstrapEmails.includes((user.email ?? "").toLowerCase());
 
         if (existing) {
           if (existing.status === "suspended" || existing.status === "banned") {
             return false;
           }
           existing.lastLoginAt = new Date();
-          // Promote to admin if email is in ADMIN_EMAILS but role is still user
-          if (isAdmin && existing.role !== "admin") {
-            existing.role = "admin";
+          // Promote to developer if in ADMIN_EMAILS but not yet developer
+          if (isBootstrapDeveloper && existing.role !== "developer") {
+            existing.role = "developer";
           }
           await existing.save();
         } else {
@@ -58,7 +55,7 @@ export const authConfig: NextAuthConfig = {
             email: user.email ?? "",
             name: user.name ?? "",
             avatarUrl: user.image ?? undefined,
-            role: isAdmin ? "admin" : "user",
+            role: isBootstrapDeveloper ? "developer" : "user",
             status: "active",
           });
         }

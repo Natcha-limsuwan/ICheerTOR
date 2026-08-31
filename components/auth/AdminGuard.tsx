@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import CircularProgress from "@mui/material/CircularProgress";
 
+const STAFF_ROLES = ["admin", "developer"];
+
 /**
  * Client-side admin guard.
- * Redirects non-admin users to the dashboard.
+ * Redirects non-staff users (admin/developer) to the dashboard.
  */
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -15,16 +17,17 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const role = (session?.user as any)?.role;
+  const isStaff = STAFF_ROLES.includes(role);
 
   useEffect(() => {
     if (status === "loading") return;
 
     if (!session) {
       router.replace("/login");
-    } else if (role !== "admin") {
+    } else if (!isStaff) {
       router.replace("/dashboard");
     }
-  }, [session, status, role, router]);
+  }, [session, status, isStaff, router]);
 
   if (status === "loading") {
     return (
@@ -34,7 +37,7 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
     );
   }
 
-  if (!session || role !== "admin") {
+  if (!session || !isStaff) {
     return null;
   }
 

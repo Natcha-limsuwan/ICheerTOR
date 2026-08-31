@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.github
+.env*
+!.env.example
+*.md
+.vscode
+.idea
+coverage
+.agents
+.specify
+SRS
+specs
+Thumbs.db
+.DS_Store

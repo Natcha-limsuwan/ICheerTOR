@@ -7,12 +7,6 @@ import mongoose from "mongoose";
  * `globalThis` to prevent creating multiple connections.
  */
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI environment variable in .env.local");
-}
-
 interface MongooseCache {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
@@ -30,8 +24,13 @@ globalThis.mongooseCache = cached;
 export async function connectDB(): Promise<typeof mongoose> {
   if (cached.conn) return cached.conn;
 
+  const MONGODB_URI = process.env.MONGODB_URI;
+  if (!MONGODB_URI) {
+    throw new Error("Please define the MONGODB_URI environment variable in .env.local");
+  }
+
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI!, {
+    cached.promise = mongoose.connect(MONGODB_URI, {
       bufferCommands: false,
     });
   }
