@@ -59,7 +59,7 @@ The canonical URL of your app. For local development:
 NEXTAUTH_URL=http://localhost:3000
 ```
 
-For production, use your deployed URL (e.g. `https://icheertor.vercel.app`).
+For production, use your deployed domain (e.g. `https://icheertor.example.com`).
 
 #### `NEXTAUTH_SECRET`
 
@@ -105,6 +105,32 @@ Used for **Google OAuth** sign-in.
 ```env
 GOOGLE_CLIENT_ID=123456789012-abcdef.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-abcdef123456
+```
+
+#### `ADMIN_EMAILS`
+
+Comma-separated email addresses used **only for bootstrapping** the first developer account.
+
+> [!IMPORTANT]
+> This variable is **not** used for ongoing role management. Once a developer account exists in the database, all role assignments are done through the **Admin Panel**.
+
+**How it works:**
+
+1. When a user with an email listed in `ADMIN_EMAILS` signs in for the **first time** AND no `developer` role exists in the database yet → they are automatically assigned the `developer` role.
+2. After a developer exists, new sign-ins from `ADMIN_EMAILS` get the default `user` role like everyone else.
+3. The developer can then promote other users to `admin` or `user` via the Admin Panel.
+
+**Role hierarchy:**
+
+| Role | Permissions |
+|------|-------------|
+| `developer` | Full access — can change other users' roles (to admin/user), suspend, ban, reinstate |
+| `admin` | Can suspend, ban, reinstate users — **cannot** change roles |
+| `user` | Normal user access |
+
+```env
+# Comma-separated; only matters for the very first developer bootstrap
+ADMIN_EMAILS=your-email@gmail.com
 ```
 
 ---
@@ -299,6 +325,98 @@ CRON_SECRET=<run: openssl rand -base64 32>
 ```
 
 The Vertex AI, SMTP, and LINE variables are only needed if you're working on AI analysis, email notifications, or LINE bot features respectively.
+
+---
+
+## 🐳 Docker Deployment
+
+### Local Development with Docker
+
+You can run the full stack (app + MongoDB) using Docker Compose:
+
+```bash
+# 1. Make sure .env is configured
+cp .env.example .env
+# Edit .env with your values
+
+# 2. Build and start
+docker compose up --build
+
+# 3. App is available at http://localhost:3000
+```
+
+### Production Docker Build
+
+The project uses a multi-stage Dockerfile optimized for production:
+
+```bash
+# Build the production image
+docker build -t icheertor:latest .
+
+# Run with environment variables
+docker run -p 3000:3000 --env-file .env icheertor:latest
+```
+
+> [!NOTE]
+> The Docker build uses Next.js **standalone output** mode (`output: "standalone"` in `next.config.ts`), which produces a self-contained `server.js` with minimal dependencies (~100MB vs ~1GB).
+
+### docker-compose.yml Services
+
+| Service | Description | Port |
+|---------|-------------|------|
+| `app` | Next.js application | 3000 |
+| `mongo` | MongoDB 7 | 27017 |
+
+MongoDB data is persisted in a named Docker volume (`mongo-data`).
+
+> [!WARNING]
+> When using Docker Compose with the local MongoDB, update `MONGODB_URI` in `.env` to:
+> ```env
+> MONGODB_URI=mongodb://mongo:27017/icheertor
+> ```
+> (Use `mongo` as hostname instead of `localhost` because they are on the same Docker network.)
+
+---
+
+## 🔄 CI/CD Pipeline (GitHub Actions)
+
+The project includes automated CI/CD via GitHub Actions:
+
+### CI Pipeline (`.github/workflows/ci.yml`)
+
+Triggered on **push** to `main`/`develop` and **pull requests** to `main`:
+
+| Job | What it does |
+|-----|------|
+| **Lint** | `npm run lint` |
+| **Type Check** | `npx tsc --noEmit` |
+| **Test** | `npx vitest run` |
+| **Build** | `npm run build` (runs after lint + typecheck + test pass) |
+
+### Deploy Pipeline (`.github/workflows/deploy.yml`)
+
+Triggered **after CI passes**:
+
+| Branch | Target | Docker Tag |
+|--------|--------|------------|
+| `develop` | Staging server | `icheertor:staging` |
+| `main` | Production server | `icheertor:latest` |
+
+### Required GitHub Secrets
+
+Set these in **Settings → Secrets and variables → Actions**:
+
+| Secret | Description |
+|--------|-------------|
+| `DOCKER_REGISTRY` | Docker registry URL (e.g. `ghcr.io/your-org`) |
+| `DOCKER_USERNAME` | Registry username |
+| `DOCKER_PASSWORD` | Registry password or access token |
+| `STAGING_HOST` | Staging server IP/hostname |
+| `STAGING_USER` | SSH username for staging |
+| `STAGING_SSH_KEY` | SSH private key for staging |
+| `PRODUCTION_HOST` | Production server IP/hostname |
+| `PRODUCTION_USER` | SSH username for production |
+| `PRODUCTION_SSH_KEY` | SSH private key for production |
 
 ---
 

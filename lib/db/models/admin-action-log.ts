@@ -6,10 +6,12 @@ import mongoose, { Schema, Document, Model, Types } from "mongoose";
 export interface IAdminActionLog extends Document {
   adminUserId: Types.ObjectId;
   targetUserId: Types.ObjectId;
-  action: "approve" | "verify" | "suspend" | "ban" | "reinstate" | "delete_profile";
+  action: "approve" | "verify" | "suspend" | "ban" | "reinstate" | "delete_profile" | "change_role";
   reason?: string;
   previousStatus: string;
   newStatus: string;
+  previousRole?: string;
+  newRole?: string;
   createdAt: Date;
 }
 
@@ -30,11 +32,13 @@ const AdminActionLogSchema = new Schema<IAdminActionLog>(
     action: {
       type: String,
       required: true,
-      enum: ["approve", "verify", "suspend", "ban", "reinstate", "delete_profile"],
+      enum: ["approve", "verify", "suspend", "ban", "reinstate", "delete_profile", "change_role"],
     },
     reason: { type: String },
     previousStatus: { type: String, required: true },
     newStatus: { type: String, required: true },
+    previousRole: { type: String },
+    newRole: { type: String },
   },
   { timestamps: true },
 );

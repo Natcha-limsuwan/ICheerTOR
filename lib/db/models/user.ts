@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Model } from "mongoose";
+import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
 /* ─── Interface ─────────────────────────────────────────────────────── */
 
@@ -7,7 +7,7 @@ export interface IUser extends Document {
   email: string;
   name: string;
   avatarUrl?: string;
-  role: "user" | "admin";
+  role: "user" | "admin" | "developer";
   status: "pending" | "active" | "suspended" | "banned";
   isVerified: boolean;
   notificationPrefs: {
@@ -17,6 +17,8 @@ export interface IUser extends Document {
     lineUserId?: string;
   };
   locale: "th" | "en";
+  roleAssignedBy?: Types.ObjectId;
+  roleAssignedAt?: Date;
   lastLoginAt?: Date;
   deletedAt?: Date;
   createdAt: Date;
@@ -43,7 +45,7 @@ const UserSchema = new Schema<IUser>(
     role: {
       type: String,
       required: true,
-      enum: ["user", "admin"],
+      enum: ["user", "admin", "developer"],
       default: "user",
     },
     status: {
@@ -61,6 +63,8 @@ const UserSchema = new Schema<IUser>(
       lineUserId: { type: String },
     },
     locale: { type: String, enum: ["th", "en"], default: "th" },
+    roleAssignedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    roleAssignedAt: { type: Date },
     lastLoginAt: { type: Date },
     deletedAt: { type: Date },
   },

@@ -1,113 +1,134 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
 import Chip from "@mui/material/Chip";
-import IconButton from "@mui/material/IconButton";
 import Button from "@mui/material/Button";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import TextField from "@mui/material/TextField";
-import BlockIcon from "@mui/icons-material/Block";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import VerifiedIcon from "@mui/icons-material/Verified";
 import PeopleIcon from "@mui/icons-material/People";
 import StorageIcon from "@mui/icons-material/Storage";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import CodeIcon from "@mui/icons-material/Code";
+import BlockIcon from "@mui/icons-material/Block";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
-interface UserItem {
+interface DashboardStats {
+  totalUsers: number;
+  activeUsers: number;
+  suspendedUsers: number;
+  bannedUsers: number;
+  adminCount: number;
+  developerCount: number;
+}
+
+interface RecentAction {
   _id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: string;
-  isVerified: boolean;
-  lastLoginAt?: string;
+  action: string;
+  adminUser?: { name: string };
+  targetUser?: { name: string; email: string };
   createdAt: string;
 }
 
-const statusColors: Record<string, { bg: string; color: string }> = {
-  active: { bg: "#E8F8ED", color: "#166534" },
-  pending: { bg: "#FFF8EB", color: "#92400E" },
-  suspended: { bg: "#FEF2F2", color: "#991B1B" },
-  banned: { bg: "#FEF2F2", color: "#7F1D1D" },
+const actionLabels: Record<string, string> = {
+  approve: "อนุมัติ",
+  verify: "ยืนยัน",
+  suspend: "ระงับ",
+  ban: "แบน",
+  reinstate: "คืนสถานะ",
+  change_role: "เปลี่ยน Role",
+  delete_profile: "ลบโปรไฟล์",
 };
 
-export default function AdminPage() {
-  const [users, setUsers] = useState<UserItem[]>([]);
+export default function AdminDashboardPage() {
+  const [stats, setStats] = useState<DashboardStats>({
+    totalUsers: 0,
+    activeUsers: 0,
+    suspendedUsers: 0,
+    bannedUsers: 0,
+    adminCount: 0,
+    developerCount: 0,
+  });
+  const [recentActions, setRecentActions] = useState<RecentAction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [actionDialog, setActionDialog] = useState<{
-    open: boolean;
-    user?: UserItem;
-    action?: string;
-    reason: string;
-  }>({ open: false, reason: "" });
 
   useEffect(() => {
-    async function fetchUsers() {
+    async function fetchData() {
       try {
-        const res = await fetch("/api/admin/users");
-        if (res.ok) {
-          const json = await res.json();
-          if (json.data) setUsers(json.data);
+        // Fetch users for stats
+        const usersRes = await fetch("/api/admin/users?limit=1000");
+        if (usersRes.ok) {
+          const json = await usersRes.json();
+          const users = json.data ?? [];
+          setStats({
+            totalUsers: users.length,
+            activeUsers: users.filter((u: { status: string }) => u.status === "active").length,
+            suspendedUsers: users.filter((u: { status: string }) => u.status === "suspended").length,
+            bannedUsers: users.filter((u: { status: string }) => u.status === "banned").length,
+            adminCount: users.filter((u: { role: string }) => u.role === "admin").length,
+            developerCount: users.filter((u: { role: string }) => u.role === "developer").length,
+          });
+        }
+
+        // Fetch recent actions
+        const logsRes = await fetch("/api/admin/logs?limit=5");
+        if (logsRes.ok) {
+          const json = await logsRes.json();
+          setRecentActions(json.data ?? []);
         }
       } catch {
-        // handle
+        // handle silently
       } finally {
         setLoading(false);
       }
     }
-    fetchUsers();
+    fetchData();
   }, []);
 
-  const handleAction = async () => {
-    if (!actionDialog.user || !actionDialog.action) return;
-    try {
-      const res = await fetch(`/api/admin/users/${actionDialog.user._id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: actionDialog.action,
-          reason: actionDialog.reason,
-        }),
-      });
-      if (res.ok) {
-        const json = await res.json();
-        setUsers((prev) =>
-          prev.map((u) => (u._id === json.data._id ? json.data : u)),
-        );
-      }
-    } catch {
-      // handle
-    }
-    setActionDialog({ open: false, reason: "" });
-  };
+  const statCards = [
+    { label: "ผู้ใช้ทั้งหมด", value: stats.totalUsers, icon: <PeopleIcon />, color: "var(--color-primary)" },
+    { label: "Active", value: stats.activeUsers, icon: <StorageIcon />, color: "var(--color-success)" },
+    { label: "Suspended", value: stats.suspendedUsers, icon: <BlockIcon />, color: "var(--color-warning)" },
+    { label: "Developers", value: stats.developerCount, icon: <CodeIcon />, color: "#7C3AED" },
+    { label: "Admins", value: stats.adminCount, icon: <AdminPanelSettingsIcon />, color: "var(--color-info)" },
+    { label: "AI Engine", value: "Healthy", icon: <SmartToyIcon />, color: "var(--color-success)" },
+  ];
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold">ผู้ดูแลระบบ</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          จัดการผู้ใช้และดูสถานะระบบ
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+            ภาพรวมระบบและการจัดการ
+          </p>
+        </div>
+        <Button
+          component={Link}
+          href="/dashboard"
+          variant="outlined"
+          startIcon={<ArrowBackIcon />}
+          sx={{
+            textTransform: "none",
+            borderColor: "var(--color-border)",
+            color: "var(--color-text-primary)",
+            alignSelf: { xs: "flex-start", sm: "center" },
+            "&:hover": {
+              borderColor: "var(--color-primary)",
+              color: "var(--color-primary)",
+              backgroundColor: "rgba(0, 71, 171, 0.04)",
+            },
+          }}
+        >
+          กลับหน้าหลัก
+        </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          { label: "ผู้ใช้ทั้งหมด", value: users.length, icon: <PeopleIcon />, color: "var(--color-primary)" },
-          { label: "สถานะ Scraper", value: "Active", icon: <StorageIcon />, color: "var(--color-success)" },
-          { label: "AI Engine", value: "Healthy", icon: <SmartToyIcon />, color: "var(--color-info)" },
-        ].map((stat, i) => (
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {statCards.map((stat, i) => (
           <Card key={i} sx={{ borderRadius: "var(--radius-card)" }}>
             <CardContent sx={{ p: 3 }}>
               <div className="flex items-center gap-3">
@@ -119,7 +140,7 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <p className="text-xs text-[var(--color-text-secondary)]">{stat.label}</p>
-                  <p className="text-lg font-bold">{stat.value}</p>
+                  <p className="text-lg font-bold">{loading ? "—" : stat.value}</p>
                 </div>
               </div>
             </CardContent>
@@ -127,134 +148,111 @@ export default function AdminPage() {
         ))}
       </div>
 
-      {/* Users Table */}
+      {/* Quick Links */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Link href="/admin/users" className="no-underline">
+          <Card
+            sx={{
+              borderRadius: "var(--radius-card)",
+              cursor: "pointer",
+              transition: "box-shadow 0.2s",
+              "&:hover": { boxShadow: "0 4px 12px rgba(0,0,0,0.1)" },
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <PeopleIcon sx={{ color: "var(--color-primary)" }} />
+                  <div>
+                    <p className="font-semibold text-[var(--color-text-primary)]">จัดการผู้ใช้</p>
+                    <p className="text-xs text-[var(--color-text-secondary)]">
+                      ค้นหา, กรอง, เปลี่ยน role และสถานะผู้ใช้
+                    </p>
+                  </div>
+                </div>
+                <ArrowForwardIcon sx={{ color: "var(--color-text-secondary)" }} />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/admin/logs" className="no-underline">
+          <Card
+            sx={{
+              borderRadius: "var(--radius-card)",
+              cursor: "pointer",
+              transition: "box-shadow 0.2s",
+              "&:hover": { boxShadow: "0 4px 12px rgba(0,0,0,0.1)" },
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <AdminPanelSettingsIcon sx={{ color: "var(--color-info)" }} />
+                  <div>
+                    <p className="font-semibold text-[var(--color-text-primary)]">ประวัติการดำเนินการ</p>
+                    <p className="text-xs text-[var(--color-text-secondary)]">
+                      ดู audit trail ของ admin actions ทั้งหมด
+                    </p>
+                  </div>
+                </div>
+                <ArrowForwardIcon sx={{ color: "var(--color-text-secondary)" }} />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      {/* Recent Actions */}
       <Card sx={{ borderRadius: "var(--radius-card)" }}>
-        <CardContent sx={{ p: 0 }}>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell><strong>ชื่อ</strong></TableCell>
-                  <TableCell><strong>อีเมล</strong></TableCell>
-                  <TableCell><strong>บทบาท</strong></TableCell>
-                  <TableCell><strong>สถานะ</strong></TableCell>
-                  <TableCell><strong>ยืนยัน</strong></TableCell>
-                  <TableCell><strong>จัดการ</strong></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center">
-                      กำลังโหลด...
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  users.map((user) => {
-                    const sc = statusColors[user.status] ?? statusColors.pending;
-                    return (
-                      <TableRow key={user._id}>
-                        <TableCell>{user.name}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <Chip
-                            label={user.role === "admin" ? "Admin" : "User"}
-                            size="small"
-                            sx={{ fontSize: "0.7rem", height: 22 }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={user.status}
-                            size="small"
-                            sx={{
-                              backgroundColor: sc.bg,
-                              color: sc.color,
-                              fontWeight: 500,
-                              fontSize: "0.7rem",
-                              height: 22,
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {user.isVerified ? (
-                            <VerifiedIcon sx={{ color: "var(--color-success)", fontSize: 18 }} />
-                          ) : (
-                            "—"
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            {user.status === "active" && (
-                              <IconButton
-                                size="small"
-                                title="ระงับ"
-                                onClick={() =>
-                                  setActionDialog({
-                                    open: true,
-                                    user,
-                                    action: "suspend",
-                                    reason: "",
-                                  })
-                                }
-                              >
-                                <BlockIcon sx={{ fontSize: 16, color: "var(--color-warning)" }} />
-                              </IconButton>
-                            )}
-                            {user.status === "suspended" && (
-                              <IconButton
-                                size="small"
-                                title="คืนสถานะ"
-                                onClick={() =>
-                                  setActionDialog({
-                                    open: true,
-                                    user,
-                                    action: "reinstate",
-                                    reason: "",
-                                  })
-                                }
-                              >
-                                <CheckCircleIcon sx={{ fontSize: 16, color: "var(--color-success)" }} />
-                              </IconButton>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+        <CardContent sx={{ p: 3 }}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold">การดำเนินการล่าสุด</h2>
+            <Link
+              href="/admin/logs"
+              className="text-xs text-[var(--color-primary)] no-underline hover:underline"
+            >
+              ดูทั้งหมด →
+            </Link>
+          </div>
+          {loading ? (
+            <p className="text-sm text-[var(--color-text-secondary)]">กำลังโหลด...</p>
+          ) : recentActions.length === 0 ? (
+            <p className="text-sm text-[var(--color-text-secondary)]">ยังไม่มีการดำเนินการ</p>
+          ) : (
+            <div className="space-y-3">
+              {recentActions.map((action) => (
+                <div
+                  key={action._id}
+                  className="flex items-center justify-between py-2 border-b border-[var(--color-border)] last:border-0"
+                >
+                  <div className="flex items-center gap-3">
+                    <Chip
+                      label={actionLabels[action.action] ?? action.action}
+                      size="small"
+                      sx={{ fontSize: "0.7rem", height: 22 }}
+                    />
+                    <div>
+                      <p className="text-sm">
+                        <span className="font-medium">{action.adminUser?.name ?? "—"}</span>
+                        {" → "}
+                        <span>{action.targetUser?.name ?? action.targetUser?.email ?? "—"}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-[var(--color-text-secondary)]">
+                    {new Date(action.createdAt).toLocaleDateString("th-TH", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
-
-      {/* Action Dialog */}
-      <Dialog open={actionDialog.open} onClose={() => setActionDialog({ open: false, reason: "" })}>
-        <DialogTitle>
-          ยืนยันการ{actionDialog.action === "suspend" ? "ระงับ" : "คืนสถานะ"}ผู้ใช้
-        </DialogTitle>
-        <DialogContent>
-          <p className="text-sm mb-3">
-            {actionDialog.user?.name} ({actionDialog.user?.email})
-          </p>
-          <TextField
-            label="เหตุผล"
-            value={actionDialog.reason}
-            onChange={(e) => setActionDialog((prev) => ({ ...prev, reason: e.target.value }))}
-            fullWidth
-            multiline
-            rows={3}
-            size="small"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setActionDialog({ open: false, reason: "" })}>ยกเลิก</Button>
-          <Button variant="contained" onClick={handleAction} color={actionDialog.action === "suspend" ? "warning" : "success"}>
-            ยืนยัน
-          </Button>
-        </DialogActions>
-      </Dialog>
     </div>
   );
 }

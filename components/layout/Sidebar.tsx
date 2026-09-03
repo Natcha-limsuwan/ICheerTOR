@@ -17,7 +17,7 @@ interface NavItem {
   label: string;
   labelEn: string;
   icon: React.ReactNode;
-  adminOnly?: boolean;
+  staffOnly?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -27,7 +27,7 @@ const navItems: NavItem[] = [
   { href: "/profile", label: "โปรไฟล์", labelEn: "Profile", icon: <PersonIcon /> },
   { href: "/bookmarks", label: "บันทึกไว้", labelEn: "Bookmarks", icon: <BookmarkIcon /> },
   { href: "/compare", label: "เปรียบเทียบ", labelEn: "Compare", icon: <CompareArrowsIcon /> },
-  { href: "/admin", label: "ผู้ดูแลระบบ", labelEn: "Admin", icon: <AdminPanelSettingsIcon />, adminOnly: true },
+  { href: "/admin", label: "ผู้ดูแลระบบ", labelEn: "Admin", icon: <AdminPanelSettingsIcon />, staffOnly: true },
 ];
 
 export default function Sidebar() {
@@ -54,7 +54,7 @@ export default function Sidebar() {
       {/* Nav links */}
       <nav className="flex flex-col gap-1 px-3 flex-1">
         {navItems
-          .filter((item) => !item.adminOnly || userRole === "admin")
+          .filter((item) => !item.staffOnly || userRole === "admin" || userRole === "developer")
           .map((item) => {
             const isActive = pathname.startsWith(item.href);
             return (

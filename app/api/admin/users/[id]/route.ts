@@ -24,8 +24,18 @@ export async function PATCH(
     return Errors.badRequest(`Invalid action: ${action}`);
   }
 
+  // Ban requires developer or admin role explicitly
+  if (action === "ban" && auth.role !== "developer" && auth.role !== "admin") {
+    return Errors.forbidden("Only developers and admins can ban users");
+  }
+
   const user = await User.findById(id);
   if (!user) return Errors.notFound("User not found");
+
+  // Cannot perform actions on a developer
+  if (user.role === "developer") {
+    return Errors.forbidden("Cannot perform actions on a developer account");
+  }
 
   const previousStatus = user.status;
   let newStatus = user.status;

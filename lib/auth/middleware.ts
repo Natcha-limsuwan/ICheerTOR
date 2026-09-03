@@ -6,11 +6,13 @@ import ConsentRecord from "@/lib/db/models/consent-record";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 
+export type UserRole = "user" | "admin" | "developer";
+
 export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: "user" | "admin";
+  role: UserRole;
   status: string;
 }
 
@@ -29,7 +31,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     id: user.id as string,
     email: user.email as string,
     name: user.name as string,
-    role: (user.role as "user" | "admin") ?? "user",
+    role: (user.role as UserRole) ?? "user",
     status: (user.status as string) ?? "active",
   };
 }
@@ -47,13 +49,29 @@ export async function requireAuth(): Promise<AuthUser | NextResponse> {
 }
 
 /**
- * Require admin role. Returns the user or a 403 NextResponse.
+ * Require one of the given roles. Returns the user or a 403 NextResponse.
  */
-export async function requireAdmin(): Promise<AuthUser | NextResponse> {
+export async function requireRole(...roles: UserRole[]): Promise<AuthUser | NextResponse> {
   const result = await requireAuth();
   if (result instanceof NextResponse) return result;
-  if (result.role !== "admin") return Errors.forbidden("Admin access required");
+  if (!roles.includes(result.role)) {
+    return Errors.forbidden(`Requires one of: ${roles.join(", ")}`);
+  }
   return result;
+}
+
+/**
+ * Require admin or developer role. Returns the user or a 403 NextResponse.
+ */
+export async function requireAdmin(): Promise<AuthUser | NextResponse> {
+  return requireRole("admin", "developer");
+}
+
+/**
+ * Require developer role. Returns the user or a 403 NextResponse.
+ */
+export async function requireDeveloper(): Promise<AuthUser | NextResponse> {
+  return requireRole("developer");
 }
 
 /**
