@@ -134,6 +134,9 @@ export default function AdminUsersPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetchUsers is also used by event handlers, so it must stay as a callback
     fetchUsers();
+    return () => {
+      fetchIdRef.current += 1;
+    };
   }, [fetchUsers]);
 
   // Debounced search
