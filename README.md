@@ -93,22 +93,53 @@ See [Docker Deployment](./ENV_SETUP_GUIDE.md#-docker-deployment) for production 
 
 ## Role System
 
-The app uses a 3-tier role system managed via the Admin Panel (no environment variables needed after initial setup):
+The app uses a 3-tier role system. After initial setup, all role management is done via the **Admin Panel** (`/admin/users`).
 
-| Role                | Permissions                                                                  |
-| ------------------- | ---------------------------------------------------------------------------- |
-| **Developer** | Full access — can change users' roles (admin/user), suspend, ban, reinstate |
-| **Admin**     | Can suspend, ban, reinstate users — cannot change roles                     |
-| **User**      | Normal user access                                                           |
+| Role | Permissions |
+| ------------- | ------------------------------------------------------------------ |
+| **Developer** | Full access — manage roles (promote/demote to admin/user), suspend, ban, reinstate users |
+| **Admin** | Can suspend, ban, reinstate users — **cannot** change roles |
+| **User** | Normal user access — browse TOR listings, save favorites, receive notifications |
+
+### What Each Role Can Do
+
+#### 👑 Developer (highest privilege)
+- Everything an Admin can do, **plus**:
+- Promote users to `admin` or demote them back to `user`
+- Promote users to `developer`
+- Access the full Admin Panel at `/admin`
+
+#### 🛡️ Admin
+- View all registered users in the Admin Panel
+- **Suspend** a user (temporarily block access)
+- **Ban** a user (permanently block access)
+- **Reinstate** a suspended/banned user
+- View admin action audit logs at `/admin/logs`
+
+#### 👤 User
+- Sign in with Google
+- Browse and search TOR procurement listings
+- Save favorites and set up notifications
+- View their own profile
 
 ### First-time Setup (Bootstrap)
 
-1. Set `ADMIN_EMAILS` in `.env` to your email address.
-2. Sign in with Google for the first time.
-3. If no developer exists in the DB, your account is automatically promoted to `developer`.
-4. After this, manage all roles through the Admin Panel at `/admin/users`.
+Since there is no environment-based auto-promotion, the **first developer** must be set up directly in the database:
 
-See [ADMIN_EMAILS](./ENV_SETUP_GUIDE.md#admin_emails) in the setup guide for details.
+1. Sign in with Google so your user document is created in MongoDB.
+2. Open your MongoDB client (e.g. [Atlas UI](https://cloud.mongodb.com/), `mongosh`, or Compass).
+3. Find your user in the `users` collection and update the role:
+
+```javascript
+// In mongosh or Atlas UI → Edit Document
+db.users.updateOne(
+  { email: "your-email@gmail.com" },
+  { $set: { role: "developer" } }
+)
+```
+
+4. Sign out and sign back in to refresh your session.
+5. You now have access to the Admin Panel at `/admin/users` to manage all other users' roles.
 
 ## CI/CD
 
