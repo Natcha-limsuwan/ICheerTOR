@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { connectDB } from "@/lib/db/connection";
 import User from "@/lib/db/models/user";
-import { apiSuccess, Errors } from "@/lib/utils/api-response";
+import { apiSuccess } from "@/lib/utils/api-response";
 import { requireAdmin, isErrorResponse } from "@/lib/auth/middleware";
 
 /** GET /api/admin/users — List all users. */

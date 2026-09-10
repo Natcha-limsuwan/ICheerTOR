@@ -107,31 +107,36 @@ GOOGLE_CLIENT_ID=123456789012-abcdef.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-abcdef123456
 ```
 
-#### `ADMIN_EMAILS`
+#### Role System & First-time Setup
 
-Comma-separated email addresses used **only for bootstrapping** the first developer account.
-
-> [!IMPORTANT]
-> This variable is **not** used for ongoing role management. Once a developer account exists in the database, all role assignments are done through the **Admin Panel**.
-
-**How it works:**
-
-1. When a user with an email listed in `ADMIN_EMAILS` signs in for the **first time** AND no `developer` role exists in the database yet → they are automatically assigned the `developer` role.
-2. After a developer exists, new sign-ins from `ADMIN_EMAILS` get the default `user` role like everyone else.
-3. The developer can then promote other users to `admin` or `user` via the Admin Panel.
+The app uses a **3-tier role system**. There is no environment variable to auto-assign roles — all role management is done via the **Admin Panel** or directly in the database for the initial bootstrap.
 
 **Role hierarchy:**
 
 | Role | Permissions |
 |------|-------------|
-| `developer` | Full access — can change other users' roles (to admin/user), suspend, ban, reinstate |
+| `developer` | Full access — manage roles (promote/demote to admin/user/developer), suspend, ban, reinstate |
 | `admin` | Can suspend, ban, reinstate users — **cannot** change roles |
-| `user` | Normal user access |
+| `user` | Normal user access — browse, search, favorites, notifications |
 
-```env
-# Comma-separated; only matters for the very first developer bootstrap
-ADMIN_EMAILS=your-email@gmail.com
+> [!IMPORTANT]
+> The **first developer** must be set up manually in the database. After that, all role changes are done through the Admin Panel at `/admin/users`.
+
+**Bootstrap your first developer account:**
+
+1. Sign in with Google so your user document is created in MongoDB.
+2. Open your MongoDB client (Atlas UI, `mongosh`, or Compass).
+3. Update your user's role:
+
+```javascript
+db.users.updateOne(
+  { email: "your-email@gmail.com" },
+  { $set: { role: "developer" } }
+)
 ```
+
+4. Sign out and sign back in to refresh your session.
+5. Navigate to `/admin/users` to manage other users' roles.
 
 ---
 

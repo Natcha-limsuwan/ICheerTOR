@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import Card from "@mui/material/Card";
@@ -32,7 +32,7 @@ import BlockIcon from "@mui/icons-material/Block";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import SearchIcon from "@mui/icons-material/Search";
-import GavelIcon from "@mui/icons-material/Gavel";
+
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
@@ -105,7 +105,10 @@ export default function AdminUsersPage() {
     severity: "success" | "error" | "info";
   }>({ open: false, message: "", severity: "success" });
 
+  const fetchIdRef = useRef(0);
+
   const fetchUsers = useCallback(async () => {
+    const fetchId = ++fetchIdRef.current;
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -116,7 +119,7 @@ export default function AdminUsersPage() {
       if (filterStatus) params.set("status", filterStatus);
 
       const res = await fetch(`/api/admin/users?${params.toString()}`);
-      if (res.ok) {
+      if (res.ok && fetchId === fetchIdRef.current) {
         const json = await res.json();
         setUsers(json.data ?? []);
         setTotal(json.meta?.total ?? 0);
@@ -124,12 +127,16 @@ export default function AdminUsersPage() {
     } catch {
       // handle
     } finally {
-      setLoading(false);
+      if (fetchId === fetchIdRef.current) setLoading(false);
     }
   }, [page, rowsPerPage, searchQuery, filterRole, filterStatus]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetchUsers is also used by event handlers, so it must stay as a callback
     fetchUsers();
+    return () => {
+      fetchIdRef.current += 1;
+    };
   }, [fetchUsers]);
 
   // Debounced search

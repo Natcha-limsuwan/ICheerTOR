@@ -33,21 +33,11 @@ export const authConfig: NextAuthConfig = {
 
         const existing = await User.findOne({ googleId: account.providerAccountId });
 
-        const bootstrapEmails = (process.env.ADMIN_EMAILS ?? "")
-          .split(",")
-          .map((e) => e.trim().toLowerCase())
-          .filter(Boolean);
-        const isBootstrapDeveloper = bootstrapEmails.includes((user.email ?? "").toLowerCase());
-
         if (existing) {
           if (existing.status === "suspended" || existing.status === "banned") {
             return false;
           }
           existing.lastLoginAt = new Date();
-          // Promote to developer if in ADMIN_EMAILS but not yet developer
-          if (isBootstrapDeveloper && existing.role !== "developer") {
-            existing.role = "developer";
-          }
           await existing.save();
         } else {
           await User.create({
@@ -55,7 +45,7 @@ export const authConfig: NextAuthConfig = {
             email: user.email ?? "",
             name: user.name ?? "",
             avatarUrl: user.image ?? undefined,
-            role: isBootstrapDeveloper ? "developer" : "user",
+            role: "user",
             status: "active",
           });
         }
