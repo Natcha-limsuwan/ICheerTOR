@@ -6,6 +6,16 @@ import { requireAuth, isErrorResponse } from "@/lib/auth/middleware";
 
 /**
  * GET /api/tor — Search and list TOR records with filtering.
+ *
+ * Query params:
+ *   q, agency, budgetMin, budgetMax, phase, techStack, page, limit
+ *   openOnly=true    only projects a vendor can still act on
+ *   sortBy           postingDate | medianPrice | publicHearingEnd | submissionDeadline
+ *
+ * Note on `openOnly`: the store holds awarded and cancelled projects too,
+ * because past winning prices are useful when estimating a bid. Listing
+ * screens that imply a project is biddable must pass openOnly=true — showing a
+ * closed project as open is the one error this product must not make.
  */
 export async function GET(request: NextRequest) {
   const auth = await requireAuth();
@@ -19,6 +29,7 @@ export async function GET(request: NextRequest) {
   const budgetMin = searchParams.get("budgetMin");
   const budgetMax = searchParams.get("budgetMax");
   const phase = searchParams.get("phase");
+  const openOnly = searchParams.get("openOnly") === "true";
   const techStack = searchParams.get("techStack");
   const sortBy = searchParams.get("sortBy") ?? "postingDate";
   const sortOrder = searchParams.get("sortOrder") === "asc" ? 1 : -1;
@@ -43,14 +54,32 @@ export async function GET(request: NextRequest) {
     if (phase) {
       filter.phase = phase;
     }
+    // Both openOnly and techStack constrain `tags`, so they are collected and
+    // applied together — assigning filter.tags twice would drop the first one.
+    const tagConditions: Record<string, unknown>[] = [];
+    if (openOnly) {
+      tagConditions.push({ tags: "open" });
+    }
     if (techStack) {
-      const stacks = techStack.split(",").map((s) => s.trim());
-      filter.tags = { $in: stacks };
+      const stacks = techStack.split(",").map((s) => s.trim()).filter(Boolean);
+      if (stacks.length) tagConditions.push({ tags: { $in: stacks } });
+    }
+    if (tagConditions.length === 1) {
+      Object.assign(filter, tagConditions[0]);
+    } else if (tagConditions.length > 1) {
+      filter.$and = tagConditions;
     }
 
     // Sort
     const sortField: Record<string, 1 | -1> = {};
-    const validSortFields = ["postingDate", "medianPrice", "submissionDeadline"];
+    // publicHearingEnd is the only deadline the source publishes today;
+    // submissionDeadline stays listed for when TOR parsing fills it in.
+    const validSortFields = [
+      "postingDate",
+      "medianPrice",
+      "publicHearingEnd",
+      "submissionDeadline",
+    ];
     if (validSortFields.includes(sortBy)) {
       sortField[sortBy] = sortOrder;
     } else {

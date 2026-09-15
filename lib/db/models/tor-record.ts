@@ -57,8 +57,39 @@ export interface ITORRecord extends Document {
   extractionError?: string;
   deduplicationHash: string;
   tags: string[];
+  /** Source-system fields kept for traceability and for resolving documents
+   *  on demand — notably projectId, which is the key e-GP needs. */
+  metadata?: ISourceMetadata;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface ISourceMetadata {
+  /** e-GP project id — used to resolve the document archive when requested. */
+  projectId?: string;
+  projectType?: string;
+  purchaseMethod?: string;
+  sumPriceAgree?: number;
+  /** Company name of the winning bidder, when the project is already awarded. */
+  winnerName?: string | null;
+  /** Why the software filter kept this record — needed to tune the keywords. */
+  filterScore?: number;
+  filterReason?: string;
+  /** Which system this record came from, so mixed sources stay traceable. */
+  source?: "egp2" | "govspending";
+  /** egp2's own GUID — needed to call its per-project endpoints. */
+  egp2ProjectId?: string;
+  /** Announcement stage name, e.g. "ประกาศเชิญชวน". */
+  announceType?: string;
+  /** Procuring agency group, e.g. "สำนักดิจิทัลกรุงเทพมหานคร". */
+  orgGroupName?: string;
+  /** Raw status text from egp2, e.g. "ระหว่างดำเนินการ". */
+  contractStatus?: string;
+  /** Title of the TOR under public hearing, when there is one. */
+  torTitle?: string;
+  /** Why this record got its phase — auditable, since the phase decides
+   *  whether a user is told they can still bid. */
+  phaseReason?: string;
 }
 
 /* ─── Schema ────────────────────────────────────────────────────────── */
@@ -104,6 +135,26 @@ const RedFlagSchema = new Schema(
   { _id: false },
 );
 
+const SourceMetadataSchema = new Schema(
+  {
+    projectId: { type: String, index: true },
+    projectType: { type: String },
+    purchaseMethod: { type: String },
+    sumPriceAgree: { type: Number },
+    winnerName: { type: String, default: null },
+    filterScore: { type: Number },
+    filterReason: { type: String },
+    source: { type: String, enum: ["egp2", "govspending"] },
+    egp2ProjectId: { type: String, index: true },
+    announceType: { type: String },
+    orgGroupName: { type: String, index: true },
+    contractStatus: { type: String },
+    torTitle: { type: String },
+    phaseReason: { type: String },
+  },
+  { _id: false },
+);
+
 const TORRecordSchema = new Schema<ITORRecord>(
   {
     title: { type: String, required: true },
@@ -142,6 +193,7 @@ const TORRecordSchema = new Schema<ITORRecord>(
     extractionError: { type: String },
     deduplicationHash: { type: String, required: true, unique: true, index: true },
     tags: { type: [String], default: [], index: true },
+    metadata: { type: SourceMetadataSchema, default: undefined },
   },
   { timestamps: true },
 );

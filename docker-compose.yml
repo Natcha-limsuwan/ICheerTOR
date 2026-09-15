@@ -22,5 +22,27 @@ services:
       - mongo-data:/data/db
     restart: unless-stopped
 
+  # One-off runner for scripts (probe, seed, ingestion, etc.) with full
+  # devDependencies and source mounted live. Not started by `up`.
+  #   docker compose run --rm tools npx tsx scripts/probe-datagoth.ts
+  tools:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    working_dir: /app
+    profiles:
+      - tools
+    depends_on:
+      - mongo
+    entrypoint: []
+    command: ["sleep", "infinity"]
+
 volumes:
   mongo-data:

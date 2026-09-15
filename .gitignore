@@ -48,3 +48,6 @@ next-env.d.ts
 *.swp
 *.tmp
 Thumbs.db
+
+# API probe samples (may contain raw data, not for commit)
+/tmp/
