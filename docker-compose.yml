@@ -1,17 +1,31 @@
 services:
-  app:
+  backend:
     build:
-      context: .
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./backend/.env
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
     env_file:
-      - .env
+      - ./frontend/.env
     environment:
       - NODE_ENV=production
-      - AUTH_TRUST_HOST=true
+      - NEXT_PUBLIC_API_URL=http://backend:3001/api
     depends_on:
-      - mongo
+      - backend
     restart: unless-stopped
 
   mongo:
@@ -22,20 +36,18 @@ services:
       - mongo-data:/data/db
     restart: unless-stopped
 
-  # One-off runner for scripts (probe, seed, ingestion, etc.) with full
-  # devDependencies and source mounted live. Not started by `up`.
-  #   docker compose run --rm tools npx tsx scripts/probe-datagoth.ts
+  # One-off runner for scripts (seed, ingestion, etc.)
+  #   docker compose run --rm tools npx tsx scripts/seed.ts
   tools:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
       target: builder
     env_file:
-      - .env
+      - ./backend/.env
     volumes:
-      - .:/app
+      - ./backend:/app
       - /app/node_modules
-      - /app/.next
     working_dir: /app
     profiles:
       - tools
