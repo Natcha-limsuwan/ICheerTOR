@@ -1,17 +1,23 @@
 # 🔐 Environment Variables Setup Guide
 
-This guide explains every variable in `.env`, what it does, and **where to get each value**.
+This guide explains every variable in the backend `.env` file, what it does, and **where to get each value**.
+
+> [!NOTE]
+> All server-side environment variables live in `backend/.env`. The frontend only needs `NEXT_PUBLIC_API_URL` (configured in `frontend/.env`).
 
 ## Quick Start
 
 ```bash
 # 1. Copy the template
-cp .env.example .env
+cp backend/.env.example backend/.env
 
 # 2. Fill in the values following the sections below
 
-# 3. Start the dev server
-npm run dev
+# 3. Start the backend
+cd backend && npm run dev
+
+# 4. In a separate terminal, start the frontend
+cd frontend && npm run dev
 ```
 
 > [!CAUTION]
@@ -42,28 +48,20 @@ MONGODB_URI=mongodb+srv://myuser:mypassword@cluster0.abc12.mongodb.net/icheertor
 
 ---
 
-### 2. Authentication — NextAuth.js (v5)
+### 2. Authentication — Passport + JWT
 
 | Variable                 | Required | Example                                  |
 | ------------------------ | -------- | ---------------------------------------- |
-| `NEXTAUTH_URL`         | ✅ Yes   | `http://localhost:3000`                |
-| `NEXTAUTH_SECRET`      | ✅ Yes   | `a1b2c3d4e5f6...` (32+ chars)          |
+| `JWT_SECRET`           | ✅ Yes   | `a1b2c3d4e5f6...` (32+ chars)          |
+| `JWT_EXPIRY`           | ❌ No    | `7d` (default)                          |
 | `GOOGLE_CLIENT_ID`     | ✅ Yes   | `123456789.apps.googleusercontent.com` |
 | `GOOGLE_CLIENT_SECRET` | ✅ Yes   | `GOCSPX-xxxxx`                         |
+| `GOOGLE_CALLBACK_URL`  | ✅ Yes   | `http://localhost:3001/api/auth/google/callback` |
+| `FRONTEND_URL`         | ✅ Yes   | `http://localhost:3000`                |
 
-#### `NEXTAUTH_URL`
+#### `JWT_SECRET`
 
-The canonical URL of your app. For local development:
-
-```env
-NEXTAUTH_URL=http://localhost:3000
-```
-
-For production, use your deployed domain (e.g. `https://icheertor.example.com`).
-
-#### `NEXTAUTH_SECRET`
-
-A random string used to encrypt JWTs and session tokens.
+A random string used to sign JWT tokens.
 
 **Generate it** by running one of these commands:
 
@@ -76,12 +74,13 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
 ```env
-NEXTAUTH_SECRET=K7gN2xQ9pLm...your-generated-string
+JWT_SECRET=K7gN2xQ9pLm...your-generated-string
+JWT_EXPIRY=7d
 ```
 
 #### `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET`
 
-Used for **Google OAuth** sign-in.
+Used for **Google OAuth** sign-in via Passport.js.
 
 **Where to get them:**
 
@@ -98,13 +97,26 @@ Used for **Google OAuth** sign-in.
    - `http://localhost:3000` (for local dev)
    - `https://your-production-url.com` (for production)
 8. Add **Authorized redirect URIs**:
-   - `http://localhost:3000/api/auth/callback/google` (for local dev)
-   - `https://your-production-url.com/api/auth/callback/google` (for production)
+   - `http://localhost:3001/api/auth/google/callback` (for local dev)
+   - `https://your-api-url.com/api/auth/google/callback` (for production)
 9. Click **Create** — copy the **Client ID** and **Client Secret**.
 
 ```env
 GOOGLE_CLIENT_ID=123456789012-abcdef.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-abcdef123456
+GOOGLE_CALLBACK_URL=http://localhost:3001/api/auth/google/callback
+```
+
+#### `FRONTEND_URL`
+
+The URL of the frontend app. The backend redirects here after OAuth login.
+
+```env
+# Local development
+FRONTEND_URL=http://localhost:3000
+
+# Production
+FRONTEND_URL=https://icheertor.example.com
 ```
 
 #### `ADMIN_EMAILS`
@@ -173,7 +185,7 @@ Path to a **GCP service account key** JSON file. This authenticates the app with
    - Name: e.g. `icheertor-vertex-ai`
    - Grant role: **Vertex AI User** (`roles/aiplatform.user`)
 3. After creating, click the service account → **Keys** tab → **Add Key** → **Create new key** → **JSON**.
-4. A `.json` file will download. Move it into your project (e.g. `keys/sa-key.json`).
+4. A `.json` file will download. Move it into your project (e.g. `backend/keys/sa-key.json`).
 5. **Add the file to `.gitignore`** so it's never committed.
 
 ```env
@@ -268,7 +280,7 @@ LINE_CHANNEL_SECRET=your-channel-secret
 
 A secret string used to protect the `/api/cron/scrape` endpoint from unauthorized access. The cron job must include this as a query parameter or header.
 
-**Generate it** the same way as `NEXTAUTH_SECRET`:
+**Generate it** the same way as `JWT_SECRET`:
 
 ```bash
 openssl rand -base64 32
@@ -289,17 +301,22 @@ SCRAPER_RATE_LIMIT_MS=2000
 
 ---
 
-### 6. App Settings (Public)
+### 6. Frontend Settings
 
-| Variable                       | Required | Default | Example         |
-| ------------------------------ | -------- | ------- | --------------- |
-| `NEXT_PUBLIC_APP_NAME`       | ❌ No    | —      | `I Cheer TOR` |
-| `NEXT_PUBLIC_DEFAULT_LOCALE` | ❌ No    | `th`  | `en`          |
+The frontend uses a separate `.env` file at `frontend/.env`:
+
+| Variable                       | Required | Default                        | Example                           |
+| ------------------------------ | -------- | ------------------------------ | --------------------------------- |
+| `NEXT_PUBLIC_API_URL`        | ✅ Yes   | `http://localhost:3001/api`  | `https://api.icheertor.com/api` |
+| `NEXT_PUBLIC_APP_NAME`       | ❌ No    | —                             | `I Cheer TOR`                   |
+| `NEXT_PUBLIC_DEFAULT_LOCALE` | ❌ No    | `th`                         | `en`                            |
 
 > [!NOTE]
 > Variables prefixed with `NEXT_PUBLIC_` are **exposed to the browser**. Do not put secrets in these.
 
 ```env
+# frontend/.env
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
 NEXT_PUBLIC_APP_NAME=I Cheer TOR
 NEXT_PUBLIC_DEFAULT_LOCALE=th
 ```
@@ -308,20 +325,30 @@ NEXT_PUBLIC_DEFAULT_LOCALE=th
 
 ## ✅ Minimal `.env` for Local Development
 
-If you just want to get the app running locally with core features, here is the **minimum** you need:
+### Backend (`backend/.env`)
 
 ```env
 # Database
 MONGODB_URI=mongodb+srv://<user>:<pass>@<cluster>.mongodb.net/icheertor
 
 # Auth
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=<run: openssl rand -base64 32>
+JWT_SECRET=<run: openssl rand -base64 32>
 GOOGLE_CLIENT_ID=<from Google Cloud Console>
 GOOGLE_CLIENT_SECRET=<from Google Cloud Console>
+GOOGLE_CALLBACK_URL=http://localhost:3001/api/auth/google/callback
+FRONTEND_URL=http://localhost:3000
+
+# Bootstrap admin
+ADMIN_EMAILS=your-email@gmail.com
 
 # Cron protection
 CRON_SECRET=<run: openssl rand -base64 32>
+```
+
+### Frontend (`frontend/.env`)
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
 ```
 
 The Vertex AI, SMTP, and LINE variables are only needed if you're working on AI analysis, email notifications, or LINE bot features respectively.
@@ -332,49 +359,52 @@ The Vertex AI, SMTP, and LINE variables are only needed if you're working on AI 
 
 ### Local Development with Docker
 
-You can run the full stack (app + MongoDB) using Docker Compose:
+You can run the full stack (backend + frontend + MongoDB) using Docker Compose:
 
 ```bash
-# 1. Make sure .env is configured
-cp .env.example .env
-# Edit .env with your values
+# 1. Make sure backend/.env is configured
+cp backend/.env.example backend/.env
+# Edit backend/.env with your values
 
 # 2. Build and start
 docker compose up --build
 
-# 3. App is available at http://localhost:3000
+# 3. Services available at:
+#    Frontend: http://localhost:3000
+#    Backend:  http://localhost:3001
+#    MongoDB:  localhost:27017
 ```
-
-### Production Docker Build
-
-The project uses a multi-stage Dockerfile optimized for production:
-
-```bash
-# Build the production image
-docker build -t icheertor:latest .
-
-# Run with environment variables
-docker run -p 3000:3000 --env-file .env icheertor:latest
-```
-
-> [!NOTE]
-> The Docker build uses Next.js **standalone output** mode (`output: "standalone"` in `next.config.ts`), which produces a self-contained `server.js` with minimal dependencies (~100MB vs ~1GB).
 
 ### docker-compose.yml Services
 
 | Service | Description | Port |
 |---------|-------------|------|
-| `app` | Next.js application | 3000 |
+| `backend` | Express API server | 3001 |
+| `frontend` | Next.js UI | 3000 |
 | `mongo` | MongoDB 7 | 27017 |
 
 MongoDB data is persisted in a named Docker volume (`mongo-data`).
 
 > [!WARNING]
-> When using Docker Compose with the local MongoDB, update `MONGODB_URI` in `.env` to:
+> When using Docker Compose with the local MongoDB, update `MONGODB_URI` in `backend/.env` to:
 > ```env
 > MONGODB_URI=mongodb://mongo:27017/icheertor
 > ```
 > (Use `mongo` as hostname instead of `localhost` because they are on the same Docker network.)
+
+### Production Docker Build
+
+Each service has its own multi-stage Dockerfile:
+
+```bash
+# Build individual images
+docker build -t icheertor-backend:latest ./backend
+docker build -t icheertor-frontend:latest ./frontend
+
+# Run with environment variables
+docker run -p 3001:3001 --env-file backend/.env icheertor-backend:latest
+docker run -p 3000:3000 --env-file frontend/.env icheertor-frontend:latest
+```
 
 ---
 
@@ -388,10 +418,10 @@ Triggered on **push** to `main`/`develop` and **pull requests** to `main`:
 
 | Job | What it does |
 |-----|------|
-| **Lint** | `npm run lint` |
-| **Type Check** | `npx tsc --noEmit` |
-| **Test** | `npx vitest run` |
-| **Build** | `npm run build` (runs after lint + typecheck + test pass) |
+| **Lint** | `cd frontend && npm run lint` |
+| **Type Check (Backend)** | `cd backend && npx tsc --noEmit` |
+| **Type Check (Frontend)** | `cd frontend && npx tsc --noEmit` |
+| **Build** | Build both services (runs after lint + typecheck pass) |
 
 ### Deploy Pipeline (`.github/workflows/deploy.yml`)
 
@@ -399,8 +429,8 @@ Triggered **after CI passes**:
 
 | Branch | Target | Docker Tag |
 |--------|--------|------------|
-| `develop` | Staging server | `icheertor:staging` |
-| `main` | Production server | `icheertor:latest` |
+| `develop` | Staging server | `icheertor-*:staging` |
+| `main` | Production server | `icheertor-*:latest` |
 
 ### Required GitHub Secrets
 
