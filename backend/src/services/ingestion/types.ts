@@ -3,7 +3,7 @@
  *
  * PDPA: ข้อมูลที่ดึงมาจาก API อาจมีข้อมูลส่วนบุคคลของเจ้าหน้าที่ติดมาด้วย
  * (ชื่อ-นามสกุลผู้ติดต่อ เบอร์โทร อีเมล) — ห้ามบันทึกลง DB จริงโดยตรง
- * ต้องผ่าน field filtering ก่อนเสมอ ดู lib/services/ingestion/pdpa-filter.ts
+ * ต้องผ่าน field filtering ก่อนเสมอ ดู src/services/ingestion/pdpa-filter.ts (ยังไม่ได้สร้าง)
  */
 
 /* ─── CKAN discovery (data.go.th) ───────────────────────────────────── */

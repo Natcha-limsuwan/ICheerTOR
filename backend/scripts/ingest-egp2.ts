@@ -35,10 +35,10 @@ import {
   fetchTors,
   ANNOUNCE_TYPE,
   type Egp2ProjectRow,
-} from "../lib/services/ingestion/egp2-client";
-import { scoreSoftware, type FilterResult } from "../lib/services/ingestion/software-filter";
-import { resolvePhase } from "../lib/services/ingestion/phase-mapper";
-import TORRecord from "../lib/db/models/tor-record";
+} from "../src/services/ingestion/egp2-client";
+import { scoreSoftware, type FilterResult } from "../src/services/ingestion/software-filter";
+import { resolvePhase } from "../src/services/ingestion/phase-mapper";
+import TORRecord from "../src/db/models/tor-record";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -183,7 +183,10 @@ async function main() {
             phase: phaseResult.phase,
             budget: row.projectBudget ?? undefined,
             medianPrice: referencePrice,
-            postingDate: hearingStart ?? new Date(),
+            // Without a hearing date there is no real posting date; the
+            // first-seen date is set once in $setOnInsert below instead of
+            // moving forward on every run.
+            ...(hearingStart ? { postingDate: hearingStart } : {}),
             publicHearingStart: hearingStart,
             // The hearing close is the only published deadline. It is NOT the
             // bid submission deadline, so it stays in its own field rather
@@ -193,15 +196,15 @@ async function main() {
             officialPortalUrl:
               `https://process5.gprocurement.go.th/egp-agpc01-web/announcement/search` +
               `?projectId=${row.projectNumber}`,
-            extractionStatus: "pending",
             deduplicationHash: dedupeHash(row.projectNumber),
             tags,
             // The reference price comes straight from the agency, so it is
-            // source data rather than an LLM guess — full confidence.
-            "parsedData.medianPrice": {
-              value: referencePrice ?? null,
-              confidence: referencePrice != null ? 1 : 0,
-            },
+            // source data rather than an LLM guess — full confidence. When
+            // egp2 has none, leave the field alone so a value the AI read
+            // from the PDF is not wiped on the next run.
+            ...(referencePrice != null
+              ? { "parsedData.medianPrice": { value: referencePrice, confidence: 1 } }
+              : {}),
             metadata: {
               source: "egp2",
               projectId: row.projectNumber,
@@ -216,6 +219,13 @@ async function main() {
               filterScore: filter.score,
               filterReason: filter.reason,
             },
+          },
+          // Set only when the record is first created. Re-running ingest daily
+          // must not reset finished AI extractions back to pending — that
+          // would re-parse (and re-pay for) every TOR on every run.
+          $setOnInsert: {
+            extractionStatus: "pending",
+            ...(hearingStart ? {} : { postingDate: new Date() }),
           },
         },
         upsert: true,
@@ -237,10 +247,11 @@ async function main() {
 [dry-run] document ที่จะเขียนลง MongoDB (2 รายการแรก):
 `);
     docs.slice(0, 2).forEach((d, i) => {
-      const op = d as { updateOne: { filter: unknown; update: { $set: unknown } } };
+      const op = d as { updateOne: { filter: unknown; update: { $set: unknown; $setOnInsert: unknown } } };
       console.log(`--- รายการที่ ${i + 1} ---`);
       console.log(`filter: ${JSON.stringify(op.updateOne.filter)}`);
       console.log(JSON.stringify(op.updateOne.update.$set, null, 2));
+      console.log(`$setOnInsert: ${JSON.stringify(op.updateOne.update.$setOnInsert)}`);
       console.log();
     });
     console.log(`(ทั้งหมด ${docs.length} รายการ — แสดง 2 รายการแรก)`);
