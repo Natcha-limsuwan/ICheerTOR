@@ -20,7 +20,15 @@ import { createHash } from "crypto";
 import type { Part } from "@google/genai";
 
 import { env } from "../../config/env";
-import type { ISourceDocument, IParsedData, IQualification, IRedFlag, ISummary, IExtractionMeta } from "../../db/models/tor-record";
+import type {
+  IExtractionMeta,
+  IMedianPrice,
+  IParsedData,
+  IQualification,
+  IRedFlag,
+  ISourceDocument,
+  ISummary,
+} from "../../db/models/tor-record";
 import { fetchProjectArchive } from "../ingestion/egp-client";
 import { listEntries, readEntry, type ZipEntry } from "../ingestion/zip-reader";
 import { pickDocument, type PickedDocument } from "../ingestion/document-picker";
@@ -31,7 +39,8 @@ import { aiCircuitBreaker } from "./circuit-breaker";
 import { getModelId, getVertexClient } from "./vertex-client";
 import { activePrompt, type ExtractionContext, type ExtractionPrompt } from "./prompts";
 import type { TorExtractionV4, QualificationV4 } from "./prompts/v4";
-import { isPlausibleMedianPrice, validateExtraction, type ValidationIssue } from "./validate-extraction";
+import { validateExtraction, type ValidationIssue } from "./validate-extraction";
+import { resolvePrices } from "./resolve-prices";
 import { analyzeRedFlags } from "./red-flag-analyzer";
 
 /* ─── Preparing the documents ───────────────────────────────────────── */
@@ -139,7 +148,9 @@ export interface ModelCall<T> {
 
 const MAX_ATTEMPTS = 3;
 /** Quota, server-side and network errors are worth waiting out; others are not. */
-const RETRYABLE = /\b(429|500|502|503|504)\b|RESOURCE_EXHAUSTED|UNAVAILABLE|fetch failed|ECONNRESET|ETIMEDOUT/;
+// "aborted" is our own timeout (AbortSignal.timeout) firing on a slow reply.
+const RETRYABLE =
+  /\b(429|500|502|503|504)\b|RESOURCE_EXHAUSTED|UNAVAILABLE|fetch failed|ECONNRESET|ETIMEDOUT|aborted/i;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -147,6 +158,17 @@ export class CircuitOpenError extends Error {
   constructor() {
     super("Vertex AI พักการเรียกชั่วคราว (circuit breaker เปิดอยู่)");
   }
+}
+
+/** Short code for ExtractionLog, so failures can be counted by cause. */
+export function errorCode(e: unknown): string {
+  const text = String(e);
+  if (e instanceof CircuitOpenError) return "circuit_open";
+  if (/429|RESOURCE_EXHAUSTED/.test(text)) return "rate_limited";
+  if (/aborted|timeout/i.test(text)) return "timeout";
+  if (e instanceof SyntaxError) return "invalid_json";
+  if (/fetch failed|ECONNRESET|ETIMEDOUT|WAF/.test(text)) return "network";
+  return "error";
 }
 
 export async function callModel<T = TorExtractionV4>(
@@ -234,6 +256,8 @@ export interface RecordContext {
   /** egp2 figures — authoritative for medianPrice, the base for ¼-of-budget. */
   budget?: number | null;
   medianPriceFromSource?: number | null;
+  /** The reference price decided by resolvePrices; egp2's when omitted. */
+  medianPrice?: IMedianPrice;
 }
 
 function toQualification(q: QualificationV4): IQualification {
@@ -276,12 +300,13 @@ export function toRecordUpdate(
     workType: out.workType,
     scopeOfWork: { content: scope.summary, confidence: scope.confidence },
     qualifications: out.qualifications.map(toQualification),
-    // egp2's reference price stays authoritative (ingest seeds it) unless it
-    // is an obvious typo; the document's own figure is kept in documentPrices.
-    medianPrice:
-      ctx.medianPriceFromSource != null && isPlausibleMedianPrice(ctx.medianPriceFromSource, ctx.budget)
-        ? { value: ctx.medianPriceFromSource, confidence: 1 }
-        : { value: out.medianPrice.value, confidence: out.medianPrice.confidence },
+    // egp2 first, corrected from the e-GP announcement when it dropped digits
+    // (resolve-prices.ts); the TOR's own figures stay in documentPrices.
+    medianPrice: ctx.medianPrice ?? {
+      value: ctx.medianPriceFromSource ?? null,
+      confidence: ctx.medianPriceFromSource != null ? 1 : 0,
+      source: ctx.medianPriceFromSource != null ? "egp2" : null,
+    },
     documentPrices: {
       budget: { value: out.budget.value, sourcePage: out.budget.sourcePage, confidence: out.budget.confidence },
       medianPrice: {
@@ -344,50 +369,86 @@ export type ExtractionOutcome =
       meta: Pick<IExtractionMeta, "promptVersion" | "modelVersion" | "durationMs" | "inputTokens" | "outputTokens" | "needsReview"> & {
         issues: ValidationIssue[];
       };
+      /** The model's reply before validation, for ExtractionLog. */
+      rawResponse: string;
+      /** The TOR PDF that was sent, for ExtractionLog. */
+      pdf: ISourceDocument | null;
     }
   | { status: "skipped"; skipReason: string; sourceDocuments: ISourceDocument[] }
-  | { status: "failed"; error: string; retryable: boolean };
+  | { status: "failed"; error: string; errorCode: string; retryable: boolean };
 
-export async function extractTor(input: ExtractionInput): Promise<ExtractionOutcome> {
+/**
+ * @param onProgress  step-by-step messages — a call can take minutes with
+ *                    quota back-off, and silence looks like a hang.
+ */
+export async function extractTor(
+  input: ExtractionInput,
+  onProgress: (message: string) => void = () => {},
+): Promise<ExtractionOutcome> {
   try {
+    onProgress("ดาวน์โหลดเอกสารจาก e-GP");
     const archive = await fetchProjectArchive(input.projectNumber);
     if (!archive) return { status: "skipped", skipReason: "e-GP ไม่มีชุดเอกสารของโครงการนี้", sourceDocuments: [] };
 
+    onProgress(`อ่าน ${(archive.zip.length / 1024 / 1024).toFixed(1)} MB`);
     const prepared = await prepareDocuments(archive.zip, { zipFileName: archive.info.fileName });
     if (prepared.skipReason) {
       return { status: "skipped", skipReason: prepared.skipReason, sourceDocuments: prepared.sourceDocuments };
     }
 
-    const call = await callModel<TorExtractionV4>(activePrompt, prepared, {
-      title: input.title,
-      agencyName: input.agencyName,
-      medianPriceFromSource: input.medianPriceFromSource,
-      budget: input.budget,
-      fileName: prepared.pdf?.entry.name ?? "",
-      documentKind: "tor",
-    });
+    onProgress(
+      `ส่ง Vertex: ${prepared.pdf ? prepared.pdf.entry.name : "ไม่มี PDF"}` +
+        `${prepared.biddingDoc ? ` + ${prepared.biddingDoc.fileName}` : ""} (ปกติ 20–95 วินาที)`,
+    );
+    const call = await callModel<TorExtractionV4>(
+      activePrompt,
+      prepared,
+      {
+        title: input.title,
+        agencyName: input.agencyName,
+        medianPriceFromSource: input.medianPriceFromSource,
+        budget: input.budget,
+        fileName: prepared.pdf?.entry.name ?? "",
+        documentKind: "tor",
+      },
+      (attempt, waitMs, e) =>
+        onProgress(`${errorCode(e)} — รอ ${waitMs / 1000} วินาทีแล้วลองใหม่ (ครั้งที่ ${attempt + 1}/${MAX_ATTEMPTS})`),
+    );
     const validated = validateExtraction(call.output, {
       budget: input.budget,
       medianPriceFromSource: input.medianPriceFromSource,
     });
+    const prices = resolvePrices({
+      egp2Budget: input.budget,
+      egp2MedianPrice: input.medianPriceFromSource,
+      facts: prepared.facts,
+      documentFigures: [validated.output.budget.value, validated.output.medianPrice.value],
+    });
+    const issues = [...validated.issues, ...prices.issues];
 
     return {
       status: "completed",
-      update: toRecordUpdate(validated.output, prepared.facts, prepared.sourceDocuments, input),
+      update: toRecordUpdate(validated.output, prepared.facts, prepared.sourceDocuments, {
+        ...input,
+        medianPrice: prices.medianPrice,
+      }),
       meta: {
         promptVersion: activePrompt.version,
         modelVersion: call.model,
         durationMs: call.durationMs,
         inputTokens: call.usage.input,
         outputTokens: call.usage.output,
-        needsReview: validated.needsReview,
-        issues: validated.issues,
+        needsReview: issues.some((i) => i.severity === "review"),
+        issues,
       },
+      rawResponse: JSON.stringify(call.output),
+      pdf: prepared.sourceDocuments.find((d) => d.fileName === prepared.pdf?.entry.name) ?? null,
     };
   } catch (e) {
     return {
       status: "failed",
       error: e instanceof Error ? e.message : String(e),
+      errorCode: errorCode(e),
       retryable: e instanceof CircuitOpenError || RETRYABLE.test(String(e)),
     };
   }

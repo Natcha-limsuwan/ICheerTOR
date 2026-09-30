@@ -15,6 +15,42 @@ const router = Router();
 router.use(authenticate);
 
 /**
+ * Fields a list/dashboard row needs: the egp2 data plus the few extraction
+ * results that help decide whether to open a project. Qualifications, scope
+ * text, conflicts and risk evidence are 10–20 KB per record and only come
+ * with GET /api/tor/:id.
+ */
+const LIST_FIELDS = [
+  "title",
+  "agencyName",
+  "phase",
+  "budget",
+  "medianPrice",
+  // egp2's medianPrice as checked at extraction (dropped digits) — prefer it.
+  "parsedData.medianPrice",
+  "postingDate",
+  "publicHearingStart",
+  "publicHearingEnd",
+  "submissionDeadline",
+  "sourceUrl",
+  "officialPortalUrl",
+  "tags",
+  "extractionStatus",
+  "extraction.needsReview",
+  "metadata.projectId",
+  "metadata.contractStatus",
+  "metadata.phaseReason",
+  "parsedData.workType",
+  "parsedData.keyDates.submissionDate",
+  "parsedData.keyDates.contractDurationDays.value",
+  "summary.overview",
+  "redFlags.ruleId",
+  "redFlags.severity",
+  "createdAt",
+  "updatedAt",
+].join(" ");
+
+/**
  * GET /api/tor — Search and list TOR records with filtering.
  */
 router.get("/", async (req: Request, res: Response) => {
@@ -69,7 +105,7 @@ router.get("/", async (req: Request, res: Response) => {
         .sort(sortField)
         .skip((page - 1) * limit)
         .limit(limit)
-        .select("-parsedData.scopeOfWork.content -parsedData.evaluationCriteria.content")
+        .select(LIST_FIELDS)
         .lean(),
       TORRecord.countDocuments(filter),
     ]);
@@ -82,7 +118,9 @@ router.get("/", async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/tor/:id — Get full TOR detail.
+ * GET /api/tor/:id — Get full TOR detail, including every extraction result.
+ * Never calls Vertex AI: extraction runs in the background (extract-tors.ts);
+ * until it has, extractionStatus is "pending" and parsedData is empty.
  */
 router.get("/:id", async (req: Request, res: Response) => {
   await connectDB();

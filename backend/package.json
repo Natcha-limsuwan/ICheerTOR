@@ -8,6 +8,7 @@
     "start": "node dist/server.js",
     "seed": "tsx scripts/seed.ts",
     "ingest": "tsx scripts/ingest-egp2.ts",
+    "extract": "tsx scripts/extract-tors.ts",
     "db:sync-indexes": "tsx scripts/sync-indexes.ts",
     "vertex:check": "tsx scripts/vertex-smoke-test.ts",
     "eval": "tsx scripts/eval-prompt.ts",

@@ -61,15 +61,34 @@ Search and list TOR records with filtering.
     "budget": 5500000,
     "postingDate": "2026-08-01T00:00:00Z",
     "submissionDeadline": "2026-09-15T17:00:00Z",
+    "publicHearingEnd": null,
     "sourceUrl": "https://...",
     "officialPortalUrl": "https://...",
+    "tags": ["software", "y2569", "bidding", "open"],
+    "metadata": { "projectId": "69049037973", "contractStatus": "ระหว่างดำเนินการ", "phaseReason": "ช่วงเสนอราคา — ..." },
     "extractionStatus": "completed",
-    "matchScore": 0.85,
-    "tags": ["React", "Node.js", "MongoDB"]
+    "extraction": { "needsReview": false },
+    "parsedData": {
+      "workType": "license",
+      "medianPrice": { "value": 24718950, "confidence": 1, "source": "egp2" },
+      "keyDates": {
+        "submissionDate": { "date": "2026-09-15", "startTime": "09:00", "endTime": "12:00", "closesAt": "2026-09-15T05:00:00Z", "status": "confirmed" },
+        "contractDurationDays": { "value": 110 }
+      }
+    },
+    "summary": { "overview": "ต่ออายุสิทธิ์การใช้งาน ..." },
+    "redFlags": [{ "ruleId": "RF-002", "severity": "warning" }]
   }],
   "meta": { "total": 342, "page": 1, "limit": 20 }
 }
 ```
+
+รายการส่งเฉพาะข้อมูลที่ใช้แสดงแถวและตัดสินใจว่าจะเปิดดูไหม — คุณสมบัติ, ขอบเขตงานเต็ม, เอกสารขัดกัน และ
+รายละเอียด red flag อยู่ใน `GET /api/tor/[id]` เท่านั้น ข้อมูลจาก AI ว่างเมื่อ `extractionStatus` ยังเป็น `pending`
+(แสดง "กำลังวิเคราะห์ TOR") — API ไม่เรียก Vertex AI ระหว่าง request
+
+`submissionDate.status`: `confirmed` = ประกาศระบุวันยื่นแล้ว (ยื่นได้วันเดียว ในช่วง `startTime`–`endTime` เวลาไทย),
+`pending` = ประกาศยังเว้นวันว่าง แสดงว่า "ยังไม่ยืนยัน รออัปเดต"
 
 **Auth**: Required (User or Admin)
 
@@ -88,22 +107,52 @@ Get full TOR detail including parsed data and red flags.
     "phase": "public_hearing",
     "medianPrice": 5000000,
     "parsedData": {
+      "workType": "license",
       "scopeOfWork": { "content": "...", "confidence": 0.92 },
       "qualifications": [
-        { "criterion": "ทุนจดทะเบียน ≥ 5,000,000 บาท", "minimumValue": 5000000, "type": "contract_value", "confidence": 0.88 }
+        {
+          "clauseNumber": "2.12.2", "criterion": "... ทุนจดทะเบียน ... ไม่ต่ำกว่า 8 ล้านบาท",
+          "type": "registered_capital", "minimumValue": 8000000, "unit": "THB",
+          "isMandatory": true, "isBoilerplate": false, "alternativeGroup": "A",
+          "requiresGovernment": null, "sameTypeRequired": null, "requiredCerts": [], "normalizedNames": [],
+          "source": "both", "sourcePage": 2, "confidence": 0.95
+        }
       ],
-      "medianPrice": { "value": 5000000, "confidence": 0.95 },
-      "evaluationCriteria": { "content": "...", "confidence": 0.85 }
+      "medianPrice": { "value": 5000000, "confidence": 1, "source": "egp2" },
+      "documentPrices": {
+        "budget": { "value": 24718950, "sourcePage": 5, "confidence": 1 },
+        "medianPrice": { "value": null, "sourcePage": null, "confidence": 0 }
+      },
+      "evaluationCriteria": { "content": "...", "confidence": 0.85, "method": "lowest_price", "weights": [] },
+      "keyDates": {
+        "submissionDate": { "date": null, "startTime": null, "endTime": null, "closesAt": null, "status": "pending" },
+        "contractDurationDays": { "value": 110, "confidence": 1, "rawText": "กำหนดเวลาส่งมอบพัสดุไม่เกิน110วัน", "source": "bidding_doc" },
+        "warrantyMonths": { "value": 12, "confidence": 1 }
+      },
+      "documentConflicts": [
+        { "topic": "ระยะเวลาแก้ไขความชำรุด", "torText": "ภายใน 7 ชั่วโมง", "biddingDocText": "ภายใน 1 วัน", "torPage": 6 }
+      ],
+      "riskClauses": [{ "clauseText": "...", "category": "brand_lock", "reason": "...", "sourcePage": 3 }]
     },
+    "summary": { "overview": "...", "keyPoints": ["..."], "deliverables": ["..."], "confidence": 0.9 },
     "redFlags": [
-      { "clauseText": "...", "reason": "...", "severity": "warning", "recommendedAction": "..." }
+      { "ruleId": "RF-002", "clauseText": "...", "reason": "...", "severity": "warning", "recommendedAction": "..." }
     ],
+    "extraction": { "promptVersion": "v4", "needsReview": false, "issues": [{ "severity": "filled", "field": "...", "message": "..." }] },
     "sources": [
       { "portalName": "bma", "sourceUrl": "...", "scrapedAt": "..." }
     ]
   }
 }
 ```
+
+ราคา: `budget` = วงเงินงบประมาณจาก egp2 (หลัก) · `medianPrice` = ราคากลางจาก egp2 ดิบ · `parsedData.medianPrice` =
+ราคากลางที่ตรวจแล้ว — ใช้ egp2 เป็นหลัก แต่ถ้า egp2 เลขตก/เป็น 0 จะแก้จากประกาศ e-GP (`source: "announcement"`)
+ให้แสดง `parsedData.medianPrice.value ?? medianPrice` · `documentPrices` = ตัวเลขตามคำที่ TOR ใช้ ไว้เทียบเท่านั้น
+(TOR ของ กทม. มักเรียกราคากลางว่า "วงเงินงบประมาณ")
+`documentConflicts` = เรื่องที่ TOR กับเอกสารประกวดราคาเขียนไม่ตรงกัน ให้แสดงทั้งสองข้อความ (กทม. เป็นผู้ชี้ขาด)
+`riskClauses` เป็นหลักฐานดิบจาก AI ห้ามแสดงเป็นคำเตือน — ให้แสดง `redFlags` ซึ่งผ่านเกณฑ์ในโค้ดแล้ว
+`extraction.needsReview: true` = มีตัวเลขที่ควรให้คนตรวจกับ PDF
 
 **Auth**: Required
 
