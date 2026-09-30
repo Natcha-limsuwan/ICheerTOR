@@ -105,7 +105,10 @@ async function main() {
     let added = 0;
     for (const row of rows) {
       if (byProject.has(row.projectNumber)) continue;
-      const filter = scoreSoftware(row.projectName, row.masterOrgDepartmentName ?? undefined);
+      // Title only. Agency names carry keywords of their own — "สำนักงาน
+      // พัฒนาระบบสาธารณสุข" hit the strong "พัฒนาระบบ" and let its medical
+      // supply purchases in as software.
+      const filter = scoreSoftware(row.projectName);
       if (!filter.isSoftware) continue;
       byProject.set(row.projectNumber, { row, filter, stage });
       added++;

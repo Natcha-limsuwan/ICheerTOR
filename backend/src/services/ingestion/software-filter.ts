@@ -21,6 +21,10 @@
  *
  * Every decision carries its reason so the keyword list can be tuned against
  * real misses instead of guesswork.
+ *
+ * Pass the project title only, not the agency name: agency names contain
+ * keywords too ("สำนักงานพัฒนาระบบสาธารณสุข" hits "พัฒนาระบบ"), which let
+ * every purchase that agency made through as software.
  */
 
 import keywords from "./keywords/software-keywords.json";
