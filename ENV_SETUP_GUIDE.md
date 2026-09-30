@@ -247,25 +247,23 @@ SMTP_USER=yourname@gmail.com
 SMTP_PASS=abcd efgh ijkl mnop
 ```
 
-#### LINE Messaging API
+#### Testing Email
 
-| Variable                      | Required | Example                              |
-| ----------------------------- | -------- | ------------------------------------ |
-| `LINE_CHANNEL_ACCESS_TOKEN` | ✅ Yes   | `xxxxxxxxxxxxxxx...` (long string) |
-| `LINE_CHANNEL_SECRET`       | ✅ Yes   | `abcdef1234567890`                 |
+After configuring SMTP, verify the connection and send a test email:
 
-**Where to get them:**
+```bash
+# 1. Verify SMTP connection only
+cd backend && npm run test-email
 
-1. Go to [LINE Developers Console](https://developers.line.biz/console/).
-2. Create a **Provider** (or select an existing one).
-3. Create a new **Messaging API Channel**.
-4. Under the **Basic settings** tab → copy the **Channel secret**.
-5. Under the **Messaging API** tab → issue a **Channel access token (long-lived)**.
+# 2. Send a test notification email
+npm run test-email send your-email@gmail.com
 
-```env
-LINE_CHANNEL_ACCESS_TOKEN=your-very-long-token-string
-LINE_CHANNEL_SECRET=your-channel-secret
+# 3. Full dispatch test (creates notification in DB + sends email if user has email pref enabled)
+npm run test-email dispatch <mongoUserId>
 ```
+
+> [!TIP]
+> Run `npm run test-email` first to confirm your SMTP credentials are valid before testing the full dispatch flow.
 
 ---
 
@@ -351,7 +349,7 @@ CRON_SECRET=<run: openssl rand -base64 32>
 NEXT_PUBLIC_API_URL=http://localhost:3001/api
 ```
 
-The Vertex AI, SMTP, and LINE variables are only needed if you're working on AI analysis, email notifications, or LINE bot features respectively.
+The Vertex AI and SMTP variables are only needed if you're working on AI analysis or email notification features respectively.
 
 ---
 
@@ -458,4 +456,3 @@ Set these in **Settings → Secrets and variables → Actions**:
 | Google Cloud Console     | <https://console.cloud.google.com/>                 |
 | Google OAuth Credentials | <https://console.cloud.google.com/apis/credentials> |
 | Google App Passwords     | <https://myaccount.google.com/apppasswords>         |
-| LINE Developers Console  | <https://developers.line.biz/console/>              |
