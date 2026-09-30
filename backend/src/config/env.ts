@@ -14,6 +14,8 @@ interface EnvConfig {
   FRONTEND_URL: string;
 
   // Vertex AI
+  /** Express-mode API key. When set, project/location/credentials are not used. */
+  VERTEX_AI_API_KEY: string;
   VERTEX_AI_PROJECT_ID: string;
   VERTEX_AI_LOCATION: string;
   VERTEX_AI_MODEL: string;
@@ -49,12 +51,16 @@ export const env: EnvConfig = {
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean),
-  FRONTEND_URL: process.env.FRONTEND_URL ?? "http://localhost:5173",
+  FRONTEND_URL: process.env.FRONTEND_URL ?? "http://localhost:3000",
 
   // Vertex AI
+  VERTEX_AI_API_KEY: (process.env.VERTEX_AI_API_KEY ?? "").trim(),
   VERTEX_AI_PROJECT_ID: process.env.VERTEX_AI_PROJECT_ID ?? "",
   VERTEX_AI_LOCATION: process.env.VERTEX_AI_LOCATION ?? "asia-southeast1",
-  VERTEX_AI_MODEL: process.env.VERTEX_AI_MODEL ?? "gemini-2.0-flash",
+  // No default: model ids retire (gemini-2.0-flash did on 2026-06-01), and a
+  // stale default fails at request time instead of at startup. Pick one from
+  // Model Garden — see docs/VERTEX-SETUP.md.
+  VERTEX_AI_MODEL: process.env.VERTEX_AI_MODEL ?? "",
   GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS ?? "",
   AI_CONFIDENCE_THRESHOLD: parseFloat(process.env.AI_CONFIDENCE_THRESHOLD ?? "0.6"),
   AI_CIRCUIT_BREAKER_THRESHOLD: parseInt(process.env.AI_CIRCUIT_BREAKER_THRESHOLD ?? "3", 10),

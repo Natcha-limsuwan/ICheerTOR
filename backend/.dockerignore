@@ -3,3 +3,5 @@ dist
 .env
 *.log
 .git
+secrets
+gcp-key*.json

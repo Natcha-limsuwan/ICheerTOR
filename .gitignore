@@ -22,3 +22,8 @@ Thumbs.db
 
 # TypeScript
 tsconfig.tsbuildinfo
+
+# GCP service-account keys (Vertex AI) — never commit
+secrets/
+gcp-key*.json
+*-sa-key.json

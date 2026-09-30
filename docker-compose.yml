@@ -9,6 +9,12 @@ services:
       - ./backend/.env
     environment:
       - NODE_ENV=production
+    # Vertex AI service-account key. Put the JSON at backend/secrets/gcp-key.json
+    # and set GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/gcp-key.json in
+    # backend/.env (a container path, not a Windows one). The `tools` service
+    # already sees it through its ./backend:/app mount.
+    volumes:
+      - ./backend/secrets:/app/secrets:ro
     depends_on:
       - mongo
     restart: unless-stopped
