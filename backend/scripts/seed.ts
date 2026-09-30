@@ -53,7 +53,7 @@ async function seed() {
       role: "user",
       status: "active",
       isVerified: true,
-      notificationPrefs: { inApp: true, email: true, line: false },
+      notificationPrefs: { inApp: true, email: true },
       locale: "th",
     },
     {
@@ -64,7 +64,7 @@ async function seed() {
       role: "admin",
       status: "active",
       isVerified: true,
-      notificationPrefs: { inApp: true, email: true, line: false },
+      notificationPrefs: { inApp: true, email: true },
       locale: "th",
     },
   ]);
@@ -246,7 +246,7 @@ async function seed() {
       title: "TOR ใหม่ที่ตรงกับโปรไฟล์ของคุณ",
       body: "พบ TOR ใหม่: จ้างพัฒนาระบบจัดการข้อมูลเมืองอัจฉริยะ จากสำนักยุทธศาสตร์และประเมินผล ราคากลาง ฿12,500,000",
       linkUrl: `/procurement/${torRecords[0]._id}`,
-      channels: { inApp: { sent: true }, email: { sent: false }, line: { sent: false } },
+      channels: { inApp: { sent: true }, email: { sent: false } },
     },
     {
       userId: userDemo._id,
@@ -255,7 +255,7 @@ async function seed() {
       title: "TOR เข้าสู่ช่วงรับฟังความคิดเห็น",
       body: "TOR: จ้างพัฒนาระบบ AI สำหรับวิเคราะห์การจราจร เข้าสู่ช่วงรับฟังความคิดเห็น ถึงวันที่ 25 สิงหาคม 2569",
       linkUrl: `/procurement/${torRecords[1]._id}`,
-      channels: { inApp: { sent: true }, email: { sent: true, sentAt: new Date() }, line: { sent: false } },
+      channels: { inApp: { sent: true }, email: { sent: true, sentAt: new Date() } },
     },
   ]);
   console.log("Created notifications");

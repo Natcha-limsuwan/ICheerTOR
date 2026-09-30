@@ -35,7 +35,7 @@ const typeLabels: Record<string, { label: string; color: string }> = {
 export default function AlertsPage() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [prefs, setPrefs] = useState({ inApp: true, email: false, line: false });
+  const [prefs, setPrefs] = useState({ inApp: true, email: false });
 
   useEffect(() => {
     async function fetchNotifications() {
@@ -85,15 +85,6 @@ export default function AlertsPage() {
                 />
               }
               label="อีเมล"
-            />
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={prefs.line}
-                  onChange={(e) => setPrefs({ ...prefs, line: e.target.checked })}
-                />
-              }
-              label="LINE"
             />
           </div>
         </CardContent>
