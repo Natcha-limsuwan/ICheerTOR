@@ -154,7 +154,7 @@ export default function DashboardPage() {
                       {item.title}
                     </h3>
                     <p className="text-xs text-[var(--color-text-secondary)] mt-1">
-                      {item.agency}
+                      {item.agencyName}
                     </p>
                     <div className="flex items-center gap-4 mt-2">
                       <span className="text-xs font-medium">
