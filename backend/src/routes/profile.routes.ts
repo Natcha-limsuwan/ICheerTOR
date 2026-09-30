@@ -42,16 +42,20 @@ router.put("/", async (req: Request, res: Response) => {
   await connectDB();
 
   try {
-    const profile = await VendorProfile.findOneAndUpdate(
-      { userId: req.user!.id },
-      { $set: req.body },
-      { new: true, runValidators: true },
-    );
+    const profile = await VendorProfile.findOne({ userId: req.user!.id });
 
     if (!profile) {
       Errors.notFound(res, "No vendor profile found");
       return;
     }
+
+    // Owner and identity fields are never client-writable. Loading and
+    // saving (rather than findOneAndUpdate) runs the pre-save hook that
+    // recomputes maxContractValue — the matcher depends on it.
+    const { userId: _userId, _id, createdAt, updatedAt, maxContractValue, ...changes } = req.body ?? {};
+    profile.set(changes);
+    await profile.save();
+
     apiSuccess(res, profile);
   } catch (error) {
     console.error("Profile update error:", error);

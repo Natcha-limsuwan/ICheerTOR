@@ -117,31 +117,63 @@ Get qualification match analysis for current user's profile against this TOR.
 {
   "data": {
     "torRecordId": "...",
-    "overallStatus": "partial",
-    "matchScore": 0.75,
+    "overallStatus": "ineligible",
+    "matchScore": 0.5,
+    "counts": { "pass": 1, "fail": 1, "unknown": 1 },
     "criteria": [
       {
         "criterion": "ทุนจดทะเบียน ≥ 5,000,000 บาท",
-        "type": "contract_value",
+        "type": "registered_capital",
         "status": "pass",
+        "isMandatory": true,
         "profileValue": 7500000,
         "requiredValue": 5000000,
         "gap": null,
-        "bridgeable": null
+        "bridgeable": null,
+        "lowConfidence": false,
+        "reason": "ผ่าน (7,500,000 ≥ 5,000,000 บาท)"
       },
       {
         "criterion": "อายุบริษัท ≥ 5 ปี",
         "type": "company_age",
         "status": "fail",
+        "isMandatory": true,
         "profileValue": 3,
         "requiredValue": 5,
         "gap": 2,
-        "bridgeable": true
+        "bridgeable": true,
+        "lowConfidence": false,
+        "reason": "ขาดอีก 2 ปี"
+      },
+      {
+        "criterion": "ผู้จัดการโครงการ อย่างน้อย 1 คน",
+        "type": "personnel",
+        "status": "unknown",
+        "isMandatory": true,
+        "profileValue": null,
+        "requiredValue": 1,
+        "gap": null,
+        "bridgeable": null,
+        "lowConfidence": true,
+        "reason": "ยังไม่ได้กรอกข้อมูลบุคลากรในโปรไฟล์"
       }
     ]
   }
 }
 ```
+
+**`overallStatus`**:
+
+| ค่า | ความหมาย |
+|---|---|
+| `eligible` | ผ่านข้อบังคับ (`isMandatory`) ทุกข้อ |
+| `ineligible` | ไม่ผ่านข้อบังคับอย่างน้อย 1 ข้อ |
+| `incomplete` | ไม่มีข้อที่ไม่ผ่าน แต่มีข้อบังคับที่ตรวจไม่ได้ (`status: "unknown"`) |
+| `unknown` | TOR ยังไม่ได้วิเคราะห์ (ไม่มี qualifications) — `matchScore` เป็น `null` |
+
+`status: "unknown"` ไม่นับเป็นผ่าน — เกิดเมื่ออ่านค่าจาก TOR ไม่ได้, ประเภทนั้นตรวจอัตโนมัติไม่ได้,
+หรือโปรไฟล์ยังไม่ได้กรอกข้อมูลส่วนนั้น `matchScore` คิดจากข้อที่ตรวจได้เท่านั้น (pass / (pass + fail))
+`lowConfidence: true` = AI สกัดข้อนี้ด้วยความมั่นใจต่ำกว่า `AI_CONFIDENCE_THRESHOLD` ควรให้ผู้ใช้เปิดดู PDF
 
 **Auth**: Required. Returns `400` if user has no vendor profile.
 
