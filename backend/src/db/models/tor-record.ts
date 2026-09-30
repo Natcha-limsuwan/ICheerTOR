@@ -50,9 +50,17 @@ export interface IQualification {
 export interface IMedianPrice {
   value: number | null;
   confidence: number;
+  /** egp2 = the API (primary); announcement = e-GP announcement text, used
+   *  when egp2 dropped digits; document = the TOR, read by AI. */
+  source?: "egp2" | "announcement" | "document" | null;
 }
 
-/** A price as the documents themselves state it (vs. egp2's figures). */
+/**
+ * A price as the TOR states it, under the name the TOR uses — shown for
+ * comparison only. BMA TORs often call the reference price "วงเงินงบประมาณ",
+ * so documentPrices.budget is frequently the ราคากลาง; the real budget is the
+ * top-level budget (egp2).
+ */
 export interface IDocumentPrice {
   value: number | null;
   sourcePage?: number | null;
@@ -323,6 +331,7 @@ const MedianPriceSchema = new Schema(
   {
     value: { type: Number, default: null },
     confidence: { type: Number, min: 0, max: 1, default: 0 },
+    source: { type: String, enum: ["egp2", "announcement", "document", null], default: null },
   },
   { _id: false },
 );

@@ -30,6 +30,7 @@ import type { TorExtractionV3 } from "../src/services/ai/prompts/v3";
 import type { TorExtractionV4 } from "../src/services/ai/prompts/v4";
 import { validateExtraction, type ValidationIssue } from "../src/services/ai/validate-extraction";
 import { callModel, prepareDocuments } from "../src/services/ai/tor-parser";
+import { resolvePrices } from "../src/services/ai/resolve-prices";
 import { fetchProjectArchive } from "../src/services/ingestion/egp-client";
 import type { ArchiveFacts } from "../src/services/ingestion/archive-facts";
 import TORRecord from "../src/db/models/tor-record";
@@ -72,9 +73,14 @@ interface Gold {
   qualifications: GoldQualification[];
   evaluationMethod: string | null;
   evaluationWeights: Array<{ criterion: string; weight: number }>;
-  /** The price figure the TOR states — see priceKind for which one it is. */
+  /** The price figure the TOR states, as printed — see priceKind. */
   medianPrice: number | null;
-  /** What the document calls that figure: "budget" = วงเงินงบประมาณ, "median_price" = ราคากลาง. */
+  /**
+   * The NAME the TOR gives that figure: "budget" = it says วงเงินงบประมาณ,
+   * "median_price" = ราคากลาง. What the TOR says, not what the figure is:
+   * BMA TORs call the reference price วงเงินงบประมาณ (the e-GP announcement
+   * shows it). Prices users see come from egp2 via resolve-prices.ts.
+   */
   priceKind?: "budget" | "median_price" | null;
   /** Bidding day, ISO date — null when the announcement leaves it blank. */
   submissionDate?: string | null;
@@ -397,7 +403,15 @@ function finalOutput(run: RunRecord): {
 } {
   if (!isV3(run.output)) return { output: run.output, issues: [] };
   const v = validateExtraction(run.output, run.validationContext ?? {});
-  return { output: v.output, issues: v.issues };
+  if (!run.facts || !("budget" in v.output)) return { output: v.output, issues: v.issues };
+  const out = v.output as TorExtractionV4;
+  const prices = resolvePrices({
+    egp2Budget: run.validationContext?.budget,
+    egp2MedianPrice: run.validationContext?.medianPriceFromSource,
+    facts: run.facts,
+    documentFigures: [out.budget.value, out.medianPrice.value],
+  });
+  return { output: v.output, issues: [...v.issues, ...prices.issues] };
 }
 
 /* ─── Main ──────────────────────────────────────────────────────────── */

@@ -67,15 +67,6 @@ export function requiredRegisteredCapital(budget: number): number {
   return CAPITAL_TIERS.find(([upTo]) => budget <= upTo)![1];
 }
 
-/**
- * egp2's ราคากลาง is normally close to the budget. One far off it is a typo
- * in the source (3,398,000 on a 23,500,000 project) and must not be shown as
- * authoritative. True when there is no budget to compare with.
- */
-export function isPlausibleMedianPrice(median: number, budget: number | null | undefined): boolean {
-  return !budget || (median >= budget * 0.3 && median <= budget * 1.5);
-}
-
 const QUARTER_OF_BUDGET = /1\s*ใน\s*4|๑\s*ใน\s*๔|หนึ่งในสี่|ร้อยละ\s*(25|๒๕)\s*ของ(มูลค่า)?(วงเงิน)?งบประมาณ/;
 const MUST_BE_POSITIVE = /(แสดง)?ค่าเป็นบวก/;
 /** A duration quote must name a period of work or delivery with a number. */
@@ -180,16 +171,6 @@ export function validateExtraction<T extends TorExtractionV3 | TorExtractionV4>(
   // budget and reference price labelled the other way round) — and egp2 has
   // typos of its own (a ราคากลาง of 3,398,000 on a 23,398,000 project). So a
   // difference is shown, never blocked on or "fixed".
-  if (ctx.medianPriceFromSource != null && !isPlausibleMedianPrice(ctx.medianPriceFromSource, ctx.budget)) {
-    issues.push({
-      severity: "review",
-      field: "medianPrice",
-      message:
-        `ราคากลางในระบบ e-GP ${fmt(ctx.medianPriceFromSource)} บาท ผิดปกติเมื่อเทียบกับงบ ` +
-        `${fmt(ctx.budget!)} บาท — น่าจะพิมพ์ผิดที่ต้นทาง จึงไม่ใช้`,
-      from: ctx.medianPriceFromSource,
-    });
-  }
   const sources = [ctx.medianPriceFromSource, ctx.budget].filter((v): v is number => v != null && v > 0);
   const compare = (field: string, label: string, read: number | null) => {
     if (read == null || !sources.length || sources.includes(read)) return;
@@ -224,8 +205,7 @@ export function validateExtraction<T extends TorExtractionV3 | TorExtractionV4>(
 
     v4.budget = checkWords(v4.budget, "budget.value", issues);
     v4.medianPrice = checkWords(v4.medianPrice, "medianPrice.value", issues);
-    compare("budget.value", "วงเงินงบประมาณ", v4.budget.value);
-    compare("medianPrice.value", "ราคากลาง", v4.medianPrice.value);
+    // Compared with egp2 and the e-GP announcement in resolve-prices.ts.
   } else {
     compare("medianPrice.value", "วงเงิน", output.medianPrice.value);
   }

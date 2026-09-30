@@ -17,6 +17,8 @@
  * announcement. Checking again is cheap because no model call is involved.
  */
 
+import { parseThaiAmountWords } from "../ai/thai-number";
+
 export type SubmissionDateStatus = "confirmed" | "pending";
 
 export interface SubmissionDate {
@@ -40,11 +42,26 @@ export interface ContractDuration {
   source: string;
 }
 
+export interface StatedAmount {
+  /** Baht. */
+  value: number;
+  rawText: string;
+  source: string;
+}
+
 export interface ArchiveFacts {
   submissionDate: SubmissionDate;
   contractDuration: ContractDuration | null;
   /** "ลงวันที่ ..." of the announcement, when filled in. ISO date. */
   announcedDate: string | null;
+  /**
+   * "ราคากลางของงาน... เป็นเงินทั้งสิ้น X บาท (words)" in the announcement.
+   * Checks egp2's figure — which has dropped digits (3,398,000 for 23,398,000).
+   * TORs often call this same figure "วงเงินงบประมาณ".
+   */
+  medianPrice: StatedAmount | null;
+  /** Bid bond in the bidding document — e-GP sets it at 5 % of the budget. */
+  bidBond: StatedAmount | null;
 }
 
 export interface TextDocument {
@@ -155,15 +172,38 @@ export function readAnnouncedDate(docs: TextDocument[]): string | null {
   return null;
 }
 
+const AMOUNT = "(\\d{1,3}(?:,\\d{3})+(?:\\.\\d{1,2})?)\\s*บาท\\s*(\\([^)]{4,120}\\))?";
+const MEDIAN_PRICE = new RegExp(`(ราคากลางของงาน.{0,80}?เป็นเงินทั้งสิ้น\\s*${AMOUNT})`);
+const BID_BOND = new RegExp(`(หลักประกัน.{0,160}?จำนวน\\s*${AMOUNT})`);
+
+/**
+ * First amount matching `pattern`. Digits in a text layer are exact, but the
+ * words in brackets are checked too: an amount whose words disagree is
+ * skipped rather than trusted.
+ */
+function readAmount(docs: TextDocument[], pattern: RegExp): StatedAmount | null {
+  for (const doc of docs) {
+    const m = pattern.exec(normalise(doc.text));
+    if (!m) continue;
+    const value = Number(m[2].replace(/,/g, ""));
+    const fromWords = m[3] ? parseThaiAmountWords(m[3]) : null;
+    if (fromWords != null && fromWords !== value) continue;
+    return { value, rawText: m[1], source: doc.fileName };
+  }
+  return null;
+}
+
 /**
  * Read every fact from the documents that have a text layer. Pass the
- * announcement first: it is the official source for the submission date, and
- * the bidding document only repeats it.
+ * announcement first: it is the official source for the submission date and
+ * the reference price, and the bidding document only repeats them.
  */
 export function readArchiveFacts(docs: TextDocument[]): ArchiveFacts {
   return {
     submissionDate: readSubmissionDate(docs),
     contractDuration: readContractDuration(docs),
     announcedDate: readAnnouncedDate(docs),
+    medianPrice: readAmount(docs, MEDIAN_PRICE),
+    bidBond: readAmount(docs, BID_BOND),
   };
 }

@@ -12,7 +12,8 @@
  */
 
 import { readArchiveFacts, readSubmissionDate } from "../src/services/ingestion/archive-facts";
-import { isPlausibleMedianPrice, validateExtraction } from "../src/services/ai/validate-extraction";
+import { validateExtraction } from "../src/services/ai/validate-extraction";
+import { hasDroppedDigits, isPlausibleMedianPrice, resolvePrices } from "../src/services/ai/resolve-prices";
 import { analyzeRedFlags, dailyPenaltyPercent } from "../src/services/ai/red-flag-analyzer";
 import { matchQualifications } from "../src/services/matching/qualification-matcher";
 import { parseThaiAmountWords } from "../src/services/ai/thai-number";
@@ -61,6 +62,20 @@ function testArchiveFacts() {
   check("ข้อ 4.3 → 150 วัน", facts.contractDuration?.days === 150, show(facts.contractDuration));
   const blankDuration = readArchiveFacts([{ fileName: "doc_1.pdf", text: "กำหนดเวลาส่งมอบพัสดุไม่เกิน วันนับถัดจาก" }]);
   check("ข้อ 4.3 ว่าง → null", blankDuration.contractDuration === null);
+
+  const money = readArchiveFacts([
+    {
+      fileName: "annoudoc.pdf",
+      text: "ราคากลางของงานซื้อในการประกวดราคาครั้งนี้ เป็นเงินทั้งสิ้น๒๓,๓๙๘,๐๐๐.๐๐ บาท (ยี่สิบสาม\nล้านสามแสนเก้าหมื่นแปดพันบาทถ้วน)",
+    },
+    { fileName: "doc_1.pdf", text: "โดยใช้หลักประกันอย่างหนึ่งอย่างใดดังต่อไปนี้ จำนวน 1,175,000.00บาท(หนึ่งล้านหนึ่งแสนเจ็ดหมื่นห้าพันบาทถ้วน)" },
+  ]);
+  check("ราคากลางจากประกาศ 23,398,000", money.medianPrice?.value === 23_398_000, show(money.medianPrice));
+  check("หลักประกันซอง 1,175,000", money.bidBond?.value === 1_175_000, show(money.bidBond));
+  const mismatch = readArchiveFacts([
+    { fileName: "a.pdf", text: "ราคากลางของงานซื้อ เป็นเงินทั้งสิ้น 23,398,000.00 บาท (ยี่สิบสามล้านบาทถ้วน)" },
+  ]);
+  check("ตัวเลขกับคำอ่านไม่ตรง → ไม่เชื่อ", mismatch.medianPrice === null);
 }
 
 /* 2 ─────────────────────────────────────────────────────────────────── */
@@ -134,9 +149,37 @@ function testValidator() {
     {},
   );
   check("ตัดเรื่องที่ฉบับหนึ่งไม่ได้ระบุ (มีวงเล็บนำ)", conflicts.output.documentConflicts.length === 1);
-  check("ราคากลาง egp2 3,398,000 บนงบ 23.5 ล้าน = พิมพ์ผิด", !isPlausibleMedianPrice(3_398_000, 23_500_000));
-  check("ราคากลาง egp2 10.62 ล้านบนงบ 11.8 ล้าน = ปกติ", isPlausibleMedianPrice(10_620_000, 11_800_000));
   check("parseThaiAmountWords", parseThaiAmountWords("(สิบล้านหกแสนสองหมื่นบาทถ้วน)") === 10_620_000);
+}
+
+/* 2b ──── resolve-prices ───────────────────────────────────────────── */
+
+function testResolvePrices() {
+  console.log("\n[2b] resolve-prices");
+  const ann = (value: number) => ({ medianPrice: { value, rawText: "", source: "annoudoc" }, bidBond: null });
+  const none = { medianPrice: null, bidBond: null };
+
+  check("3,398,000 เป็น 23,398,000 ที่เลขตก", hasDroppedDigits(3_398_000, 23_398_000));
+  check("egp2 3,398,000 บนงบ 23.5 ล้าน = ผิดปกติ", !isPlausibleMedianPrice(3_398_000, 23_500_000));
+
+  const same = resolvePrices({ egp2Budget: 11_800_000, egp2MedianPrice: 10_620_000, facts: ann(10_620_000) });
+  check("egp2 ตรงกับประกาศ → egp2", same.medianPrice.source === "egp2" && same.medianPrice.value === 10_620_000 && !same.issues.length);
+
+  const dropped = resolvePrices({ egp2Budget: 23_500_000, egp2MedianPrice: 3_398_000, facts: ann(23_398_000) });
+  check("egp2 เลขตก → ใช้ประกาศ", dropped.medianPrice.value === 23_398_000 && dropped.medianPrice.source === "announcement");
+
+  const differ = resolvePrices({ egp2Budget: 12_000_000, egp2MedianPrice: 10_620_000, facts: ann(10_700_000) });
+  check("egp2 ต่างจากประกาศแบบอื่น → คง egp2 + review", differ.medianPrice.value === 10_620_000 && differ.issues[0]?.severity === "review");
+
+  const noAnn = resolvePrices({ egp2Budget: 23_500_000, egp2MedianPrice: 3_398_000, facts: none, documentFigures: [23_388_000] });
+  check("egp2 ผิดปกติ ไม่มีประกาศ → ใช้ TOR + review", noAnn.medianPrice.source === "document" && noAnn.issues[0]?.severity === "review");
+
+  const bond = resolvePrices({
+    egp2Budget: 11_800_000,
+    egp2MedianPrice: 10_620_000,
+    facts: { medianPrice: null, bidBond: { value: 590_000, rawText: "", source: "doc_" } },
+  });
+  check("หลักประกัน 590,000 = 5% ของงบ 11.8 ล้าน → ไม่เตือน", bond.issues.length === 0);
 }
 
 /* 3 ─────────────────────────────────────────────────────────────────── */
@@ -243,6 +286,7 @@ function testMatcher() {
 
 testArchiveFacts();
 testValidator();
+testResolvePrices();
 testRedFlags();
 testMatcher();
 console.log(`\n${passed} ผ่าน, ${failed} ไม่ผ่าน`);
