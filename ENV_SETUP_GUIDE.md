@@ -220,25 +220,42 @@ These control the AI circuit breaker and request behavior. The defaults work wel
 
 ### 4. Notifications
 
+The system supports **2 notification channels**:
+
+| Channel | Description | Always on? |
+|---------|-------------|------------|
+| **In-App (Web)** | Notifications shown inside the iCheerTOR web app | ✅ Yes |
+| **Email (Gmail SMTP)** | Notification emails sent via Gmail | User preference |
+
 #### Email (SMTP via Gmail)
 
-| Variable | Required | Example |
-| ------------- | -------- | ----------------------- |
-| `SMTP_HOST` | ✅ Yes | `smtp.gmail.com` |
-| `SMTP_PORT` | ✅ Yes | `587` |
-| `SMTP_USER` | ✅ Yes | `yourname@gmail.com` |
-| `SMTP_PASS` | ✅ Yes | `abcd efgh ijkl mnop` |
+| Variable | Required | Default | Example |
+| ------------- | -------- | ------- | ----------------------- |
+| `SMTP_HOST` | ✅ Yes | `smtp.gmail.com` | `smtp.gmail.com` |
+| `SMTP_PORT` | ✅ Yes | `587` | `587` |
+| `SMTP_USER` | ✅ Yes | — | `yourname@gmail.com` |
+| `SMTP_PASS` | ✅ Yes | — | `abcd efgh ijkl mnop` |
 
-**Where to get `SMTP_PASS` (Gmail App Password):**
+#### Step-by-Step: Get Gmail App Password
 
 > [!IMPORTANT]
-> You **cannot** use your regular Gmail password. You need an **App Password**.
+> You **cannot** use your regular Gmail password. Gmail requires a 16-character **App Password** for SMTP.
 
-1. Go to [Google Account Security](https://myaccount.google.com/security).
-2. Enable **2-Step Verification** if not already enabled.
-3. Go to [App Passwords](https://myaccount.google.com/apppasswords).
-4. Select **Mail** and your device, then click **Generate**.
-5. Copy the 16-character password (formatted as `xxxx xxxx xxxx xxxx`).
+**Prerequisites:** You need a Gmail account with **2-Step Verification** enabled.
+
+1. **Enable 2-Step Verification** (if not already):
+   - Go to [Google Account Security](https://myaccount.google.com/security)
+   - Find **2-Step Verification** and turn it **On**
+   - Follow the prompts to set up (phone number or authenticator app)
+
+2. **Generate an App Password:**
+   - Go directly to [App Passwords](https://myaccount.google.com/apppasswords)
+   - In the **App name** field, type: `iCheerTOR`
+   - Click **Create**
+   - Google will display a **16-character password** (e.g. `abcd efgh ijkl mnop`)
+   - **Copy it immediately** — you won't be able to see it again
+
+3. **Update `backend/.env`:**
 
 ```env
 SMTP_HOST=smtp.gmail.com
@@ -247,23 +264,73 @@ SMTP_USER=yourname@gmail.com
 SMTP_PASS=abcd efgh ijkl mnop
 ```
 
+> [!CAUTION]
+> Never share or commit your App Password. If compromised, revoke it at [App Passwords](https://myaccount.google.com/apppasswords) and generate a new one.
+
 #### Testing Email
 
-After configuring SMTP, verify the connection and send a test email:
+After configuring SMTP credentials, test the email system:
+
+**Step 1 — Verify SMTP connection:**
 
 ```bash
-# 1. Verify SMTP connection only
-cd backend && npm run test-email
+cd backend
+npm run test-email
+```
 
-# 2. Send a test notification email
+Expected output if credentials are correct:
+```
+📡 Verifying SMTP connection...
+✅ SMTP connection verified!
+```
+
+If credentials are wrong, you'll see:
+```
+❌ SMTP verification failed: Invalid login: 535-5.7.8 Username and Password not accepted.
+```
+
+**Step 2 — Send a test email:**
+
+```bash
 npm run test-email send your-email@gmail.com
+```
 
-# 3. Full dispatch test (creates notification in DB + sends email if user has email pref enabled)
+Expected output:
+```
+📡 Verifying SMTP connection...
+✅ SMTP connection verified!
+
+📧 Sending test notification email to: your-email@gmail.com
+[EMAIL] Sent to your-email@gmail.com — messageId: <abc123@gmail.com>
+
+✅ Email sent successfully!
+   Message ID: <abc123@gmail.com>
+
+📬 Check your inbox at: your-email@gmail.com
+```
+
+Check your inbox for a styled HTML email from **iCheerTOR** with the test notification.
+
+**Step 3 — Full dispatch test (optional, requires MongoDB):**
+
+```bash
 npm run test-email dispatch <mongoUserId>
 ```
 
+This creates a notification in the database AND sends an email if the user has email notifications enabled in their preferences.
+
 > [!TIP]
-> Run `npm run test-email` first to confirm your SMTP credentials are valid before testing the full dispatch flow.
+> If the test email lands in **Spam**, mark it as "Not spam" — Gmail will learn to deliver future emails to the inbox.
+
+#### Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `Invalid login` error | Double-check `SMTP_USER` and `SMTP_PASS`. Make sure you're using an **App Password**, not your regular Gmail password. |
+| `SMTP_USER or SMTP_PASS not configured` | The `.env` values are still placeholders. Replace `<email>` and `<app-password>` with real values. |
+| Email lands in Spam | Mark as "Not spam" once. For production, consider setting up SPF/DKIM DNS records. |
+| `Connection timeout` | Check if your firewall/network allows outbound connections on port 587. |
+| App Passwords page not available | Ensure **2-Step Verification** is enabled on your Google Account first. |
 
 ---
 
