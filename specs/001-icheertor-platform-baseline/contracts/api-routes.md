@@ -120,6 +120,7 @@ Get qualification match analysis for current user's profile against this TOR.
     "overallStatus": "ineligible",
     "matchScore": 0.5,
     "counts": { "pass": 1, "fail": 1, "unknown": 1 },
+    "standardClausesSkipped": 11,
     "criteria": [
       {
         "criterion": "ทุนจดทะเบียน ≥ 5,000,000 บาท",
@@ -131,6 +132,7 @@ Get qualification match analysis for current user's profile against this TOR.
         "gap": null,
         "bridgeable": null,
         "lowConfidence": false,
+        "alternativeGroup": null,
         "reason": "ผ่าน (7,500,000 ≥ 5,000,000 บาท)"
       },
       {
@@ -143,6 +145,7 @@ Get qualification match analysis for current user's profile against this TOR.
         "gap": 2,
         "bridgeable": true,
         "lowConfidence": false,
+        "alternativeGroup": null,
         "reason": "ขาดอีก 2 ปี"
       },
       {
@@ -155,6 +158,7 @@ Get qualification match analysis for current user's profile against this TOR.
         "gap": null,
         "bridgeable": null,
         "lowConfidence": true,
+        "alternativeGroup": null,
         "reason": "ยังไม่ได้กรอกข้อมูลบุคลากรในโปรไฟล์"
       }
     ]
@@ -173,6 +177,9 @@ Get qualification match analysis for current user's profile against this TOR.
 
 `status: "unknown"` ไม่นับเป็นผ่าน — เกิดเมื่ออ่านค่าจาก TOR ไม่ได้, ประเภทนั้นตรวจอัตโนมัติไม่ได้,
 หรือโปรไฟล์ยังไม่ได้กรอกข้อมูลส่วนนั้น `matchScore` คิดจากข้อที่ตรวจได้เท่านั้น (pass / (pass + fail))
+ข้อที่มี `alternativeGroup` เดียวกันเป็นทางเลือก (เช่น มูลค่าสุทธิ / ทุนจดทะเบียน / เงินฝาก / วงเงินสินเชื่อ)
+นับเป็นข้อบังคับข้อเดียว: ผ่านเมื่อผ่านข้อใดข้อหนึ่งในกลุ่ม และไม่ผ่านเมื่อไม่ผ่านทุกข้อ
+ข้อมาตรฐานที่มีในทุก TOR ของ กทม. (`isBoilerplate` เช่น ไม่เป็นบุคคลล้มละลาย) ไม่ถูกตรวจ — นับไว้ใน `standardClausesSkipped`
 `lowConfidence: true` = AI สกัดข้อนี้ด้วยความมั่นใจต่ำกว่า `AI_CONFIDENCE_THRESHOLD` ควรให้ผู้ใช้เปิดดู PDF
 
 **Auth**: Required. Returns `400` if user has no vendor profile.

@@ -58,7 +58,9 @@ const RULES: Rule[] = [
   {
     kind: "bidding_doc",
     rank: 1,
-    test: /bidding|เอกสารประกวดราคา|document\s*part|e-?bidding/i,
+    // doc_310000110000062_69049037572.pdf is the e-GP generated bidding
+    // document — real text, unlike the scanned TOR beside it.
+    test: /^doc_\d|bidding|เอกสารประกวดราคา|document\s*part|e-?bidding/i,
     reason: "เอกสารประกวดราคา — มีคุณสมบัติผู้ยื่นข้อเสนอบางส่วน",
   },
   {
@@ -96,6 +98,18 @@ function classify(entry: ArchiveEntry): PickedDocument {
 export interface PickResult {
   /** The document to parse, or null when the archive holds no usable one. */
   best: PickedDocument | null;
+  /**
+   * The TOR itself (scope + agency-specific requirements), when present.
+   * Usually a scan. May be an unconventionally named agency attachment —
+   * see pickDocument.
+   */
+  tor: PickedDocument | null;
+  /**
+   * The e-GP bidding document (doc_*.pdf). Generated as text, so its numbers
+   * are exact; read together with the TOR rather than instead of it, since it
+   * has no scope and sometimes lacks requirements the TOR adds.
+   */
+  biddingDoc: PickedDocument | null;
   /** Every PDF, classified and ranked — useful for logging and audit. */
   ranked: PickedDocument[];
   /** True when a genuine TOR was found (as opposed to a fallback). */
@@ -105,15 +119,34 @@ export interface PickResult {
 }
 
 /**
+ * Agency attachments that are not the TOR even though they are "other":
+ * a public-hearing copy duplicates the TOR, and these are e-GP system files.
+ */
+const NOT_A_TOR_CANDIDATE = /^annoudoc|^doc_\d|_pub_\d|^attach_pub/i;
+
+/**
  * Pick the document to parse. Falls back to the bidding document or the
  * announcement when no TOR is present, since those still carry some of the
  * fields we extract — but never to contracts, which post-date the bid.
+ *
+ * TOR names are not always recognisable ("oracle117new.pdf" was one). When
+ * no file is named like a TOR but the archive also has a bidding document —
+ * i.e. an open e-bidding project, which always has a TOR attached — the
+ * largest unclassified agency attachment is taken as the TOR. The model's
+ * documentCheck confirms or rejects that guess.
  */
 export function pickDocument(entries: ArchiveEntry[]): PickResult {
   const pdfs = entries.filter((e) => PDF_RE.test(e.name) && e.size > 0);
 
   if (pdfs.length === 0) {
-    return { best: null, ranked: [], hasTor: false, skipReason: "ไม่มีไฟล์ PDF ในชุดเอกสาร" };
+    return {
+      best: null,
+      tor: null,
+      biddingDoc: null,
+      ranked: [],
+      hasTor: false,
+      skipReason: "ไม่มีไฟล์ PDF ในชุดเอกสาร",
+    };
   }
 
   const ranked = pdfs
@@ -121,12 +154,35 @@ export function pickDocument(entries: ArchiveEntry[]): PickResult {
     // Prefer the larger file when two share a rank: the fuller document.
     .sort((a, b) => a.rank - b.rank || b.size - a.size);
 
-  const hasTor = ranked.some((d) => d.kind === "tor");
-  const usable = ranked.filter((d) => d.rank <= 2);
+  const biddingDoc = ranked.find((d) => d.kind === "bidding_doc" && /^doc_\d/i.test(d.name))
+    ?? ranked.find((d) => d.kind === "bidding_doc")
+    ?? null;
+
+  let tor = ranked.find((d) => d.kind === "tor") ?? null;
+  const hasTor = tor !== null;
+  if (!tor && biddingDoc) {
+    const candidate = ranked
+      .filter((d) => d.kind === "other" && !NOT_A_TOR_CANDIDATE.test(d.name))
+      .sort((a, b) => b.size - a.size)[0];
+    if (candidate) {
+      tor = {
+        ...candidate,
+        kind: "tor",
+        rank: 0,
+        reason: "ชื่อไฟล์ไม่บอกว่าเป็น TOR — ใช้ไฟล์แนบของหน่วยงานที่ใหญ่ที่สุดแทน",
+      };
+    }
+  }
+
+  const usable = [tor, ...ranked.filter((d) => d.rank <= 2)].filter(
+    (d): d is PickedDocument => d !== null,
+  );
 
   if (usable.length === 0) {
     return {
       best: null,
+      tor: null,
+      biddingDoc: null,
       ranked,
       hasTor: false,
       skipReason:
@@ -134,5 +190,5 @@ export function pickDocument(entries: ArchiveEntry[]): PickResult {
     };
   }
 
-  return { best: usable[0], ranked, hasTor };
+  return { best: usable[0], tor, biddingDoc, ranked, hasTor };
 }

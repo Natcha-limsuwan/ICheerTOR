@@ -65,7 +65,8 @@ export const env: EnvConfig = {
   AI_CONFIDENCE_THRESHOLD: parseFloat(process.env.AI_CONFIDENCE_THRESHOLD ?? "0.6"),
   AI_CIRCUIT_BREAKER_THRESHOLD: parseInt(process.env.AI_CIRCUIT_BREAKER_THRESHOLD ?? "3", 10),
   AI_CIRCUIT_BREAKER_COOLDOWN_MS: parseInt(process.env.AI_CIRCUIT_BREAKER_COOLDOWN_MS ?? "60000", 10),
-  AI_REQUEST_TIMEOUT_MS: parseInt(process.env.AI_REQUEST_TIMEOUT_MS ?? "30000", 10),
+  // A scanned TOR plus the bidding document takes 25–95 s on Gemini 3 Flash.
+  AI_REQUEST_TIMEOUT_MS: parseInt(process.env.AI_REQUEST_TIMEOUT_MS ?? "180000", 10),
 
   // Notifications
   SMTP_HOST: process.env.SMTP_HOST ?? "smtp.gmail.com",

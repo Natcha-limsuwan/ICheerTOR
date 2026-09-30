@@ -146,7 +146,7 @@ ADMIN_EMAILS=your-email@gmail.com
 | `AI_CONFIDENCE_THRESHOLD` | ❌ No | `0.6` | `0.7` |
 | `AI_CIRCUIT_BREAKER_THRESHOLD` | ❌ No | `3` | `5` |
 | `AI_CIRCUIT_BREAKER_COOLDOWN_MS` | ❌ No | `60000` | `120000` |
-| `AI_REQUEST_TIMEOUT_MS` | ❌ No | `30000` | `60000` |
+| `AI_REQUEST_TIMEOUT_MS` | ❌ No | `180000` | `180000` |
 
 #### `VERTEX_AI_PROJECT_ID`
 
@@ -202,7 +202,7 @@ These control the AI circuit breaker and request behavior. The defaults work wel
 | `AI_CONFIDENCE_THRESHOLD` | Minimum confidence score to accept an AI result | `0.6` |
 | `AI_CIRCUIT_BREAKER_THRESHOLD` | Number of consecutive failures before the circuit opens | `3` |
 | `AI_CIRCUIT_BREAKER_COOLDOWN_MS` | How long (ms) to wait before retrying after circuit opens | `60000` |
-| `AI_REQUEST_TIMEOUT_MS` | Timeout (ms) for individual AI requests | `30000` |
+| `AI_REQUEST_TIMEOUT_MS` | Timeout (ms) for individual AI requests — one TOR takes 25–95 s | `180000` |
 
 ---
 

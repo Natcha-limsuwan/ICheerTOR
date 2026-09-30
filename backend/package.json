@@ -9,10 +9,11 @@
     "seed": "tsx scripts/seed.ts",
     "ingest": "tsx scripts/ingest-egp2.ts",
     "db:sync-indexes": "tsx scripts/sync-indexes.ts",
-    "vertex:check": "tsx scripts/vertex-smoke-test.ts"
+    "vertex:check": "tsx scripts/vertex-smoke-test.ts",
+    "eval": "tsx scripts/eval-prompt.ts",
+    "test:extraction": "tsx scripts/test-extraction.ts"
   },
   "dependencies": {
-    "@google-cloud/vertexai": "^1.12.0",
     "@google/genai": "^2.24.0",
     "@line/bot-sdk": "^11.2.0",
     "cheerio": "^1.2.0",
@@ -24,7 +25,8 @@
     "node-cron": "^4.6.0",
     "nodemailer": "^8.0.11",
     "passport": "^0.7.0",
-    "passport-google-oauth20": "^2.0.0"
+    "passport-google-oauth20": "^2.0.0",
+    "unpdf": "^1.8.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.18",

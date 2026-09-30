@@ -7,16 +7,21 @@ export interface IParsedField {
   confidence: number;
 }
 
-export type QualificationType =
-  | "contract_value"
-  | "company_age"
-  | "registered_capital"
-  | "personnel"
-  | "tech_stack"
-  | "certification"
-  | "other";
+export const QUALIFICATION_TYPES = [
+  "contract_value",
+  "company_age",
+  "registered_capital",
+  "net_worth",
+  "personnel",
+  "tech_stack",
+  "certification",
+  "other",
+] as const;
+export type QualificationType = (typeof QUALIFICATION_TYPES)[number];
 
 export interface IQualification {
+  /** Clause number as printed, e.g. "2.12.1". */
+  clauseNumber?: string | null;
   criterion: string;
   /** Number for thresholds (THB, years, head-count); text for stacks/certs. */
   minimumValue?: number | string;
@@ -24,7 +29,20 @@ export interface IQualification {
   type: QualificationType;
   /** False for "preferred" criteria that add score but do not disqualify. */
   isMandatory?: boolean;
-  /** 1-based page in the source PDF, so users can check the original. */
+  /** Standard clause found in every BMA TOR (legal capacity, not bankrupt…). */
+  isBoilerplate?: boolean;
+  /** Items sharing a label are alternatives: meeting any one is enough. */
+  alternativeGroup?: string | null;
+  /** contract_value only: past work must be for a government body. */
+  requiresGovernment?: boolean | null;
+  /** contract_value only: past work must be the same kind of work. */
+  sameTypeRequired?: boolean | null;
+  requiredCerts?: string[];
+  /** Canonical technology/standard names, for tech_stack matching. */
+  normalizedNames?: string[];
+  /** Which document the clause came from. */
+  source?: "bidding_doc" | "tor" | "both";
+  /** 1-based page in the TOR PDF, so users can check the original. */
   sourcePage?: number;
   confidence: number;
 }
@@ -34,10 +52,10 @@ export interface IMedianPrice {
   confidence: number;
 }
 
-export interface IDatedField {
-  value: Date | null;
-  /** The sentence the date was read from, for manual checking. */
-  rawText?: string;
+/** A price as the documents themselves state it (vs. egp2's figures). */
+export interface IDocumentPrice {
+  value: number | null;
+  sourcePage?: number | null;
   confidence: number;
 }
 
@@ -46,13 +64,59 @@ export interface INumberField {
   confidence: number;
 }
 
+export type SubmissionDateStatus = "confirmed" | "pending";
+
+/**
+ * e-bidding takes bids on one day inside a time window. Read in code from the
+ * e-GP announcement, not by the model. "pending" = the announcement still
+ * leaves the date blank (always so during public hearing) — show it as not
+ * yet confirmed, and re-read later.
+ */
+export interface ISubmissionDate {
+  /** ISO date, e.g. "2026-03-16". */
+  date: string | null;
+  /** "09:00", Bangkok time. */
+  startTime: string | null;
+  endTime: string | null;
+  /** End of the window — also copied to the top-level submissionDeadline. */
+  closesAt: Date | null;
+  status: SubmissionDateStatus;
+  rawText?: string | null;
+  /** File it was read from. */
+  source?: string | null;
+}
+
+export interface IContractDuration extends INumberField {
+  /** The sentence the figure came from. */
+  rawText?: string | null;
+  /** "bidding_doc" when read in code from clause 4.3, "ai" otherwise. */
+  source?: "bidding_doc" | "ai" | null;
+}
+
 export interface IKeyDates {
-  /** Bid submission deadline as read from the PDF. Promoted to the top-level
-   *  submissionDeadline only when confidence is high enough. */
-  submissionDeadline: IDatedField;
-  contractDurationDays: INumberField;
+  submissionDate: ISubmissionDate;
+  contractDurationDays: IContractDuration;
   warrantyMonths: INumberField;
 }
+
+export interface IEvaluationCriteria extends IParsedField {
+  method?: "lowest_price" | "price_performance" | "other" | null;
+  weights?: Array<{ criterion: string; weight: number }>;
+}
+
+/**
+ * The TOR and the e-GP bidding document disagree. Shown to users, never
+ * resolved: the bidding document itself says BMA rules on conflicts.
+ */
+export interface IDocumentConflict {
+  topic: string;
+  torText: string;
+  biddingDocText: string;
+  torPage?: number | null;
+}
+
+export const WORK_TYPES = ["development", "license", "hardware", "maintenance", "service", "other"] as const;
+export type WorkType = (typeof WORK_TYPES)[number];
 
 export interface ITechRequirement {
   name: string;
@@ -66,21 +130,36 @@ export interface IPaymentTerm {
   condition: string;
 }
 
+export const RISK_CATEGORIES = [
+  "brand_lock",
+  "narrow_spec",
+  "high_qualification",
+  "tight_timeline",
+  "unusual_penalty",
+  "unusual_payment",
+  "other",
+] as const;
+
 export interface IRiskClause {
   clauseText: string;
-  category: "brand_lock" | "tight_timeline" | "high_qualification" | "unusual_penalty" | "other";
+  category: (typeof RISK_CATEGORIES)[number];
   reason: string;
   sourcePage?: number;
 }
 
 export interface IParsedData {
+  workType?: WorkType;
   scopeOfWork: IParsedField;
   qualifications: IQualification[];
   /** Reference price. Seeded from egp2 with confidence 1 at ingest; the AI
    *  value only fills it when the source had none. */
   medianPrice: IMedianPrice;
-  evaluationCriteria: IParsedField;
+  /** Budget and reference price as the TOR states them — may differ from
+   *  egp2's, which sometimes labels them the other way round. */
+  documentPrices?: { budget: IDocumentPrice; medianPrice: IDocumentPrice };
+  evaluationCriteria: IEvaluationCriteria;
   keyDates?: IKeyDates;
+  documentConflicts?: IDocumentConflict[];
   techRequirements?: ITechRequirement[];
   paymentTerms?: IPaymentTerm[];
   /** LLM-suggested risky clauses — raw input for the rule-based redFlags,
@@ -110,14 +189,19 @@ export interface IExtractionMeta {
   durationMs?: number;
   /** Why the record was skipped (no TOR in the archive, etc.). */
   skipReason?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  /** What validate-extraction corrected or wants a person to check. */
+  issues?: Array<{ severity: "corrected" | "filled" | "review" | "info"; field: string; message: string }>;
 }
 
 /**
- * Which file the extraction read. The PDF itself is never stored — only
- * enough to tell whether e-GP has since published a different one.
+ * A file the extraction read. The PDF itself is never stored — only enough
+ * to tell whether e-GP has since published a different one.
  */
 export interface ISourceDocument {
   fileName: string;
+  /** "tor", "bidding_doc", "announcement". */
   kind: string;
   sha256: string;
   sizeBytes: number;
@@ -165,7 +249,8 @@ export interface ITORRecord extends Document {
   extractionStatus: ExtractionStatus;
   extractionError?: string;
   extraction: IExtractionMeta;
-  sourceDocument?: ISourceDocument;
+  /** Every file the last extraction read: the TOR, bidding document, announcement. */
+  sourceDocuments: ISourceDocument[];
   deduplicationHash: string;
   tags: string[];
   /** Source-system fields kept for traceability and for resolving documents
@@ -215,23 +300,19 @@ const ParsedFieldSchema = new Schema(
 
 const QualificationSchema = new Schema(
   {
+    clauseNumber: { type: String, default: null },
     criterion: { type: String, required: true },
     minimumValue: { type: Schema.Types.Mixed },
     unit: { type: String, enum: ["THB", "years", "persons", "text"] },
-    type: {
-      type: String,
-      enum: [
-        "contract_value",
-        "company_age",
-        "registered_capital",
-        "personnel",
-        "tech_stack",
-        "certification",
-        "other",
-      ],
-      default: "other",
-    },
+    type: { type: String, enum: [...QUALIFICATION_TYPES], default: "other" },
     isMandatory: { type: Boolean, default: true },
+    isBoilerplate: { type: Boolean, default: false },
+    alternativeGroup: { type: String, default: null },
+    requiresGovernment: { type: Boolean, default: null },
+    sameTypeRequired: { type: Boolean, default: null },
+    requiredCerts: { type: [String], default: [] },
+    normalizedNames: { type: [String], default: [] },
+    source: { type: String, enum: ["bidding_doc", "tor", "both"] },
     sourcePage: { type: Number, min: 1 },
     confidence: { type: Number, min: 0, max: 1, default: 0 },
   },
@@ -246,10 +327,10 @@ const MedianPriceSchema = new Schema(
   { _id: false },
 );
 
-const DatedFieldSchema = new Schema(
+const DocumentPriceSchema = new Schema(
   {
-    value: { type: Date, default: null },
-    rawText: { type: String },
+    value: { type: Number, default: null },
+    sourcePage: { type: Number, default: null },
     confidence: { type: Number, min: 0, max: 1, default: 0 },
   },
   { _id: false },
@@ -263,11 +344,57 @@ const NumberFieldSchema = new Schema(
   { _id: false },
 );
 
+const SubmissionDateSchema = new Schema(
+  {
+    date: { type: String, default: null },
+    startTime: { type: String, default: null },
+    endTime: { type: String, default: null },
+    closesAt: { type: Date, default: null },
+    status: { type: String, enum: ["confirmed", "pending"], default: "pending" },
+    rawText: { type: String, default: null },
+    source: { type: String, default: null },
+  },
+  { _id: false },
+);
+
+const ContractDurationSchema = new Schema(
+  {
+    value: { type: Number, default: null },
+    confidence: { type: Number, min: 0, max: 1, default: 0 },
+    rawText: { type: String, default: null },
+    source: { type: String, enum: ["bidding_doc", "ai", null], default: null },
+  },
+  { _id: false },
+);
+
 const KeyDatesSchema = new Schema(
   {
-    submissionDeadline: { type: DatedFieldSchema, default: () => ({}) },
-    contractDurationDays: { type: NumberFieldSchema, default: () => ({}) },
+    submissionDate: { type: SubmissionDateSchema, default: () => ({}) },
+    contractDurationDays: { type: ContractDurationSchema, default: () => ({}) },
     warrantyMonths: { type: NumberFieldSchema, default: () => ({}) },
+  },
+  { _id: false },
+);
+
+const EvaluationCriteriaSchema = new Schema(
+  {
+    content: { type: String },
+    confidence: { type: Number, min: 0, max: 1, default: 0 },
+    method: { type: String, enum: ["lowest_price", "price_performance", "other", null], default: null },
+    weights: {
+      type: [new Schema({ criterion: String, weight: Number }, { _id: false })],
+      default: [],
+    },
+  },
+  { _id: false },
+);
+
+const DocumentConflictSchema = new Schema(
+  {
+    topic: { type: String, required: true },
+    torText: { type: String, required: true },
+    biddingDocText: { type: String, required: true },
+    torPage: { type: Number, default: null },
   },
   { _id: false },
 );
@@ -297,11 +424,7 @@ const PaymentTermSchema = new Schema(
 const RiskClauseSchema = new Schema(
   {
     clauseText: { type: String, required: true },
-    category: {
-      type: String,
-      enum: ["brand_lock", "tight_timeline", "high_qualification", "unusual_penalty", "other"],
-      default: "other",
-    },
+    category: { type: String, enum: [...RISK_CATEGORIES], default: "other" },
     reason: { type: String, required: true },
     sourcePage: { type: Number, min: 1 },
   },
@@ -328,6 +451,21 @@ const ExtractionMetaSchema = new Schema(
     needsReview: { type: Boolean, default: false },
     durationMs: { type: Number },
     skipReason: { type: String },
+    inputTokens: { type: Number },
+    outputTokens: { type: Number },
+    issues: {
+      type: [
+        new Schema(
+          {
+            severity: { type: String, enum: ["corrected", "filled", "review", "info"], required: true },
+            field: { type: String, required: true },
+            message: { type: String, required: true },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
   },
   { _id: false },
 );
@@ -396,11 +534,20 @@ const TORRecordSchema = new Schema<ITORRecord>(
     pdfUrl: { type: String },
     pdfStoragePath: { type: String },
     parsedData: {
+      workType: { type: String, enum: [...WORK_TYPES] },
       scopeOfWork: { type: ParsedFieldSchema, default: () => ({}) },
       qualifications: { type: [QualificationSchema], default: [] },
       medianPrice: { type: MedianPriceSchema, default: () => ({}) },
-      evaluationCriteria: { type: ParsedFieldSchema, default: () => ({}) },
+      documentPrices: {
+        type: new Schema(
+          { budget: DocumentPriceSchema, medianPrice: DocumentPriceSchema },
+          { _id: false },
+        ),
+        default: undefined,
+      },
+      evaluationCriteria: { type: EvaluationCriteriaSchema, default: () => ({}) },
       keyDates: { type: KeyDatesSchema, default: undefined },
+      documentConflicts: { type: [DocumentConflictSchema], default: [] },
       techRequirements: { type: [TechRequirementSchema], default: [] },
       paymentTerms: { type: [PaymentTermSchema], default: [] },
       riskClauses: { type: [RiskClauseSchema], default: [] },
@@ -416,7 +563,7 @@ const TORRecordSchema = new Schema<ITORRecord>(
     },
     extractionError: { type: String },
     extraction: { type: ExtractionMetaSchema, default: () => ({}) },
-    sourceDocument: { type: SourceDocumentSchema, default: undefined },
+    sourceDocuments: { type: [SourceDocumentSchema], default: [] },
     deduplicationHash: { type: String, required: true, unique: true, index: true },
     tags: { type: [String], default: [], index: true },
     metadata: { type: SourceMetadataSchema, default: undefined },

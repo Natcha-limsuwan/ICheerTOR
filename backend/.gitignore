@@ -4,3 +4,6 @@ dist/
 *.log
 secrets/
 gcp-key*.json
+
+# eval-prompt.ts output (model replies per run)
+eval/runs/

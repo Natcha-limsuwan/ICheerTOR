@@ -23,11 +23,17 @@ export interface CriterionMatch {
   bridgeable: boolean | null;
   /** The AI extracted this criterion with low confidence — check the PDF. */
   lowConfidence: boolean;
+  /** Criteria sharing a label are alternatives: one pass satisfies the group. */
+  alternativeGroup: string | null;
   /** Why the status is what it is, in Thai, for display. */
   reason: string;
 }
 
 /**
+ * Mandatory criteria are judged per requirement: an alternative group (e.g.
+ * net worth OR registered capital OR deposit OR credit line) counts as one,
+ * passing when any member passes and failing only when every member fails.
+ *
  * - eligible:   every mandatory criterion passed
  * - ineligible: at least one mandatory criterion failed
  * - incomplete: nothing failed, but some mandatory criteria could not be checked
@@ -41,6 +47,11 @@ export interface MatchResult {
   matchScore: number | null;
   counts: { pass: number; fail: number; unknown: number };
   criteria: CriterionMatch[];
+  /**
+   * Standard clauses every BMA TOR has (legal capacity, not bankrupt, e-GP
+   * registration…). Self-declared by the bidder, so not checked here.
+   */
+  standardClausesSkipped: number;
 }
 
 /* ─── Matcher ───────────────────────────────────────────────────────── */
@@ -53,22 +64,26 @@ export function matchQualifications(
   profile: IVendorProfile,
   qualifications: IQualification[],
 ): MatchResult {
-  if (qualifications.length === 0) {
+  const checkable = qualifications.filter((q) => !q.isBoilerplate);
+  const standardClausesSkipped = qualifications.length - checkable.length;
+  if (checkable.length === 0) {
     return {
       overallStatus: "unknown",
       matchScore: null,
       counts: { pass: 0, fail: 0, unknown: 0 },
       criteria: [],
+      standardClausesSkipped,
     };
   }
 
-  const criteria: CriterionMatch[] = qualifications.map((q) => {
+  const criteria: CriterionMatch[] = checkable.map((q) => {
     const base = {
       criterion: q.criterion,
       type: q.type,
       // TOR qualifications are hard requirements unless the PDF says otherwise.
       isMandatory: q.isMandatory ?? true,
       lowConfidence: q.confidence < env.AI_CONFIDENCE_THRESHOLD,
+      alternativeGroup: q.alternativeGroup ?? null,
     };
     switch (q.type) {
       case "contract_value":
@@ -99,13 +114,27 @@ export function matchQualifications(
   const checked = counts.pass + counts.fail;
   const matchScore = checked > 0 ? counts.pass / checked : null;
 
-  const mandatory = criteria.filter((c) => c.isMandatory);
+  const requirements = requirementStatuses(criteria.filter((c) => c.isMandatory));
   let overallStatus: OverallStatus;
-  if (mandatory.some((c) => c.status === "fail")) overallStatus = "ineligible";
-  else if (mandatory.some((c) => c.status === "unknown")) overallStatus = "incomplete";
+  if (requirements.includes("fail")) overallStatus = "ineligible";
+  else if (requirements.includes("unknown")) overallStatus = "incomplete";
   else overallStatus = "eligible";
 
-  return { overallStatus, matchScore, counts, criteria };
+  return { overallStatus, matchScore, counts, criteria, standardClausesSkipped };
+}
+
+/** One status per requirement — an alternative group collapses to one. */
+function requirementStatuses(mandatory: CriterionMatch[]): CriterionStatus[] {
+  const groups = new Map<string, CriterionStatus[]>();
+  const single: CriterionStatus[] = [];
+  for (const c of mandatory) {
+    if (c.alternativeGroup == null) single.push(c.status);
+    else groups.set(c.alternativeGroup, [...(groups.get(c.alternativeGroup) ?? []), c.status]);
+  }
+  const grouped = [...groups.values()].map((statuses): CriterionStatus =>
+    statuses.includes("pass") ? "pass" : statuses.every((s) => s === "fail") ? "fail" : "unknown",
+  );
+  return [...single, ...grouped];
 }
 
 /* ─── Evaluators ────────────────────────────────────────────────────── */
