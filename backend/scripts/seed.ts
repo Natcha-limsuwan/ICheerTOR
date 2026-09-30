@@ -6,18 +6,18 @@
 
 import mongoose from "mongoose";
 import { config } from "dotenv";
-config({ path: ".env.local" });
+config({ path: ".env" });
 
-import User from "../lib/db/models/user";
-import VendorProfile from "../lib/db/models/vendor-profile";
-import TORRecord from "../lib/db/models/tor-record";
-import Bookmark from "../lib/db/models/bookmark";
-import Notification from "../lib/db/models/notification";
+import User from "../src/db/models/user";
+import VendorProfile from "../src/db/models/vendor-profile";
+import TORRecord from "../src/db/models/tor-record";
+import Bookmark from "../src/db/models/bookmark";
+import Notification from "../src/db/models/notification";
 import crypto from "crypto";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 if (!MONGODB_URI) {
-  console.error("MONGODB_URI not set in .env.local");
+  console.error("MONGODB_URI not set in .env");
   process.exit(1);
 }
 
@@ -75,6 +75,8 @@ async function seed() {
     userId: userDemo._id,
     companyName: "บริษัท เดโม เทคโนโลยี จำกัด",
     companyAge: 5,
+    foundedYear: 2021,
+    registeredCapital: 8000000,
     pastContracts: [
       { description: "ระบบจัดการข้อมูลสำหรับ สำนักงานเขตบางรัก", value: 3500000, year: 2025, agencyName: "สำนักงานเขตบางรัก" },
       { description: "ระบบบริหารงานบุคคล สำนักยุทธศาสตร์", value: 7200000, year: 2024, agencyName: "สำนักยุทธศาสตร์และประเมินผล" },
@@ -85,6 +87,10 @@ async function seed() {
       { name: "มาตรฐาน มรท. 8001", issuedBy: "สมอ." },
     ],
     teamSize: 18,
+    personnel: [
+      { role: "Project Manager", count: 2, certifications: ["PMP"] },
+      { role: "System Analyst", count: 3, certifications: [] },
+    ],
   });
   console.log("Created vendor profile");
 
@@ -104,7 +110,7 @@ async function seed() {
       parsedData: {
         scopeOfWork: { content: "พัฒนาระบบรวบรวมและวิเคราะห์ข้อมูลเมืองจากเซ็นเซอร์ IoT ทั่วกรุงเทพมหานคร เชื่อมต่อกับระบบ GIS และแดชบอร์ดแบบ Real-time สำหรับผู้บริหาร", confidence: 0.92 },
         qualifications: [
-          { criterion: "ทุนจดทะเบียนไม่น้อยกว่า 5,000,000 บาท", minimumValue: 5000000, type: "contract_value", confidence: 0.95 },
+          { criterion: "ทุนจดทะเบียนไม่น้อยกว่า 5,000,000 บาท", minimumValue: 5000000, unit: "THB", type: "registered_capital", confidence: 0.95 },
           { criterion: "อายุบริษัทไม่น้อยกว่า 3 ปี", minimumValue: 3, type: "company_age", confidence: 0.88 },
           { criterion: "มีประสบการณ์ด้าน IoT/Cloud Computing", minimumValue: "IoT, Cloud Computing", type: "tech_stack", confidence: 0.85 },
           { criterion: "ได้รับมาตรฐาน ISO 27001", minimumValue: "ISO 27001", type: "certification", confidence: 0.90 },
@@ -132,7 +138,7 @@ async function seed() {
       parsedData: {
         scopeOfWork: { content: "พัฒนาระบบ AI วิเคราะห์สภาพจราจรแบบ Real-time จากกล้อง CCTV ในพื้นที่กรุงเทพมหานคร พร้อมระบบแจ้งเตือนและรายงานสถิติ", confidence: 0.89 },
         qualifications: [
-          { criterion: "ทุนจดทะเบียนไม่น้อยกว่า 10,000,000 บาท", minimumValue: 10000000, type: "contract_value", confidence: 0.93 },
+          { criterion: "ทุนจดทะเบียนไม่น้อยกว่า 10,000,000 บาท", minimumValue: 10000000, unit: "THB", type: "registered_capital", confidence: 0.93 },
           { criterion: "อายุบริษัทไม่น้อยกว่า 5 ปี", minimumValue: 5, type: "company_age", confidence: 0.91 },
           { criterion: "มีประสบการณ์ด้าน AI/Machine Learning", minimumValue: "AI, Machine Learning", type: "tech_stack", confidence: 0.87 },
           { criterion: "ต้องเคยทำโครงการกับหน่วยงานราชการ มูลค่าไม่น้อยกว่า 8,000,000 บาท", minimumValue: 8000000, type: "contract_value", confidence: 0.85 },
@@ -166,7 +172,7 @@ async function seed() {
       parsedData: {
         scopeOfWork: { content: "ออกแบบและพัฒนาเว็บไซต์ให้บริการประชาชนแบบ One-Stop Service รองรับการยื่นคำร้อง ติดตามสถานะ และชำระค่าธรรมเนียมออนไลน์", confidence: 0.94 },
         qualifications: [
-          { criterion: "ทุนจดทะเบียนไม่น้อยกว่า 2,000,000 บาท", minimumValue: 2000000, type: "contract_value", confidence: 0.96 },
+          { criterion: "ทุนจดทะเบียนไม่น้อยกว่า 2,000,000 บาท", minimumValue: 2000000, unit: "THB", type: "registered_capital", confidence: 0.96 },
           { criterion: "อายุบริษัทไม่น้อยกว่า 2 ปี", minimumValue: 2, type: "company_age", confidence: 0.93 },
           { criterion: "มีประสบการณ์ด้าน Web Development", minimumValue: "Web Development", type: "tech_stack", confidence: 0.91 },
         ],
@@ -191,7 +197,7 @@ async function seed() {
       parsedData: {
         scopeOfWork: { content: "พัฒนาระบบฐานข้อมูลทะเบียนราษฎร์แบบดิจิทัล รองรับการเชื่อมต่อกับระบบ Linkage Center ของรัฐบาล", confidence: 0.45 },
         qualifications: [
-          { criterion: "ทุนจดทะเบียนไม่น้อยกว่า 15,000,000 บาท", minimumValue: 15000000, type: "contract_value", confidence: 0.88 },
+          { criterion: "ทุนจดทะเบียนไม่น้อยกว่า 15,000,000 บาท", minimumValue: 15000000, unit: "THB", type: "registered_capital", confidence: 0.88 },
           { criterion: "อายุบริษัทไม่น้อยกว่า 7 ปี", minimumValue: 7, type: "company_age", confidence: 0.55 },
         ],
         medianPrice: { value: 18000000, confidence: 0.93 },
@@ -216,7 +222,7 @@ async function seed() {
       parsedData: {
         scopeOfWork: { content: "พัฒนาแอปพลิเคชันบนเว็บสำหรับแจ้งเหตุฉุกเฉินและติดตามสถานะการช่วยเหลือ", confidence: 0.91 },
         qualifications: [
-          { criterion: "ทุนจดทะเบียนไม่น้อยกว่า 3,000,000 บาท", minimumValue: 3000000, type: "contract_value", confidence: 0.94 },
+          { criterion: "ทุนจดทะเบียนไม่น้อยกว่า 3,000,000 บาท", minimumValue: 3000000, unit: "THB", type: "registered_capital", confidence: 0.94 },
           { criterion: "อายุบริษัทไม่น้อยกว่า 3 ปี", minimumValue: 3, type: "company_age", confidence: 0.92 },
         ],
         medianPrice: { value: 5500000, confidence: 0.96 },

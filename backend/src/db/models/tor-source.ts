@@ -2,7 +2,7 @@ import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
 export interface ITORSource extends Document {
   torRecordId: Types.ObjectId;
-  portalName: "bma" | "egp";
+  portalName: "bma" | "egp" | "egp2";
   sourceUrl: string;
   scrapedAt: Date;
   rawHtml?: string;
@@ -21,7 +21,7 @@ const TORSourceSchema = new Schema<ITORSource>(
     portalName: {
       type: String,
       required: true,
-      enum: ["bma", "egp"],
+      enum: ["bma", "egp", "egp2"],
     },
     sourceUrl: { type: String, required: true },
     scrapedAt: { type: Date, required: true },
