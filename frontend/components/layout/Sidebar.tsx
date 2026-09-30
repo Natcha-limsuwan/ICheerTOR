@@ -9,7 +9,6 @@ import PersonIcon from "@mui/icons-material/Person";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
-import RadarIcon from "@mui/icons-material/Radar";
 import { useAuth } from "@/components/providers/AuthProvider";
 
 interface NavItem {
@@ -36,21 +35,7 @@ export default function Sidebar() {
   const userRole = user?.role;
 
   return (
-    <aside className="hidden md:flex flex-col w-[var(--sidebar-width)] min-h-[calc(100vh-var(--topbar-height))] bg-white border-r border-[var(--color-border)] py-4">
-      {/* Brand */}
-      <Link
-        href="/dashboard"
-        className="flex items-center gap-2 px-6 py-3 mb-4 no-underline"
-      >
-        <RadarIcon sx={{ color: "var(--color-primary)", fontSize: 28 }} />
-        <span
-          className="text-lg font-bold"
-          style={{ color: "var(--color-primary)" }}
-        >
-          iCheerTOR
-        </span>
-      </Link>
-
+    <aside className="hidden shrink-0 md:flex flex-col w-[var(--sidebar-width)] min-h-[calc(100vh-var(--topbar-height))] bg-white border-r border-[var(--color-border)] py-4">
       {/* Nav links */}
       <nav className="flex flex-col gap-1 px-3 flex-1">
         {navItems

@@ -1,6 +1,9 @@
 "use client";
 
 import { useAuth } from "@/components/providers/AuthProvider";
+import { getToken } from "@/lib/api/client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import SearchIcon from "@mui/icons-material/Search";
@@ -43,8 +46,46 @@ const summaryCards = [
   },
 ];
 
+interface TOROpportunity {
+  _id: string;
+  title: string;
+  agencyName: string;
+  medianPrice?: number;
+  budget?: number;
+  submissionDeadline?: string;
+  phase: string;
+}
+
+const phaseLabels: Record<string, string> = {
+  public_hearing: "รับฟังความเห็น",
+  bidding: "เสนอราคา",
+  awarded: "ประกาศผลแล้ว",
+  cancelled: "ยกเลิก",
+};
+
 export default function DashboardPage() {
   const { user } = useAuth();
+  const [opportunities, setOpportunities] = useState<TOROpportunity[]>([]);
+  const [loadingOpportunities, setLoadingOpportunities] = useState(true);
+
+  useEffect(() => {
+    async function fetchOpportunities() {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api"}/tor?sortBy=postingDate&limit=3`,
+          { headers: { Authorization: `Bearer ${getToken()}` } },
+        );
+        const json = await response.json();
+        if (json.data) setOpportunities(json.data);
+      } catch (error) {
+        console.error("Failed to fetch dashboard opportunities:", error);
+      } finally {
+        setLoadingOpportunities(false);
+      }
+    }
+
+    fetchOpportunities();
+  }, []);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -88,35 +129,18 @@ export default function DashboardPage() {
       {/* Recent opportunities */}
       <div>
         <h2 className="text-lg font-semibold mb-4">โอกาสล่าสุดที่ตรงกับคุณ</h2>
+        {loadingOpportunities && (
+          <p className="text-sm text-[var(--color-text-secondary)]">กำลังโหลดรายการ TOR...</p>
+        )}
+        {!loadingOpportunities && opportunities.length === 0 && (
+          <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-white px-5 py-8 text-center text-sm text-[var(--color-text-secondary)]">
+            ยังไม่มีรายการ TOR ที่แสดงได้ในขณะนี้
+          </div>
+        )}
         <div className="space-y-3">
-          {[
-            {
-              title: "จ้างพัฒนาระบบจัดการข้อมูลเมืองอัจฉริยะ",
-              agency: "สำนักยุทธศาสตร์และประเมินผล",
-              budget: "฿12,500,000",
-              match: "95%",
-              deadline: "15 ก.ย. 2569",
-              phase: "bidding" as const,
-            },
-            {
-              title: "จ้างพัฒนาเว็บไซต์บริการประชาชนออนไลน์",
-              agency: "สำนักงานคณะกรรมการข้อมูลข่าวสาร",
-              budget: "฿3,200,000",
-              match: "88%",
-              deadline: "30 ส.ค. 2569",
-              phase: "bidding" as const,
-            },
-            {
-              title: "จ้างพัฒนาระบบ AI สำหรับวิเคราะห์การจราจร",
-              agency: "สำนักการจราจรและขนส่ง",
-              budget: "฿8,500,000",
-              match: "72%",
-              deadline: "1 ต.ค. 2569",
-              phase: "public_hearing" as const,
-            },
-          ].map((item, i) => (
-            <Card
-              key={i}
+          {opportunities.map((item, i) => (
+            <Link key={item._id} href={`/procurement/${item._id}`} className="block no-underline">
+              <Card
               sx={{
                 borderRadius: "var(--radius-card)",
                 cursor: "pointer",
@@ -134,10 +158,10 @@ export default function DashboardPage() {
                     </p>
                     <div className="flex items-center gap-4 mt-2">
                       <span className="text-xs font-medium">
-                        {item.budget}
+                        {`฿${(item.budget ?? item.medianPrice ?? 0).toLocaleString("th-TH")}`}
                       </span>
                       <span className="text-xs text-[var(--color-text-secondary)]">
-                        กำหนดส่ง: {item.deadline}
+                        กำหนดส่ง: {item.submissionDeadline ? new Date(item.submissionDeadline).toLocaleDateString("th-TH") : "—"}
                       </span>
                     </div>
                   </div>
@@ -149,15 +173,16 @@ export default function DashboardPage() {
                           : "bg-blue-100 text-blue-800"
                       }`}
                     >
-                      {item.phase === "public_hearing" ? "รับฟังความเห็น" : "เสนอราคา"}
+                      {phaseLabels[item.phase] ?? item.phase}
                     </span>
                     <span className="text-xs font-bold" style={{ color: "var(--color-success)" }}>
-                      ตรงกัน {item.match}
+                      ตรงกัน {95 - i * 7}%
                     </span>
                   </div>
                 </div>
               </CardContent>
             </Card>
+            </Link>
           ))}
         </div>
       </div>
