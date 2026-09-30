@@ -63,11 +63,21 @@ export function resolvePhase(
 
   if (IN_PROGRESS.some((s) => status.includes(s))) {
     // No contract yet. The announcement type separates a draft still open for
-    // comment from an invitation open for bids.
+    // comment (time to prepare) from an invitation (bids being taken). An
+    // invitation stays "ระหว่างดำเนินการ" after submission closes too, while
+    // bids are evaluated — egp2 gives no bid deadline, so the reason says so.
     if (announceTypeId === ANNOUNCE_TYPE.DRAFT_BIDDING) {
-      return { phase: "public_hearing", isOpen: true, reason: "อยู่ระหว่างรับฟังความเห็นร่าง TOR" };
+      return {
+        phase: "public_hearing",
+        isOpen: true,
+        reason: "ช่วงเตรียมตัว — ร่าง TOR เปิดรับฟังความเห็น ยังไม่เปิดให้ยื่นข้อเสนอ",
+      };
     }
-    return { phase: "bidding", isOpen: true, reason: "ยังไม่มีสัญญา — อยู่ระหว่างจัดซื้อจัดจ้าง" };
+    return {
+      phase: "bidding",
+      isOpen: true,
+      reason: "ช่วงเสนอราคา — ประกาศเชิญชวนแล้ว ยังไม่มีสัญญา (อาจปิดรับข้อเสนอแล้วและอยู่ระหว่างพิจารณา)",
+    };
   }
 
   // An unrecognised status is closed by default, and says so, so that a new
