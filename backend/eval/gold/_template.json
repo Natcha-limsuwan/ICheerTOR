@@ -1,0 +1,36 @@
+{
+  "projectNumber": "",
+  "fileName": "TOR.pdf",
+  "workType": "",
+  "contractDurationDays": null,
+  "qualifications": [
+    {
+      "criterion": "",
+      "type": "",
+      "minimumNumber": null,
+      "unit": null,
+      "normalizedNames": [],
+      "isMandatory": true,
+      "isBoilerplate": false,
+      "alternativeGroup": null,
+      "requiresGovernment": null,
+      "sameTypeRequired": null,
+      "requiredCerts": [],
+      "sourcePage": null
+    }
+  ],
+  "evaluationMethod": null,
+  "evaluationWeights": [],
+  "medianPrice": null,
+  "priceKind": null,
+  "submissionDate": null,
+  "warrantyMonths": null,
+  "riskClauses": [],
+  "documentConflicts": [
+    {
+      "topic": "",
+      "note": "TOR: ... | doc_: ..."
+    }
+  ],
+  "notes": ""
+}
