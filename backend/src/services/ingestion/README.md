@@ -27,7 +27,7 @@ e-GP มี WAF ที่ตอบ **HTTP 200 พร้อม HTML ว่า "Re
 | ขั้น | endpoint |
 |---|---|
 | metadata | `opend.data.go.th/govspending/service/egp-contract?api-key=…` |
-| หา zipId | `process5…/egp-approval-service/apv-common/infoProcureDocAnnounZipTemp?projectId=…` |
+| หา zipId | `process5…/egp-approval-service/apv-common/infoProcureDocAnnounZip?projectId=…` (ประกาศเชิญชวนจริง — มีวันยื่น) ถ้าไม่มีใช้ `…ZipTemp` (ร่างช่วงรับฟังความเห็น — วันยื่นว่าง) |
 | โหลด ZIP | `process5…/egp-upload-service/v1/downloadFileTest?fileId=<zipId>` |
 
 ทดสอบแล้วได้ผล 4/4 โครงการ กทม.

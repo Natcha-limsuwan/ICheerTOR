@@ -2,9 +2,19 @@
  * Client for the e-GP document pipeline on process5.gprocurement.go.th.
  *
  * The chain, verified end to end against real BMA projects:
- *   project_id  →  infoProcureDocAnnounZipTemp  →  zipId
- *               →  downloadFileTest             →  ZIP archive
- *               →  (unzip elsewhere)            →  TOR PDF
+ *   project_id  →  infoProcureDocAnnounZip(Temp)  →  zipId
+ *               →  downloadFileTest               →  ZIP archive
+ *               →  (unzip elsewhere)              →  TOR PDF
+ *
+ * Two archives per project:
+ *   infoProcureDocAnnounZip      the invitation as announced ("final") —
+ *                                the forms carry the bid date and time
+ *   infoProcureDocAnnounZipTemp  the public-hearing draft ("draft") — the
+ *                                same forms with the dates left blank
+ * A project without a hearing returns the same archive from both; one still
+ * in its hearing has only the draft. fetchProjectArchive takes the final one
+ * when it exists — reading only the draft is why every bid date came back
+ * blank before.
  *
  * A Referer header is mandatory on every call. Without it the WAF returns a
  * 200 whose body is "Request Rejected" — not an auth failure, so it is easy
@@ -57,19 +67,28 @@ function assertNotBlocked(body: string): void {
   }
 }
 
+export type ArchiveStage = "final" | "draft";
+
+const ZIP_INFO_ENDPOINT: Record<ArchiveStage, string> = {
+  final: "infoProcureDocAnnounZip",
+  draft: "infoProcureDocAnnounZipTemp",
+};
+
 export interface ZipInfo {
   projectId: string;
   zipId: string;
   /** e.g. "67119538991_28112567.zip" — carries the project id and post date. */
   fileName: string | null;
+  stage: ArchiveStage;
 }
 
 /**
  * Resolve a project id to the id of its document archive.
  * Returns null when the project has no published archive.
  */
-export async function getZipInfo(projectId: string): Promise<ZipInfo | null> {
-  const url = `${APPROVAL_SERVICE}/infoProcureDocAnnounZipTemp?projectId=${encodeURIComponent(projectId)}`;
+export async function getZipInfo(projectId: string, stage: ArchiveStage = "final"): Promise<ZipInfo | null> {
+  const endpoint = ZIP_INFO_ENDPOINT[stage];
+  const url = `${APPROVAL_SERVICE}/${endpoint}?projectId=${encodeURIComponent(projectId)}`;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), INFO_TIMEOUT_MS);
@@ -83,7 +102,7 @@ export async function getZipInfo(projectId: string): Promise<ZipInfo | null> {
     assertNotBlocked(body);
 
     if (!res.ok) {
-      throw new EgpError(`HTTP ${res.status} จาก infoProcureDocAnnounZipTemp`, res.status);
+      throw new EgpError(`HTTP ${res.status} จาก ${endpoint}`, res.status);
     }
 
     const json = JSON.parse(body) as {
@@ -98,6 +117,7 @@ export async function getZipInfo(projectId: string): Promise<ZipInfo | null> {
       projectId: json.data?.projectId ?? projectId,
       zipId,
       fileName: json.data?.buildName1 ?? null,
+      stage,
     };
   } finally {
     clearTimeout(timer);
@@ -138,11 +158,16 @@ export async function downloadZip(zipId: string): Promise<Buffer> {
   }
 }
 
-/** Convenience: project id straight to archive bytes. */
+/** The newest archive: the announced invitation, else the hearing draft. */
+export async function getLatestZipInfo(projectId: string): Promise<ZipInfo | null> {
+  return (await getZipInfo(projectId, "final")) ?? (await getZipInfo(projectId, "draft"));
+}
+
+/** Convenience: project id straight to the newest archive's bytes. */
 export async function fetchProjectArchive(
   projectId: string,
 ): Promise<{ info: ZipInfo; zip: Buffer } | null> {
-  const info = await getZipInfo(projectId);
+  const info = await getLatestZipInfo(projectId);
   if (!info) return null;
   return { info, zip: await downloadZip(info.zipId) };
 }
