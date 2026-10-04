@@ -44,7 +44,7 @@ async function seed() {
   console.log("Cleared existing data");
 
   // ─── Users ──────────────────────────────────────────────────────
-  const [userDemo, adminDemo] = await User.create([
+  const [userDemo] = await User.create([
     {
       googleId: "google-demo-user-001",
       email: "demo@icheertor.dev",

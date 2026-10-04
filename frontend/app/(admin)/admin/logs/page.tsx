@@ -1,8 +1,7 @@
 "use client";
 
-
-import { api, getToken } from "@/lib/api/client";
-import { useState, useEffect, useCallback } from "react";
+import { getToken } from "@/lib/api/client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -62,30 +61,36 @@ export default function AdminLogsPage() {
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [filterAction, setFilterAction] = useState("");
 
-  const fetchLogs = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.set("page", String(page + 1));
-      params.set("limit", String(rowsPerPage));
-      if (filterAction) params.set("action", filterAction);
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api"}/admin/logs?${params.toString()}`, { headers: { Authorization: `Bearer ${getToken()}` } });
-      if (res.ok) {
-        const json = await res.json();
-        setLogs(json.data ?? []);
-        setTotal(json.meta?.total ?? 0);
-      }
-    } catch {
-      // handle
-    } finally {
-      setLoading(false);
-    }
-  }, [page, rowsPerPage, filterAction]);
-
   useEffect(() => {
+    let cancelled = false;
+    async function fetchLogs() {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        params.set("page", String(page + 1));
+        params.set("limit", String(rowsPerPage));
+        if (filterAction) params.set("action", filterAction);
+
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api"}/admin/logs?${params.toString()}`,
+          { headers: { Authorization: `Bearer ${getToken()}` } }
+        );
+        if (res.ok && !cancelled) {
+          const json = await res.json();
+          setLogs(json.data ?? []);
+          setTotal(json.meta?.total ?? 0);
+        }
+      } catch {
+        // handle
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
     fetchLogs();
-  }, [fetchLogs]);
+    return () => {
+      cancelled = true;
+    };
+  }, [page, rowsPerPage, filterAction]);
 
   return (
     <div className="space-y-6 animate-fade-in">
