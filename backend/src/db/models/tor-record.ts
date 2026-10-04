@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
+import type { DataChecks } from "../../services/ingestion/data-checks";
 
 /* ─── Sub-document interfaces ───────────────────────────────────────── */
 
@@ -284,6 +285,9 @@ export interface ITORRecord extends Document {
   extraction: IExtractionMeta;
   /** Every file the last extraction read: the TOR, bidding document, announcement. */
   sourceDocuments: ISourceDocument[];
+  /** Where egp2, the announcement and the TOR disagree (data-checks.ts) —
+   *  stored by the daily jobs; needsCheck is the admin review queue. */
+  dataChecks?: DataChecks;
   deduplicationHash: string;
   tags: string[];
   /** Source-system fields kept for traceability and for resolving documents
@@ -549,6 +553,31 @@ const RedFlagSchema = new Schema(
   { _id: false },
 );
 
+const DataChecksSchema = new Schema(
+  {
+    conflicts: {
+      type: [
+        new Schema(
+          {
+            code: { type: String, required: true },
+            severity: { type: String, enum: ["info", "check"], required: true },
+            message: { type: String, required: true },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
+    needsCheck: { type: Boolean, default: false },
+    checkedAt: { type: Date },
+    resolvedCodes: { type: [String], default: [] },
+    resolvedBy: { type: String, default: null },
+    resolvedAt: { type: Date, default: null },
+    resolvedNote: { type: String, default: null },
+  },
+  { _id: false },
+);
+
 const SourceMetadataSchema = new Schema(
   {
     projectId: { type: String, index: true },
@@ -621,6 +650,7 @@ const TORRecordSchema = new Schema<ITORRecord>(
     extractionError: { type: String },
     extraction: { type: ExtractionMetaSchema, default: () => ({}) },
     sourceDocuments: { type: [SourceDocumentSchema], default: [] },
+    dataChecks: { type: DataChecksSchema, default: undefined },
     deduplicationHash: { type: String, required: true, unique: true, index: true },
     tags: { type: [String], default: [], index: true },
     metadata: { type: SourceMetadataSchema, default: undefined },
@@ -644,6 +674,9 @@ TORRecordSchema.index(
 
 // Compound index for listing queries
 TORRecordSchema.index({ agencyName: 1, postingDate: -1 });
+
+// Admin review queue.
+TORRecordSchema.index({ "dataChecks.needsCheck": 1, updatedAt: -1 });
 
 // Extraction work queue: the next records to send to Vertex AI — open ones
 // with the nearest hearing deadline first.

@@ -16,6 +16,7 @@ import { validateExtraction } from "../src/services/ai/validate-extraction";
 import { hasDroppedDigits, isPlausibleMedianPrice, resolvePrices } from "../src/services/ai/resolve-prices";
 import { analyzeRedFlags, dailyPenaltyPercent } from "../src/services/ai/red-flag-analyzer";
 import { matchQualifications } from "../src/services/matching/qualification-matcher";
+import { bidWindow, computeDataChecks } from "../src/services/ingestion/data-checks";
 import { parseThaiAmountWords } from "../src/services/ai/thai-number";
 import type { TorExtractionV4 } from "../src/services/ai/prompts/v4";
 import type { IParsedData, IQualification } from "../src/db/models/tor-record";
@@ -319,10 +320,42 @@ function testMatcher() {
   check("ทุนไม่ผ่าน แต่ข้ออื่นในกลุ่มตรวจไม่ได้ → incomplete", poor.overallStatus === "incomplete", poor.overallStatus);
 }
 
+/* 5 ─────────────────────────────────────────────────────────────────── */
+
+function testDataChecks() {
+  console.log("\n[5] data-checks");
+  const now = new Date("2026-10-04T03:00:00Z"); // 10:00 Bangkok
+  check("ยังไม่ถึงวันยื่น → upcoming", bidWindow("2026-10-10T05:00:00Z", now).state === "upcoming");
+  check("ยื่นวันนี้ก่อนปิด → today", bidWindow("2026-10-04T05:00:00Z", now).state === "today");
+  const closed = bidWindow("2026-06-22T05:00:00Z", now);
+  check("หมดเขต 22 มิ.ย. → closed 104 วัน", closed.state === "closed" && closed.closedDaysAgo === 104, show(closed));
+  check("ไม่มีวัน → unknown", bidWindow(null, now).state === "unknown");
+
+  const base = { parsedData: { keyDates: {} }, extraction: { issues: [] } } as never;
+  const old = computeDataChecks({ ...(base as object), phase: "bidding", submissionDeadline: new Date("2026-06-22T05:00:00Z") } as never, now);
+  check(
+    "หมดเขตนานแล้ว แต่ egp2 ยังเปิด → แจ้งผู้ใช้ ไม่เข้าคิว admin",
+    !old.needsCheck && old.conflicts[0].code === "bids_closed_still_open" && old.conflicts[0].severity === "info",
+  );
+  const awarded = computeDataChecks({ ...(base as object), phase: "awarded", submissionDeadline: new Date("2026-10-10T05:00:00Z") } as never, now);
+  check("ได้ผู้ชนะแล้ว แต่ยังไม่ถึงวันยื่น → เข้าคิว admin", awarded.needsCheck && awarded.conflicts[0].code === "awarded_before_bid_day");
+  const resolved = computeDataChecks(
+    {
+      ...(base as object),
+      phase: "awarded",
+      submissionDeadline: new Date("2026-10-10T05:00:00Z"),
+      dataChecks: { resolvedCodes: ["awarded_before_bid_day"] },
+    } as never,
+    now,
+  );
+  check("admin ตรวจแล้ว → ไม่ขึ้นคิวอีก แต่ยังแสดงข้อขัดกัน", !resolved.needsCheck && resolved.conflicts.length === 1);
+}
+
 testArchiveFacts();
 testValidator();
 testResolvePrices();
 testRedFlags();
 testMatcher();
+testDataChecks();
 console.log(`\n${passed} ผ่าน, ${failed} ไม่ผ่าน`);
 process.exit(failed ? 1 : 0);

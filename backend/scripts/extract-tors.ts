@@ -5,15 +5,21 @@
  * TOR takes 20–95 s, and express mode has a small per-minute quota). The API
  * reads what this script stored.
  *
- * Queue: open projects (public hearing first, soonest hearing close first)
- * whose extractionStatus is "pending", plus "processing" ones whose lock
- * expired (a crashed run). Each record is claimed with a lock before the
- * call, so two runs never pay for the same TOR.
+ * Queue: open projects whose extractionStatus is "pending", plus
+ * "processing" ones whose lock expired (a crashed run). Public hearing first,
+ * then projects still taking bids (soonest bid day first), and projects whose
+ * bids already closed last — still extracted, for history, just not first.
+ * Each record is claimed with a lock before the call, so two runs never pay
+ * for the same TOR.
  *
- * --refresh-dates does not call the model. For extracted records whose
- * submission date is still "pending" it re-reads the e-GP announcement: the
- * date is filled in once the agency fixes it. If the TOR file itself changed
- * (a new version was published), the record goes back to the queue.
+ * --refresh-dates does not call the model. It reads the e-GP announcement of
+ * every open project whose bid date is not confirmed yet — extracted or not —
+ * so the queue order above knows which bids have closed before any token is
+ * spent. If an extracted TOR's file changed, the record goes back to the queue.
+ *
+ * Every run ends by recomputing dataChecks (data-checks.ts) for all records:
+ * where egp2 and the announcement disagree, and what an admin should check.
+ * It reads the database only; --check runs just that step.
  *
  * Usage (in container):
  *   docker compose --profile tools run --rm tools npm run extract -- --dry-run
@@ -22,6 +28,9 @@
  *   ... npm run extract -- --retry-failed          # also failed ones under the attempt cap
  *   ... npm run extract -- --only=69049037973 --force   # take over a record a stopped run left locked
  *   ... npm run extract -- --refresh-dates         # no model calls
+ *   ... npm run extract -- --check                 # recompute dataChecks only
+ *
+ * Daily order: npm run ingest, then extract --refresh-dates, then extract --limit=N
  */
 
 import { config } from "dotenv";
@@ -35,6 +44,7 @@ import { extractTor, prepareDocuments } from "../src/services/ai/tor-parser";
 import { activePrompt } from "../src/services/ai/prompts";
 import { getModelId } from "../src/services/ai/vertex-client";
 import { fetchProjectArchive } from "../src/services/ingestion/egp-client";
+import { bidWindow, computeDataChecks } from "../src/services/ingestion/data-checks";
 
 /* ─── Args ──────────────────────────────────────────────────────────── */
 
@@ -47,6 +57,9 @@ const DELAY_S = Number(arg("delay") ?? 20);
 const DRY_RUN = argv.includes("--dry-run");
 const RETRY_FAILED = argv.includes("--retry-failed");
 const REFRESH_DATES = argv.includes("--refresh-dates");
+const CHECK_ONLY = argv.includes("--check");
+/** The dates pass costs no tokens, so it has no reason to stop at 10. */
+const REFRESH_LIMIT = Number(arg("limit") ?? 500);
 /** With --only: ignore the lock of a run that was stopped (Ctrl+C) mid-call. */
 const FORCE = argv.includes("--force") && Boolean(ONLY);
 
@@ -63,11 +76,23 @@ const fmtS = (ms: number) => `${(ms / 1000).toFixed(1)} s`;
 
 type QueueRecord = Pick<
   ITORRecord,
-  "title" | "agencyName" | "phase" | "budget" | "medianPrice" | "publicHearingEnd" | "postingDate" | "extraction" | "extractionStatus" | "metadata" | "sourceDocuments" | "parsedData"
+  | "title"
+  | "agencyName"
+  | "phase"
+  | "budget"
+  | "medianPrice"
+  | "publicHearingEnd"
+  | "postingDate"
+  | "submissionDeadline"
+  | "extraction"
+  | "extractionStatus"
+  | "metadata"
+  | "sourceDocuments"
+  | "parsedData"
 > & { _id: Types.ObjectId };
 
 const QUEUE_FIELDS =
-  "title agencyName phase budget medianPrice publicHearingEnd postingDate extraction extractionStatus metadata sourceDocuments";
+  "title agencyName phase budget medianPrice publicHearingEnd postingDate submissionDeadline extraction extractionStatus metadata sourceDocuments";
 
 async function loadQueue(): Promise<QueueRecord[]> {
   const now = new Date();
@@ -88,15 +113,20 @@ async function loadQueue(): Promise<QueueRecord[]> {
     .select(QUEUE_FIELDS)
     .lean()) as unknown as QueueRecord[];
 
-  // Public hearing first — the window for comments is short — then the
-  // soonest hearing close, then the newest.
-  const rank = (r: QueueRecord) => (r.phase === "public_hearing" ? 0 : 1);
-  const LAST = 8.64e15; // max Date — records without a hearing close go last
+  // 1. public hearing — the window for comments is short
+  // 2. bids not closed (or bid day not announced) — soonest bid day first
+  // 3. bids closed — most recently closed first; still worth having
+  const closed = (r: QueueRecord) => bidWindow(r.submissionDeadline, now).state === "closed";
+  const rank = (r: QueueRecord) => (r.phase === "public_hearing" ? 0 : closed(r) ? 2 : 1);
+  const LAST = 8.64e15; // max Date — records without a date go after dated ones
   const ts = (d: Date | undefined, missing: number) => (d ? new Date(d).getTime() : missing);
   return records
     .sort(
       (a, b) =>
         rank(a) - rank(b) ||
+        (rank(a) === 2
+          ? ts(b.submissionDeadline, 0) - ts(a.submissionDeadline, 0)
+          : ts(a.submissionDeadline, LAST) - ts(b.submissionDeadline, LAST)) ||
         ts(a.publicHearingEnd, LAST) - ts(b.publicHearingEnd, LAST) ||
         ts(b.postingDate, 0) - ts(a.postingDate, 0),
     )
@@ -246,15 +276,17 @@ async function refreshDates(): Promise<void> {
   const records = (await TORRecord.find({
     "metadata.projectId": ONLY ?? { $exists: true },
     ...(ONLY ? {} : { phase: { $in: OPEN_PHASES } }),
-    extractionStatus: "completed",
+    // Not yet extracted too: the queue needs their bid dates before any
+    // model call. A record being extracted right now is left alone.
+    extractionStatus: { $in: ["completed", "pending", "failed"] },
     // --only re-reads one project even when its date is already confirmed.
     ...(ONLY ? {} : { "parsedData.keyDates.submissionDate.status": { $ne: "confirmed" } }),
   })
     .select(`${QUEUE_FIELDS} parsedData.keyDates`)
-    .limit(LIMIT)
+    .limit(REFRESH_LIMIT)
     .lean()) as unknown as QueueRecord[];
 
-  console.log(`[dates] วันยื่นที่ยังไม่ประกาศ ${records.length} โครงการ${DRY_RUN ? " | DRY RUN" : ""}\n`);
+  console.log(`[dates] วันยื่นที่ยังไม่ยืนยัน ${records.length} โครงการ${DRY_RUN ? " | DRY RUN" : ""}\n`);
   let confirmed = 0;
   let requeued = 0;
   for (const r of records) {
@@ -324,6 +356,25 @@ async function refreshDates(): Promise<void> {
   console.log(`\n[dates] ได้วันยื่นเพิ่ม ${confirmed} | TOR เปลี่ยนต้องอ่านใหม่ ${requeued}`);
 }
 
+/* ─── Data checks (database only) ───────────────────────────────────── */
+
+/** Recompute dataChecks for every record; keeps what an admin resolved. */
+async function recheckAll(): Promise<void> {
+  const now = new Date();
+  const records = await TORRecord.find({})
+    .select("phase submissionDeadline parsedData.keyDates extraction.issues dataChecks")
+    .lean();
+  const checks = records.map((r) => ({ _id: r._id, checks: computeDataChecks(r as never, now) }));
+  if (checks.length) {
+    await TORRecord.bulkWrite(
+      checks.map(({ _id, checks }) => ({ updateOne: { filter: { _id }, update: { $set: { dataChecks: checks } } } })),
+    );
+  }
+  const withConflicts = checks.filter((c) => c.checks.conflicts.length).length;
+  const flagged = checks.filter((c) => c.checks.needsCheck).length;
+  console.log(`[check] ข้อมูลขัดกัน ${withConflicts}/${records.length} โครงการ | รอ admin ตรวจ ${flagged}`);
+}
+
 /* ─── Main ──────────────────────────────────────────────────────────── */
 
 async function main() {
@@ -334,8 +385,14 @@ async function main() {
   }
   await mongoose.connect(uri);
 
+  if (CHECK_ONLY) {
+    await recheckAll();
+    await mongoose.disconnect();
+    return;
+  }
   if (REFRESH_DATES) {
     await refreshDates();
+    if (!DRY_RUN) await recheckAll();
     await mongoose.disconnect();
     return;
   }
@@ -371,6 +428,7 @@ async function main() {
     console.log(
       `\n[extract] สำเร็จ ${counts.completed} | ข้าม ${counts.skipped} | ล้มเหลว ${counts.failed + counts.stop}`,
     );
+    await recheckAll();
   }
   await mongoose.disconnect();
 }

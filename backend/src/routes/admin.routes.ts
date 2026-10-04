@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { connectDB } from "../db/connection.js";
 import User from "../db/models/user.js";
 import AdminActionLog from "../db/models/admin-action-log.js";
+import TORRecord from "../db/models/tor-record.js";
 import { apiSuccess, Errors } from "../utils/api-response.js";
 import { authenticate, requireRole } from "../middleware/auth.js";
 
@@ -204,6 +205,65 @@ router.get("/logs", async (req: Request, res: Response) => {
   ]);
 
   apiSuccess(res, logs, { total, page, limit });
+});
+
+/**
+ * GET /api/admin/tor-checks — Projects whose sources disagree in a way a
+ * person should look at (dataChecks.needsCheck), newest first.
+ */
+router.get("/tor-checks", async (req: Request, res: Response) => {
+  await connectDB();
+
+  const page = Math.max(1, parseInt((req.query.page as string) ?? "1", 10));
+  const limit = Math.min(100, parseInt((req.query.limit as string) ?? "20", 10));
+  const filter = { "dataChecks.needsCheck": true };
+
+  const [records, total] = await Promise.all([
+    TORRecord.find(filter)
+      .sort({ updatedAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .select("title agencyName phase budget medianPrice submissionDeadline officialPortalUrl metadata.projectId dataChecks")
+      .lean(),
+    TORRecord.countDocuments(filter),
+  ]);
+
+  apiSuccess(res, records, { total, page, limit });
+});
+
+/**
+ * PATCH /api/admin/tor-checks/:id — Mark the current conflicts as checked.
+ * Only the codes present now are resolved: a new kind of conflict raises
+ * needsCheck again on the next daily run.
+ */
+router.patch("/tor-checks/:id", async (req: Request, res: Response) => {
+  await connectDB();
+
+  const record = await TORRecord.findById(req.params.id).select("dataChecks").lean();
+  if (!record?.dataChecks) {
+    Errors.notFound(res, "TOR record or its data checks not found");
+    return;
+  }
+
+  const note = typeof req.body?.note === "string" ? req.body.note.slice(0, 1000) : null;
+  const codes = record.dataChecks.conflicts.filter((c) => c.severity === "check").map((c) => c.code);
+  const updated = await TORRecord.findByIdAndUpdate(
+    req.params.id,
+    {
+      $set: {
+        "dataChecks.resolvedCodes": [...new Set([...(record.dataChecks.resolvedCodes ?? []), ...codes])],
+        "dataChecks.needsCheck": false,
+        "dataChecks.resolvedBy": req.user!.id as string,
+        "dataChecks.resolvedAt": new Date(),
+        "dataChecks.resolvedNote": note,
+      },
+    },
+    { new: true },
+  )
+    .select("title dataChecks")
+    .lean();
+
+  apiSuccess(res, updated);
 });
 
 export default router;

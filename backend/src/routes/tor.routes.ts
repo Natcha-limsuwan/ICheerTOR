@@ -6,6 +6,7 @@ import UserCorrection from "../db/models/user-correction.js";
 import VendorProfile from "../db/models/vendor-profile.js";
 import { matchQualifications } from "../services/matching/qualification-matcher.js";
 import { resolveDownloadUrl } from "../services/ingestion/egp-document-url.js";
+import { bidWindow } from "../services/ingestion/data-checks.js";
 import { apiSuccess, Errors } from "../utils/api-response.js";
 import { authenticate } from "../middleware/auth.js";
 
@@ -48,6 +49,8 @@ const LIST_FIELDS = [
   "summary.overview",
   "redFlags.ruleId",
   "redFlags.severity",
+  "dataChecks.conflicts",
+  "dataChecks.needsCheck",
   "createdAt",
   "updatedAt",
 ].join(" ");
@@ -64,6 +67,7 @@ router.get("/", async (req: Request, res: Response) => {
   const budgetMax = req.query.budgetMax as string | undefined;
   const phase = req.query.phase as string | undefined;
   const openOnly = req.query.openOnly === "true";
+  const needsCheck = req.query.needsCheck === "true";
   const techStack = req.query.techStack as string | undefined;
   const sortBy = (req.query.sortBy as string) ?? "postingDate";
   const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
@@ -81,9 +85,17 @@ router.get("/", async (req: Request, res: Response) => {
       if (budgetMax) (filter.medianPrice as Record<string, number>).$lte = Number(budgetMax);
     }
     if (phase) filter.phase = phase;
+    if (needsCheck) filter["dataChecks.needsCheck"] = true;
 
     const tagConditions: Record<string, unknown>[] = [];
-    if (openOnly) tagConditions.push({ tags: "open" });
+    // "Open" = egp2 says so AND the bid day has not passed. egp2 keeps a
+    // project open until the contract is signed, long after bids close.
+    if (openOnly) {
+      tagConditions.push({ tags: "open" });
+      tagConditions.push({
+        $or: [{ submissionDeadline: { $exists: false } }, { submissionDeadline: null }, { submissionDeadline: { $gte: new Date() } }],
+      });
+    }
     if (techStack) {
       const stacks = techStack.split(",").map((s) => s.trim()).filter(Boolean);
       if (stacks.length) tagConditions.push({ tags: { $in: stacks } });
@@ -112,7 +124,12 @@ router.get("/", async (req: Request, res: Response) => {
       TORRecord.countDocuments(filter),
     ]);
 
-    apiSuccess(res, records, { total, page, limit });
+    const now = new Date();
+    apiSuccess(
+      res,
+      records.map((r) => ({ ...r, bidWindow: bidWindow(r.submissionDeadline, now) })),
+      { total, page, limit },
+    );
   } catch (error) {
     console.error("TOR search error:", error);
     Errors.internal(res, "Failed to search TOR records");
@@ -138,7 +155,7 @@ router.get("/:id", async (req: Request, res: Response) => {
       .sort({ scrapedAt: -1 })
       .lean();
 
-    apiSuccess(res, { ...record, sources });
+    apiSuccess(res, { ...record, bidWindow: bidWindow(record.submissionDeadline), sources });
   } catch (error) {
     console.error("TOR detail error:", error);
     Errors.internal(res, "Failed to fetch TOR record");
