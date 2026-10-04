@@ -9,9 +9,9 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-[var(--color-background)]">
       <TopBar />
-      <div className="flex">
+      <div className="flex min-w-0">
         <Sidebar />
-        <main className="flex-1 p-6 max-w-[1440px] mx-auto w-full">
+        <main className="min-w-0 flex-1 p-6">
           {children}
         </main>
       </div>

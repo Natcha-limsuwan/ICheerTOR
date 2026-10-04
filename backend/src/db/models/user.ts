@@ -13,8 +13,6 @@ export interface IUser extends Document {
   notificationPrefs: {
     inApp: boolean;
     email: boolean;
-    line: boolean;
-    lineUserId?: string;
   };
   locale: "th" | "en";
   roleAssignedBy?: Types.ObjectId;
@@ -59,8 +57,6 @@ const UserSchema = new Schema<IUser>(
     notificationPrefs: {
       inApp: { type: Boolean, default: true },
       email: { type: Boolean, default: false },
-      line: { type: Boolean, default: false },
-      lineUserId: { type: String },
     },
     locale: { type: String, enum: ["th", "en"], default: "th" },
     roleAssignedBy: { type: Schema.Types.ObjectId, ref: "User" },

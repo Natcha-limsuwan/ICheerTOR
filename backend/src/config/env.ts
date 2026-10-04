@@ -30,8 +30,6 @@ interface EnvConfig {
   SMTP_PORT: number;
   SMTP_USER: string;
   SMTP_PASS: string;
-  LINE_CHANNEL_ACCESS_TOKEN: string;
-  LINE_CHANNEL_SECRET: string;
 
   // Scraper
   CRON_SECRET: string;
@@ -68,13 +66,11 @@ export const env: EnvConfig = {
   // A scanned TOR plus the bidding document takes 25–95 s on Gemini 3 Flash.
   AI_REQUEST_TIMEOUT_MS: parseInt(process.env.AI_REQUEST_TIMEOUT_MS ?? "180000", 10),
 
-  // Notifications
+  // Notifications (email via Gmail SMTP)
   SMTP_HOST: process.env.SMTP_HOST ?? "smtp.gmail.com",
   SMTP_PORT: parseInt(process.env.SMTP_PORT ?? "587", 10),
   SMTP_USER: process.env.SMTP_USER ?? "",
   SMTP_PASS: process.env.SMTP_PASS ?? "",
-  LINE_CHANNEL_ACCESS_TOKEN: process.env.LINE_CHANNEL_ACCESS_TOKEN ?? "",
-  LINE_CHANNEL_SECRET: process.env.LINE_CHANNEL_SECRET ?? "",
 
   // Scraper
   CRON_SECRET: process.env.CRON_SECRET ?? "",

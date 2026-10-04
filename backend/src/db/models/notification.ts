@@ -10,7 +10,6 @@ export interface INotification extends Document {
   channels: {
     inApp: { sent: boolean; readAt?: Date };
     email: { sent: boolean; sentAt?: Date; error?: string };
-    line: { sent: boolean; sentAt?: Date; error?: string };
   };
   createdAt: Date;
 }
@@ -42,11 +41,6 @@ const NotificationSchema = new Schema<INotification>(
         readAt: { type: Date },
       },
       email: {
-        sent: { type: Boolean, default: false },
-        sentAt: { type: Date },
-        error: { type: String },
-      },
-      line: {
         sent: { type: Boolean, default: false },
         sentAt: { type: Date },
         error: { type: String },

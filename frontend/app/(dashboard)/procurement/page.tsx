@@ -1,7 +1,7 @@
 "use client";
 
 
-import { api, getToken } from "@/lib/api/client";
+import { getToken } from "@/lib/api/client";
 import { useState, useEffect, useCallback } from "react";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -14,7 +14,7 @@ import InputLabel from "@mui/material/InputLabel";
 import Pagination from "@mui/material/Pagination";
 import SearchIcon from "@mui/icons-material/Search";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import PillBadge from "@/components/shared/PillBadge";
 import EmptyState from "@/components/shared/EmptyState";
 
@@ -40,6 +40,7 @@ interface TORItem {
 }
 
 export default function ProcurementPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [phase, setPhase] = useState("");
   const [sortBy, setSortBy] = useState("postingDate");
@@ -152,12 +153,18 @@ export default function ProcurementPage() {
 
       <div className="space-y-3">
         {records.map((tor) => (
-          <Link
-            key={tor._id}
-            href={`/procurement/${tor._id}`}
-            className="no-underline block"
-          >
             <Card
+              key={tor._id}
+              role="link"
+              tabIndex={0}
+              aria-label={`ดูรายละเอียด ${tor.title}`}
+              onClick={() => router.push(`/procurement/${tor._id}`)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  router.push(`/procurement/${tor._id}`);
+                }
+              }}
               sx={{
                 borderRadius: "var(--radius-card)",
                 cursor: "pointer",
@@ -221,7 +228,6 @@ export default function ProcurementPage() {
                 </div>
               </CardContent>
             </Card>
-          </Link>
         ))}
       </div>
 

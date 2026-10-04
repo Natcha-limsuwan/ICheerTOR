@@ -12,11 +12,11 @@
     "db:sync-indexes": "tsx scripts/sync-indexes.ts",
     "vertex:check": "tsx scripts/vertex-smoke-test.ts",
     "eval": "tsx scripts/eval-prompt.ts",
-    "test:extraction": "tsx scripts/test-extraction.ts"
+    "test:extraction": "tsx scripts/test-extraction.ts",
+    "test-email": "tsx scripts/test-email.ts"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",
-    "@line/bot-sdk": "^11.2.0",
     "cheerio": "^1.2.0",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
