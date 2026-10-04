@@ -15,6 +15,8 @@
  *   ... npx tsx scripts/eval-prompt.ts --prompt=v2 --only=69049097411
  *   ... npx tsx scripts/eval-prompt.ts --cached          # no API calls
  *   ... npx tsx scripts/eval-prompt.ts --verbose         # every mismatch
+ *   ... npx tsx scripts/eval-prompt.ts --no-bidding-doc  # TOR only to the model
+ *       (doc_ is still read in code); runs go to eval/runs/<version>-nodoc/
  */
 
 import { config } from "dotenv";
@@ -44,9 +46,11 @@ const VERSION_NUM = Number(PROMPT_VERSION.replace(/\D/g, ""));
 const ONLY = arg("only");
 const CACHED = argv.includes("--cached");
 const VERBOSE = argv.includes("--verbose");
+/** Withhold the bidding document's text from the model, to measure what it adds. */
+const NO_BIDDING_DOC = argv.includes("--no-bidding-doc");
 
 const GOLD_DIR = path.resolve("eval/gold");
-const RUN_DIR = path.resolve("eval/runs", PROMPT_VERSION);
+const RUN_DIR = path.resolve("eval/runs", PROMPT_VERSION + (NO_BIDDING_DOC ? "-nodoc" : ""));
 
 /* ─── Gold format ───────────────────────────────────────────────────── */
 
@@ -370,7 +374,7 @@ async function runModel(gold: Gold): Promise<RunRecord> {
   // Same preparation as the pipeline; score the file the labeller read.
   const prepared = await prepareDocuments(archive.zip, {
     pdfFileName: gold.fileName,
-    withBiddingDoc: VERSION_NUM >= 3,
+    withBiddingDoc: VERSION_NUM >= 3 && !NO_BIDDING_DOC,
   });
   if (prepared.skipReason) throw new Error(prepared.skipReason);
 

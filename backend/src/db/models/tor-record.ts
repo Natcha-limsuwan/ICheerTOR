@@ -101,8 +101,33 @@ export interface IContractDuration extends INumberField {
   source?: "bidding_doc" | "ai" | null;
 }
 
+export interface IDatePeriod {
+  /** ISO dates. */
+  from: string;
+  to: string;
+  rawText?: string | null;
+  source?: string | null;
+}
+
+export interface IDatedSentence {
+  date: string;
+  rawText: string;
+  source?: string | null;
+}
+
+/** All read in code from the e-GP announcement (archive-facts.ts). */
 export interface IKeyDates {
+  /** "final" = the announced invitation, "draft" = the public-hearing draft,
+   *  whose forms leave the bid date blank — show "ยังไม่ประกาศวันยื่น". */
+  documentStage?: "final" | "draft" | null;
+  /** ISO date of the announcement. */
+  announcedDate?: string | null;
   submissionDate: ISubmissionDate;
+  /** Paying for the bid documents — after the bid day in BMA announcements;
+   *  missing it can disqualify a bid. */
+  documentFeePeriod?: IDatePeriod | null;
+  /** Every dated sentence in the announcement, named or not. */
+  announcementDates?: IDatedSentence[];
   contractDurationDays: IContractDuration;
   warrantyMonths: INumberField;
 }
@@ -376,9 +401,32 @@ const ContractDurationSchema = new Schema(
   { _id: false },
 );
 
+const DatePeriodSchema = new Schema(
+  {
+    from: { type: String, required: true },
+    to: { type: String, required: true },
+    rawText: { type: String, default: null },
+    source: { type: String, default: null },
+  },
+  { _id: false },
+);
+
+const DatedSentenceSchema = new Schema(
+  {
+    date: { type: String, required: true },
+    rawText: { type: String, required: true },
+    source: { type: String, default: null },
+  },
+  { _id: false },
+);
+
 const KeyDatesSchema = new Schema(
   {
+    documentStage: { type: String, enum: ["final", "draft", null], default: null },
+    announcedDate: { type: String, default: null },
     submissionDate: { type: SubmissionDateSchema, default: () => ({}) },
+    documentFeePeriod: { type: DatePeriodSchema, default: null },
+    announcementDates: { type: [DatedSentenceSchema], default: [] },
     contractDurationDays: { type: ContractDurationSchema, default: () => ({}) },
     warrantyMonths: { type: NumberFieldSchema, default: () => ({}) },
   },

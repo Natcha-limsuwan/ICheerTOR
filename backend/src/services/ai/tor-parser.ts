@@ -34,7 +34,7 @@ import { listEntries, readEntry, type ZipEntry } from "../ingestion/zip-reader";
 import { pickDocument, type PickedDocument } from "../ingestion/document-picker";
 import { extractPdfText } from "../ingestion/pdf-text";
 import { sliceBiddingDoc } from "../ingestion/bidding-doc";
-import { readArchiveFacts, type ArchiveFacts, type TextDocument } from "../ingestion/archive-facts";
+import { readArchiveFacts, type ArchiveFacts, type DocumentStage, type TextDocument } from "../ingestion/archive-facts";
 import { aiCircuitBreaker } from "./circuit-breaker";
 import { getModelId, getVertexClient } from "./vertex-client";
 import { activePrompt, type ExtractionContext, type ExtractionPrompt } from "./prompts";
@@ -70,6 +70,8 @@ export interface PrepareOptions {
   /** Send the bidding document as text (prompt v3+). Default true. */
   withBiddingDoc?: boolean;
   zipFileName?: string | null;
+  /** Which archive this is — "draft" means the bid date cannot be known yet. */
+  stage?: DocumentStage;
 }
 
 function describe(entry: ZipEntry, bytes: Buffer, kind: string, zipFileName?: string | null): ISourceDocument {
@@ -131,7 +133,7 @@ export async function prepareDocuments(zip: Buffer, opts: PrepareOptions = {}): 
   return {
     pdf,
     biddingDoc,
-    facts: readArchiveFacts(textDocs),
+    facts: readArchiveFacts(textDocs, opts.stage ?? null),
     sourceDocuments,
     skipReason: pdf || biddingDoc ? undefined : pick.skipReason ?? "ไม่มี TOR หรือเอกสารประกวดราคาที่อ่านได้",
   };
@@ -322,7 +324,11 @@ export function toRecordUpdate(
       weights: out.evaluationCriteria.weights,
     },
     keyDates: {
+      documentStage: facts.documentStage,
+      announcedDate: facts.announcedDate,
       submissionDate: facts.submissionDate,
+      documentFeePeriod: facts.documentFeePeriod,
+      announcementDates: facts.announcementDates,
       // Clause 4.3 of the bidding document, read in code, beats the model.
       contractDurationDays: facts.contractDuration
         ? { value: facts.contractDuration.days, confidence: 1, rawText: facts.contractDuration.rawText, source: "bidding_doc" }
@@ -391,7 +397,10 @@ export async function extractTor(
     if (!archive) return { status: "skipped", skipReason: "e-GP ไม่มีชุดเอกสารของโครงการนี้", sourceDocuments: [] };
 
     onProgress(`อ่าน ${(archive.zip.length / 1024 / 1024).toFixed(1)} MB`);
-    const prepared = await prepareDocuments(archive.zip, { zipFileName: archive.info.fileName });
+    const prepared = await prepareDocuments(archive.zip, {
+      zipFileName: archive.info.fileName,
+      stage: archive.info.stage,
+    });
     if (prepared.skipReason) {
       return { status: "skipped", skipReason: prepared.skipReason, sourceDocuments: prepared.sourceDocuments };
     }

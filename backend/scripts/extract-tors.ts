@@ -247,7 +247,8 @@ async function refreshDates(): Promise<void> {
     "metadata.projectId": ONLY ?? { $exists: true },
     ...(ONLY ? {} : { phase: { $in: OPEN_PHASES } }),
     extractionStatus: "completed",
-    "parsedData.keyDates.submissionDate.status": { $ne: "confirmed" },
+    // --only re-reads one project even when its date is already confirmed.
+    ...(ONLY ? {} : { "parsedData.keyDates.submissionDate.status": { $ne: "confirmed" } }),
   })
     .select(`${QUEUE_FIELDS} parsedData.keyDates`)
     .limit(LIMIT)
@@ -269,7 +270,10 @@ async function refreshDates(): Promise<void> {
         console.log("ไม่มีชุดเอกสาร");
         continue;
       }
-      const prepared = await prepareDocuments(archive.zip, { zipFileName: archive.info.fileName });
+      const prepared = await prepareDocuments(archive.zip, {
+        zipFileName: archive.info.fileName,
+        stage: archive.info.stage,
+      });
 
       // A new TOR file means the requirements may have changed: extract again.
       const oldTor = r.sourceDocuments?.find((d) => d.kind === "tor")?.sha256;
@@ -281,8 +285,16 @@ async function refreshDates(): Promise<void> {
         continue;
       }
 
-      const { submissionDate, contractDuration } = prepared.facts;
-      const set: Record<string, unknown> = {};
+      const { submissionDate, contractDuration, documentStage, announcedDate, documentFeePeriod, announcementDates } =
+        prepared.facts;
+      // Announcement facts are refreshed as a set: a final announcement
+      // replaces everything read from the draft.
+      const set: Record<string, unknown> = {
+        "parsedData.keyDates.documentStage": documentStage,
+        "parsedData.keyDates.announcedDate": announcedDate,
+        "parsedData.keyDates.documentFeePeriod": documentFeePeriod,
+        "parsedData.keyDates.announcementDates": announcementDates,
+      };
       if (submissionDate.status === "confirmed") {
         set["parsedData.keyDates.submissionDate"] = submissionDate;
         set.submissionDeadline = submissionDate.closesAt;
@@ -296,11 +308,13 @@ async function refreshDates(): Promise<void> {
           source: "bidding_doc",
         };
       }
-      if (Object.keys(set).length) await TORRecord.updateOne({ _id: r._id }, { $set: set });
+      await TORRecord.updateOne({ _id: r._id }, { $set: set });
       console.log(
         submissionDate.status === "confirmed"
           ? `ยื่น ${submissionDate.date} ${submissionDate.startTime}–${submissionDate.endTime}`
-          : "ยังไม่ประกาศ",
+          : documentStage === "draft"
+            ? "ยังเป็นร่าง — ยังไม่ประกาศวันยื่น"
+            : "ประกาศแล้วแต่ยังไม่ระบุวันยื่น",
       );
     } catch (e) {
       console.log(`✗ ${e instanceof Error ? e.message : e}`);

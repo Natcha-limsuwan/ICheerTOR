@@ -76,6 +76,41 @@ function testArchiveFacts() {
     { fileName: "a.pdf", text: "ราคากลางของงานซื้อ เป็นเงินทั้งสิ้น 23,398,000.00 บาท (ยี่สิบสามล้านบาทถ้วน)" },
   ]);
   check("ตัวเลขกับคำอ่านไม่ตรง → ไม่เชื่อ", mismatch.medianPrice === null);
+
+  const announcement = readArchiveFacts(
+    [
+      {
+        fileName: "annoudoc_1.pdf",
+        text:
+          "๓. ผู้สนใจสามารถดาวน์โหลดเอกสารเลขที่ ๙/๒๕๖๙ลงวันที่ ๙ มิถุนายน พ.ศ. ๒๕๖๙ผ่านทางระบบ\n" +
+          "๔. ผู้ยื่นข้อเสนอต้องชำระเงินค่าซื้อเอกสารประกวดราคาอิเล็กทรอนิกส์ในราคาชุดละ\n" +
+          "๕๐๐.๐๐บาท (ห้าร้อยบาทถ้วน) ตั้งแต่วันที่๑๙ มิถุนายน ๒๕๖๙ถึงวันที่๒๕ มิถุนายน ๒๕๖๙\n" +
+          "ประกาศ ณ วันที่ ๑๐ มิถุนายน พ.ศ. ๒๕๖๙",
+      },
+      { fileName: "doc_1.pdf", text: "ตามประกาศ ลงวันที่ ๑ มกราคม ๒๕๖๙" },
+    ],
+    "final",
+  );
+  check("วันประกาศใช้ 'ประกาศ ณ วันที่' ก่อน 'ลงวันที่'", announcement.announcedDate === "2026-06-10", show(announcement.announcedDate));
+  check(
+    "ช่วงชำระค่าเอกสาร 19–25 มิ.ย.",
+    announcement.documentFeePeriod?.from === "2026-06-19" && announcement.documentFeePeriod?.to === "2026-06-25",
+    show(announcement.documentFeePeriod),
+  );
+  check("เก็บทุกวันที่ในประกาศ (ไม่รวม doc_)", announcement.announcementDates.length === 4, show(announcement.announcementDates.map((d) => d.date)));
+  check("บันทึกว่าเป็นประกาศจริง", announcement.documentStage === "final");
+
+  const signed = readArchiveFacts([
+    {
+      fileName: "annoudoc_1.pdf",
+      text:
+        "ประกาศ ณ วันที่ ๑๐ มิถุนายน พ.ศ. ๒๕๖๙ (นายสมชาย ใจดี) ผู้อำนวยการกอง\n" +
+        "สมหญิง ทดสอบ (นางสาวสมหญิง ทดสอบ) เจ้าพนักงานธุรการ ประกาศขึ้นเว็บวันที่ ๑๐ มิถุนายน ๒๕๖๙ โดย นางสาวสมหญิง ทดสอบ",
+    },
+  ]).announcementDates;
+  check("ข้ามวันที่ในบล็อกลายเซ็น (ประกาศขึ้นเว็บ)", signed.length === 1, show(signed));
+  check("ไม่เก็บชื่อเจ้าหน้าที่", !signed.some((d) => /สมชาย|สมหญิง/.test(d.rawText)), show(signed));
+  check("ไม่ปิดชื่อเดือน (มิถุนายน มีคำว่า นาย)", announcement.announcementDates.every((d) => !d.rawText.includes("[ชื่อ]")), show(announcement.announcementDates));
 }
 
 /* 2 ─────────────────────────────────────────────────────────────────── */

@@ -10,6 +10,10 @@
  *    ระหว่างเวลา ๐๙.๐๐ น. ถึง ๑๒.๐๐ น."
  *   "๔.๓ ผู้ยื่นข้อเสนอจะต้องเสนอกำหนดเวลาดำเนินการแล้วเสร็จไม่เกิน ๑๘๓ วัน"
  *
+ * Also read: the announcement date, the document-fee period (paid after the
+ * bid day in BMA announcements), and every dated sentence in the
+ * announcement, so no date is lost before it has a name of its own.
+ *
  * e-bidding takes bids on a single day within a time window, so the
  * submission date is that day plus the window. Until the agency fixes the
  * date the form reads "ในวันที่ ระหว่างเวลา น. ถึง น." — that is "pending",
@@ -49,11 +53,40 @@ export interface StatedAmount {
   source: string;
 }
 
+/** "final" = the invitation as announced, "draft" = the public-hearing draft. */
+export type DocumentStage = "final" | "draft";
+
+export interface DatePeriod {
+  /** ISO dates. */
+  from: string;
+  to: string;
+  rawText: string;
+  source: string;
+}
+
+export interface DatedSentence {
+  /** ISO date. */
+  date: string;
+  /** The sentence around the date, so a person can tell what it is. */
+  rawText: string;
+  source: string;
+}
+
 export interface ArchiveFacts {
+  /** Which archive the documents came from. Null when unknown. */
+  documentStage: DocumentStage | null;
   submissionDate: SubmissionDate;
   contractDuration: ContractDuration | null;
-  /** "ลงวันที่ ..." of the announcement, when filled in. ISO date. */
+  /** "ประกาศ ณ วันที่ / ลงวันที่ ..." of the announcement, when filled in. ISO date. */
   announcedDate: string | null;
+  /**
+   * "ผู้ยื่นข้อเสนอต้องชำระเงินค่าซื้อเอกสาร… ตั้งแต่วันที่ … ถึงวันที่ …".
+   * In BMA announcements it falls after the bid day — bidders pay for the
+   * documents afterwards — so it is a second deadline, not part of preparing.
+   */
+  documentFeePeriod: DatePeriod | null;
+  /** Every dated sentence in the announcement, named or not — nothing dropped. */
+  announcementDates: DatedSentence[];
   /**
    * "ราคากลางของงาน... เป็นเงินทั้งสิ้น X บาท (words)" in the announcement.
    * Checks egp2's figure — which has dropped digits (3,398,000 for 23,398,000).
@@ -115,7 +148,13 @@ const SUBMISSION =
 /** The same sentence with the date still blank on the form. */
 const SUBMISSION_BLANK = /(เสนอราคา.{0,120}?ในวันที่\s*ระหว่างเวลา)/;
 
-const ANNOUNCED = new RegExp(`ลงวันที่\\s*(\\d{1,2})\\s*(${MONTH})\\s*(?:พ\\.ศ\\.\\s*)?(\\d{4})`);
+/** A full Thai date, "10 มิถุนายน พ.ศ. 2569" after normalise. Groups: day, month, year. */
+const DATE = `(\\d{1,2})\\s*(${MONTH})\\s*(?:พ\\.ศ\\.\\s*)?(\\d{4})`;
+/** "ประกาศ ณ วันที่" is the announcement's own date; "ลงวันที่" is the fallback. */
+const ANNOUNCED = [new RegExp(`ประกาศ ณ วันที่\\s*${DATE}`), new RegExp(`ลงวันที่\\s*${DATE}`)];
+const DOCUMENT_FEE = new RegExp(`(ค่าซื้อเอกสาร.{0,160}?ตั้งแต่วันที่\\s*${DATE}\\s*ถึงวันที่\\s*${DATE})`);
+const ANY_DATE = new RegExp(DATE, "g");
+const ANNOUNCEMENT_FILE = /^annoudoc/i;
 
 const DURATION =
   /(กำหนดเวลา(?:ดำเนินการแล้วเสร็จ|ดำเนินงานแล้วเสร็จ|ส่งมอบพัสดุ|ส่งมอบงาน|แล้วเสร็จ)\s*ไม่เกิน\s*(\d{1,4})\s*(วัน|เดือน|ปี))/;
@@ -164,12 +203,64 @@ export function readContractDuration(docs: TextDocument[]): ContractDuration | n
 }
 
 export function readAnnouncedDate(docs: TextDocument[]): string | null {
-  for (const doc of docs) {
-    const m = ANNOUNCED.exec(normalise(doc.text));
-    const date = m && isoDate(m[1], m[2], m[3]);
-    if (date) return date;
+  for (const pattern of ANNOUNCED) {
+    for (const doc of docs) {
+      const m = pattern.exec(normalise(doc.text));
+      const date = m && isoDate(m[1], m[2], m[3]);
+      if (date) return date;
+    }
   }
   return null;
+}
+
+export function readDocumentFeePeriod(docs: TextDocument[]): DatePeriod | null {
+  for (const doc of docs) {
+    const m = DOCUMENT_FEE.exec(normalise(doc.text));
+    if (!m) continue;
+    const from = isoDate(m[2], m[3], m[4]);
+    const to = isoDate(m[5], m[6], m[7]);
+    if (from && to) return { from, to, rawText: m[1], source: doc.fileName };
+  }
+  return null;
+}
+
+/**
+ * PDPA: the announcement ends in signature blocks naming officials. A date's
+ * context is therefore the words BEFORE it only, cut back to where its
+ * sentence starts, with titled names masked — and the "ประกาศขึ้นเว็บ" stamp,
+ * which sits inside a signature block, is skipped (it repeats announcedDate).
+ */
+const SENTENCE_START = /(?:^|\s)(?:\d{1,2}\.\s|ประกาศ ณ|ผู้)/g;
+// A title only at a word start — "มิถุนายน" contains "นาย".
+const TITLED_NAME = /(?<=^|[\s(])(?:นางสาว|นาง|นาย|ว่าที่\s*ร(?:้อย)?\s*\.?\s*ต(?:รี)?\.?|ดร\.)\s*[ก-๙]+(?:\s+[ก-๙]+)?/g;
+const SIGNATURE_STAMP = /ประกาศขึ้นเว็บ/;
+
+function dateContext(text: string, index: number, match: string): string | null {
+  const before = text.slice(Math.max(0, index - 140), index);
+  if (SIGNATURE_STAMP.test(before)) return null;
+  const starts = [...before.matchAll(SENTENCE_START)];
+  const from = starts.length ? starts[starts.length - 1].index! : 0;
+  return (before.slice(from) + match).replace(TITLED_NAME, "[ชื่อ]").trim();
+}
+
+/** Every full date in the announcement, with the words before it. */
+export function readAnnouncementDates(docs: TextDocument[]): DatedSentence[] {
+  const out: DatedSentence[] = [];
+  const seen = new Set<string>();
+  for (const doc of docs.filter((d) => ANNOUNCEMENT_FILE.test(d.fileName))) {
+    const text = normalise(doc.text);
+    for (const m of text.matchAll(ANY_DATE)) {
+      const date = isoDate(m[1], m[2], m[3]);
+      if (!date) continue;
+      const rawText = dateContext(text, m.index, m[0]);
+      if (!rawText) continue;
+      const key = `${date}|${rawText}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ date, rawText, source: doc.fileName });
+    }
+  }
+  return out;
 }
 
 const AMOUNT = "(\\d{1,3}(?:,\\d{3})+(?:\\.\\d{1,2})?)\\s*บาท\\s*(\\([^)]{4,120}\\))?";
@@ -198,11 +289,14 @@ function readAmount(docs: TextDocument[], pattern: RegExp): StatedAmount | null 
  * announcement first: it is the official source for the submission date and
  * the reference price, and the bidding document only repeats them.
  */
-export function readArchiveFacts(docs: TextDocument[]): ArchiveFacts {
+export function readArchiveFacts(docs: TextDocument[], documentStage: DocumentStage | null = null): ArchiveFacts {
   return {
+    documentStage,
     submissionDate: readSubmissionDate(docs),
     contractDuration: readContractDuration(docs),
     announcedDate: readAnnouncedDate(docs),
+    documentFeePeriod: readDocumentFeePeriod(docs),
+    announcementDates: readAnnouncementDates(docs),
     medianPrice: readAmount(docs, MEDIAN_PRICE),
     bidBond: readAmount(docs, BID_BOND),
   };

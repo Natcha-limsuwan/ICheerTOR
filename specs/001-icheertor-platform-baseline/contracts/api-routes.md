@@ -72,7 +72,9 @@ Search and list TOR records with filtering.
       "workType": "license",
       "medianPrice": { "value": 24718950, "confidence": 1, "source": "egp2" },
       "keyDates": {
+        "documentStage": "final",
         "submissionDate": { "date": "2026-09-15", "startTime": "09:00", "endTime": "12:00", "closesAt": "2026-09-15T05:00:00Z", "status": "confirmed" },
+        "documentFeePeriod": { "from": "2026-09-16", "to": "2026-09-22" },
         "contractDurationDays": { "value": 110 }
       }
     },
@@ -88,7 +90,10 @@ Search and list TOR records with filtering.
 (แสดง "กำลังวิเคราะห์ TOR") — API ไม่เรียก Vertex AI ระหว่าง request
 
 `submissionDate.status`: `confirmed` = ประกาศระบุวันยื่นแล้ว (ยื่นได้วันเดียว ในช่วง `startTime`–`endTime` เวลาไทย),
-`pending` = ประกาศยังเว้นวันว่าง แสดงว่า "ยังไม่ยืนยัน รออัปเดต"
+`pending` = ยังไม่มีวัน — ดู `documentStage`: `draft` = ยังเป็นร่างช่วงรับฟังความเห็น ("ร่าง — ยังไม่ประกาศวันยื่น"),
+`final` = ประกาศแล้วแต่ยังไม่ระบุวัน ("ยังไม่ยืนยัน รออัปเดต") · `documentFeePeriod` = ช่วงชำระค่าซื้อเอกสาร
+ซึ่งใน กทม. อยู่หลังวันยื่น — ไม่ชำระอาจถูกตัดสิทธิ์ จึงควรแสดงเป็นเส้นตายที่สอง · `announcementDates` (เฉพาะ detail)
+= ทุกประโยคในประกาศที่มีวันที่ ไว้ให้เปิดดู (ตัดชื่อเจ้าหน้าที่ออกแล้ว)
 
 **Auth**: Required (User or Admin)
 
@@ -125,7 +130,11 @@ Get full TOR detail including parsed data and red flags.
       },
       "evaluationCriteria": { "content": "...", "confidence": 0.85, "method": "lowest_price", "weights": [] },
       "keyDates": {
-        "submissionDate": { "date": null, "startTime": null, "endTime": null, "closesAt": null, "status": "pending" },
+        "documentStage": "final",
+        "announcedDate": "2026-06-10",
+        "submissionDate": { "date": "2026-06-22", "startTime": "09:00", "endTime": "12:00", "closesAt": "2026-06-22T05:00:00Z", "status": "confirmed", "rawText": "...", "source": "annoudoc_....pdf" },
+        "documentFeePeriod": { "from": "2026-06-23", "to": "2026-06-29", "rawText": "...ค่าซื้อเอกสาร... 500.00 บาท..." },
+        "announcementDates": [{ "date": "2026-06-10", "rawText": "ประกาศ ณ วันที่ 10 มิถุนายน พ.ศ. 2569" }],
         "contractDurationDays": { "value": 110, "confidence": 1, "rawText": "กำหนดเวลาส่งมอบพัสดุไม่เกิน110วัน", "source": "bidding_doc" },
         "warrantyMonths": { "value": 12, "confidence": 1 }
       },
