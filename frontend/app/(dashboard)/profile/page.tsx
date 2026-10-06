@@ -1,17 +1,22 @@
 "use client";
 
-
 import { getToken } from "@/lib/api/client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
 import AddIcon from "@mui/icons-material/Add";
 import CheckIcon from "@mui/icons-material/Check";
 import SaveIcon from "@mui/icons-material/Save";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import Alert from "@mui/material/Alert";
 
 interface Credential {
@@ -44,6 +49,7 @@ const PRESET_PROJECT_TYPES = [
 ];
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<ProfileData>({
     companyName: "",
     companyAge: 0,
@@ -52,11 +58,16 @@ export default function ProfilePage() {
     credentials: [],
     teamSize: 1,
   });
+  const [initialProfile, setInitialProfile] = useState<ProfileData | null>(null);
   const [isNew, setIsNew] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [newTech, setNewTech] = useState("");
   const [newCategory, setNewCategory] = useState("");
+
+  // Navigation warning dialog
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [pendingUrl, setPendingUrl] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadProfile() {
@@ -65,22 +76,95 @@ export default function ProfilePage() {
         if (res.ok) {
           const json = await res.json();
           const data = json.data ?? {};
-          setProfile({
+          const loadedData: ProfileData = {
             companyName: data.companyName ?? "",
             companyAge: data.companyAge ?? 0,
             techStacks: data.techStacks ?? [],
             interestedCategories: data.interestedCategories ?? [],
             credentials: data.credentials ?? [],
             teamSize: data.teamSize ?? 1,
-          });
+          };
+          setProfile(loadedData);
+          setInitialProfile(loadedData);
           setIsNew(false);
+        } else {
+          setInitialProfile({
+            companyName: "",
+            companyAge: 0,
+            techStacks: [],
+            interestedCategories: [],
+            credentials: [],
+            teamSize: 1,
+          });
         }
       } catch {
-        // No profile yet
+        setInitialProfile({
+          companyName: "",
+          companyAge: 0,
+          techStacks: [],
+          interestedCategories: [],
+          credentials: [],
+          teamSize: 1,
+        });
       }
     }
     loadProfile();
   }, []);
+
+  // Check if user has modified profile without saving
+  const isDirty = useMemo(() => {
+    if (!initialProfile) return false;
+    return JSON.stringify(profile) !== JSON.stringify(initialProfile);
+  }, [profile, initialProfile]);
+
+  // Intercept browser reload / tab close
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  // Intercept in-app link clicks when changes are unsaved
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const handleLinkClick = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest("a");
+      if (!target) return;
+
+      const href = target.getAttribute("href");
+      if (!href || href.startsWith("#") || href.startsWith("javascript:")) return;
+      if (href === window.location.pathname || href === "/profile") return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      setPendingUrl(href);
+      setShowLeaveDialog(true);
+    };
+
+    document.addEventListener("click", handleLinkClick, { capture: true });
+    return () => {
+      document.removeEventListener("click", handleLinkClick, { capture: true });
+    };
+  }, [isDirty]);
+
+  const handleConfirmLeave = () => {
+    setShowLeaveDialog(false);
+    setInitialProfile(profile); // Reset dirty check
+    if (pendingUrl) {
+      router.push(pendingUrl);
+    }
+  };
+
+  const handleCancelLeave = () => {
+    setShowLeaveDialog(false);
+    setPendingUrl(null);
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -97,6 +181,7 @@ export default function ProfilePage() {
       if (res.ok) {
         setMessage({ type: "success", text: "บันทึกโปรไฟล์สำเร็จ" });
         setIsNew(false);
+        setInitialProfile(profile);
       } else {
         const err = await res.json();
         setMessage({ type: "error", text: err.error?.message ?? "บันทึกไม่สำเร็จ" });
@@ -305,18 +390,6 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Save / Manage Profile */}
-      <Button
-        variant="contained"
-        onClick={handleSave}
-        disabled={saving}
-        startIcon={<SaveIcon />}
-        fullWidth
-        size="large"
-      >
-        {saving ? "กำลังบันทึก..." : "จัดการ profile"}
-      </Button>
-
       {/* PDPA Section */}
       <Card
         sx={{
@@ -341,6 +414,52 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Save Button at the Bottom */}
+      <Button
+        variant="contained"
+        onClick={handleSave}
+        disabled={saving}
+        startIcon={<SaveIcon />}
+        fullWidth
+        size="large"
+      >
+        {saving ? "กำลังบันทึก..." : "บันทึกโปรไฟล์"}
+      </Button>
+
+      {/* Unsaved Changes Confirmation Dialog */}
+      <Dialog
+        open={showLeaveDialog}
+        onClose={handleCancelLeave}
+        slotProps={{
+          paper: {
+            sx: { borderRadius: "var(--radius-card)", p: 1, maxWidth: 440 },
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 1 }}>
+          <WarningAmberIcon color="warning" />
+          ยังไม่ได้บันทึกข้อมูล
+        </DialogTitle>
+        <DialogContent>
+          <p className="text-sm text-[var(--color-text-secondary)]">
+            คุณมีการเปลี่ยนแปลงข้อมูลโปรไฟล์ที่ยังไม่ได้บันทึก หากออกจากหน้านี้ ข้อมูลที่แก้ไขจะไม่ได้รับการบันทึก คุณแน่ใจหรือไม่ว่าต้องการออกจากหน้านี้?
+          </p>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={handleCancelLeave} variant="outlined" sx={{ textTransform: "none" }}>
+            อยู่หน้านี้ต่อ
+          </Button>
+          <Button
+            onClick={handleConfirmLeave}
+            variant="contained"
+            color="error"
+            sx={{ textTransform: "none" }}
+          >
+            ออกจากหน้านี้
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
