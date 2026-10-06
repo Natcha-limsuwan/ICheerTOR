@@ -1,27 +1,18 @@
 "use client";
 
 
-import { api, getToken } from "@/lib/api/client";
+import { getToken } from "@/lib/api/client";
 import { useState, useEffect } from "react";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
-import IconButton from "@mui/material/IconButton";
 import AddIcon from "@mui/icons-material/Add";
-import DeleteIcon from "@mui/icons-material/Delete";
+import CheckIcon from "@mui/icons-material/Check";
 import SaveIcon from "@mui/icons-material/Save";
-import DownloadIcon from "@mui/icons-material/Download";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import Alert from "@mui/material/Alert";
-
-interface PastContract {
-  description: string;
-  value: number;
-  year: number;
-  agencyName?: string;
-}
 
 interface Credential {
   name: string;
@@ -31,18 +22,33 @@ interface Credential {
 interface ProfileData {
   companyName: string;
   companyAge: number;
-  pastContracts: PastContract[];
   techStacks: string[];
+  interestedCategories: string[];
   credentials: Credential[];
   teamSize: number;
 }
+
+const PRESET_PROJECT_TYPES = [
+  "ระบบเว็บแอปพลิเคชัน (Web Application)",
+  "แอปพลิเคชันมือถือ (Mobile Application)",
+  "ระบบสารสนเทศ / พอร์ทัลข้อมูล (Data Portal & MIS)",
+  "แดชบอร์ดและวิเคราะห์ข้อมูล (Dashboard & Analytics)",
+  "ปัญญาประดิษฐ์ (AI & Machine Learning)",
+  "ระบบคลาวด์และโครงสร้างพื้นฐาน (Cloud & Infrastructure)",
+  "ความมั่นคงปลอดภัยไซเบอร์ (Cybersecurity)",
+  "ระบบเชื่อมโยงข้อมูล (System Integration & API)",
+  "ระบบบริหารจัดการองค์กร (ERP / CRM)",
+  "อินเทอร์เน็ตของสรรพสิ่ง / สมาร์ทซิตี้ (IoT & Smart City)",
+  "พัฒนาระบบและบำรุงรักษา (Maintenance & Support)",
+  "จัดหาและติดตั้งระบบสารสนเทศ (IT Procurement & Setup)",
+];
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData>({
     companyName: "",
     companyAge: 0,
-    pastContracts: [],
     techStacks: [],
+    interestedCategories: [],
     credentials: [],
     teamSize: 1,
   });
@@ -50,6 +56,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [newTech, setNewTech] = useState("");
+  const [newCategory, setNewCategory] = useState("");
 
   useEffect(() => {
     async function loadProfile() {
@@ -57,7 +64,15 @@ export default function ProfilePage() {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api"}/profile`, { headers: { Authorization: `Bearer ${getToken()}` } });
         if (res.ok) {
           const json = await res.json();
-          setProfile(json.data);
+          const data = json.data ?? {};
+          setProfile({
+            companyName: data.companyName ?? "",
+            companyAge: data.companyAge ?? 0,
+            techStacks: data.techStacks ?? [],
+            interestedCategories: data.interestedCategories ?? [],
+            credentials: data.credentials ?? [],
+            teamSize: data.teamSize ?? 1,
+          });
           setIsNew(false);
         }
       } catch {
@@ -74,7 +89,10 @@ export default function ProfilePage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api"}/profile`, {
         method: isNew ? "POST" : "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify(profile),
+        body: JSON.stringify({
+          ...profile,
+          pastContracts: [],
+        }),
       });
       if (res.ok) {
         setMessage({ type: "success", text: "บันทึกโปรไฟล์สำเร็จ" });
@@ -90,18 +108,31 @@ export default function ProfilePage() {
     }
   };
 
-  const addContract = () => {
-    setProfile((p) => ({
-      ...p,
-      pastContracts: [...p.pastContracts, { description: "", value: 0, year: new Date().getFullYear(), agencyName: "" }],
-    }));
-  };
-
   const addTech = () => {
     if (newTech.trim() && !profile.techStacks.includes(newTech.trim())) {
       setProfile((p) => ({ ...p, techStacks: [...p.techStacks, newTech.trim()] }));
       setNewTech("");
     }
+  };
+
+  const addCategory = () => {
+    const trimmed = newCategory.trim();
+    if (trimmed && !profile.interestedCategories.includes(trimmed)) {
+      setProfile((p) => ({ ...p, interestedCategories: [...p.interestedCategories, trimmed] }));
+      setNewCategory("");
+    }
+  };
+
+  const toggleCategory = (cat: string) => {
+    setProfile((p) => {
+      const exists = p.interestedCategories.includes(cat);
+      return {
+        ...p,
+        interestedCategories: exists
+          ? p.interestedCategories.filter((c) => c !== cat)
+          : [...p.interestedCategories, cat],
+      };
+    });
   };
 
   return (
@@ -182,89 +213,99 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Past Contracts */}
+      {/* Interested Project Types */}
       <Card sx={{ borderRadius: "var(--radius-card)" }}>
         <CardContent sx={{ p: 3 }}>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">ผลงานที่ผ่านมา</h2>
-            <Button variant="text" onClick={addContract} startIcon={<AddIcon />}>
-              เพิ่มผลงาน
-            </Button>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold">ประเภทงานที่สนใจ</h2>
+            <span className="text-xs text-[var(--color-text-secondary)]">
+              เลือกแล้ว {profile.interestedCategories.length} รายการ
+            </span>
           </div>
-          <div className="space-y-4">
-            {profile.pastContracts.map((contract, i) => (
-              <div key={i} className="border border-gray-200 rounded-lg p-3 space-y-3">
-                <div className="flex justify-between items-start">
-                  <span className="text-xs font-medium text-[var(--color-text-secondary)]">
-                    ผลงาน #{i + 1}
-                  </span>
-                  <IconButton
-                    size="small"
-                    onClick={() =>
+          <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+            เลือกประเภทงานหรือโครงการจัดซื้อจัดจ้างที่คุณสนใจเพื่อช่วยค้นหาและจับคู่กับ TOR
+          </p>
+
+          {/* Quick Select Presets */}
+          <div className="mb-4">
+            <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">
+              เลือกจากหมวดหมู่งานยอดนิยม (คลิกเพื่อเลือก / ยกเลิก):
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {PRESET_PROJECT_TYPES.map((type) => {
+                const isSelected = profile.interestedCategories.includes(type);
+                return (
+                  <Chip
+                    key={type}
+                    label={type}
+                    clickable
+                    color={isSelected ? "primary" : "default"}
+                    variant={isSelected ? "filled" : "outlined"}
+                    icon={isSelected ? <CheckIcon fontSize="small" /> : undefined}
+                    onClick={() => toggleCategory(type)}
+                    sx={{
+                      cursor: "pointer",
+                      fontSize: "0.8rem",
+                      py: 0.5,
+                      transition: "all 0.15s ease",
+                      ...(isSelected && {
+                        fontWeight: 600,
+                      }),
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Selected Categories */}
+          {profile.interestedCategories.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">
+                รายการที่เลือกไว้:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {profile.interestedCategories.map((cat) => (
+                  <Chip
+                    key={cat}
+                    label={cat}
+                    color="primary"
+                    variant="filled"
+                    onDelete={() =>
                       setProfile((p) => ({
                         ...p,
-                        pastContracts: p.pastContracts.filter((_, j) => j !== i),
+                        interestedCategories: p.interestedCategories.filter((c) => c !== cat),
                       }))
                     }
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <TextField
-                    label="รายละเอียด"
-                    value={contract.description}
-                    onChange={(e) => {
-                      const updated = [...profile.pastContracts];
-                      updated[i] = { ...updated[i], description: e.target.value };
-                      setProfile({ ...profile, pastContracts: updated });
-                    }}
-                    fullWidth
-                    size="small"
                   />
-                  <TextField
-                    label="มูลค่า (บาท)"
-                    type="number"
-                    value={contract.value}
-                    onChange={(e) => {
-                      const updated = [...profile.pastContracts];
-                      updated[i] = { ...updated[i], value: Number(e.target.value) };
-                      setProfile({ ...profile, pastContracts: updated });
-                    }}
-                    fullWidth
-                    size="small"
-                  />
-                  <TextField
-                    label="ปี"
-                    type="number"
-                    value={contract.year}
-                    onChange={(e) => {
-                      const updated = [...profile.pastContracts];
-                      updated[i] = { ...updated[i], year: Number(e.target.value) };
-                      setProfile({ ...profile, pastContracts: updated });
-                    }}
-                    fullWidth
-                    size="small"
-                  />
-                  <TextField
-                    label="หน่วยงาน"
-                    value={contract.agencyName ?? ""}
-                    onChange={(e) => {
-                      const updated = [...profile.pastContracts];
-                      updated[i] = { ...updated[i], agencyName: e.target.value };
-                      setProfile({ ...profile, pastContracts: updated });
-                    }}
-                    fullWidth
-                    size="small"
-                  />
-                </div>
+                ))}
               </div>
-            ))}
+            </div>
+          )}
+
+          {/* Custom Input (similar to techstack) */}
+          <div className="pt-3 border-t border-gray-100">
+            <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">
+              หรือพิมพ์เพิ่มประเภทงานอื่น ๆ:
+            </p>
+            <div className="flex gap-2">
+              <TextField
+                placeholder="พิมพ์ประเภทงานที่สนใจ..."
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCategory())}
+                size="small"
+                sx={{ flex: 1 }}
+              />
+              <Button variant="outlined" onClick={addCategory} startIcon={<AddIcon />}>
+                เพิ่ม
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Save */}
+      {/* Save / Manage Profile */}
       <Button
         variant="contained"
         onClick={handleSave}
@@ -273,7 +314,7 @@ export default function ProfilePage() {
         fullWidth
         size="large"
       >
-        {saving ? "กำลังบันทึก..." : "บันทึกโปรไฟล์"}
+        {saving ? "กำลังบันทึก..." : "จัดการ profile"}
       </Button>
 
       {/* PDPA Section */}
@@ -286,18 +327,9 @@ export default function ProfilePage() {
         <CardContent sx={{ p: 3 }}>
           <h2 className="text-lg font-semibold mb-3">ข้อมูลส่วนบุคคล (PDPA)</h2>
           <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-            ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล คุณมีสิทธิ์ดูข้อมูล ส่งออก
-            และลบบัญชีของคุณ
+            ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล คุณมีสิทธิ์ดูข้อมูล และลบบัญชีของคุณ
           </p>
           <div className="flex flex-wrap gap-3">
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api"}/pdpa/export`}
-              size="small"
-            >
-              ส่งออกข้อมูล
-            </Button>
             <Button
               variant="outlined"
               color="error"
