@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import mongoose from "mongoose";
 import { connectDB } from "../db/connection.js";
 import TORRecord from "../db/models/tor-record.js";
 import TORSource from "../db/models/tor-source.js";
@@ -58,7 +59,39 @@ const LIST_FIELDS = [
 ].join(" ");
 
 /**
+ * Which records a list shows. The default is what the product is built on —
+ * TORs the AI has read; the others are opt-in, so the response shape never
+ * changes, only how many rows come back.
+ *
+ *   parsed (default)  extractionStatus "completed"
+ *   new               parsed + still-open projects not read yet (just
+ *                     ingested, or failed) — so a project in public hearing
+ *                     is not hidden while it waits for the model
+ *   all               every record (admin, history)
+ */
+export type ListScope = "parsed" | "new" | "all";
+
+export function scopeFilter(scope: ListScope, now = new Date()): Record<string, unknown> {
+  if (scope === "all") return {};
+  const parsed = { extractionStatus: "completed" };
+  if (scope === "parsed") return parsed;
+  return {
+    $or: [
+      parsed,
+      {
+        extractionStatus: { $in: ["pending", "processing", "failed"] },
+        phase: { $in: ["public_hearing", "bidding"] },
+        $or: [{ submissionDeadline: { $exists: false } }, { submissionDeadline: null }, { submissionDeadline: { $gte: now } }],
+      },
+    ],
+  };
+}
+
+const LIST_SCOPES: ListScope[] = ["parsed", "new", "all"];
+
+/**
  * GET /api/tor — Search and list TOR records with filtering.
+ * ?scope=parsed|new|all (default parsed) — see scopeFilter.
  */
 router.get("/", async (req: Request, res: Response) => {
   await connectDB();
@@ -73,6 +106,12 @@ router.get("/", async (req: Request, res: Response) => {
   const techStack = req.query.techStack as string | undefined;
   /** Attach the authenticated user's qualification result to each list row. */
   const includeMatch = req.query.includeMatch === "true";
+  const scopeParam = (req.query.scope as string | undefined) ?? "parsed";
+  if (!LIST_SCOPES.includes(scopeParam as ListScope)) {
+    Errors.badRequest(res, `scope must be one of: ${LIST_SCOPES.join(", ")}`);
+    return;
+  }
+  const scope = scopeParam as ListScope;
   const sortBy = (req.query.sortBy as string) ?? "postingDate";
   const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
   const page = Math.max(1, parseInt((req.query.page as string) ?? "1", 10));
@@ -92,6 +131,8 @@ router.get("/", async (req: Request, res: Response) => {
     if (needsCheck) filter["dataChecks.needsCheck"] = true;
 
     const tagConditions: Record<string, unknown>[] = [];
+    const inScope = scopeFilter(scope);
+    if (Object.keys(inScope).length) tagConditions.push(inScope);
     // "Open" = egp2 says so AND the bid day has not passed. egp2 keeps a
     // project open until the contract is signed, long after bids close.
     if (openOnly) {
@@ -171,12 +212,19 @@ router.get("/dashboard", async (req: Request, res: Response) => {
     );
     const soon = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-    const [torTotal, torNewToday, bookmarked, closingSoon, notificationTotal, notificationUnread, profile, records] = await Promise.all([
-      TORRecord.countDocuments({}),
-      TORRecord.countDocuments({ createdAt: { $gte: todayStart } }),
+    // Counted like the default list (scope "parsed"), so a card never says
+    // 110 while the list shows 51.
+    const parsed = scopeFilter("parsed", now);
+    // aggregate() does not cast like find() does: the id must be an ObjectId.
+    const userObjectId = new mongoose.Types.ObjectId(req.user!.id as string);
+
+    const [torTotal, torNewToday, torAnalyzing, bookmarked, closingSoon, notificationTotal, notificationUnread, profile, records] = await Promise.all([
+      TORRecord.countDocuments(parsed),
+      TORRecord.countDocuments({ ...scopeFilter("new", now), createdAt: { $gte: todayStart } }),
+      TORRecord.countDocuments({ $and: [scopeFilter("new", now), { extractionStatus: { $ne: "completed" } }] }),
       Bookmark.countDocuments({ userId: req.user!.id }),
       Bookmark.aggregate<{ count: number }>([
-        { $match: { userId: req.user!.id } },
+        { $match: { userId: userObjectId } },
         {
           $lookup: {
             from: "torrecords",
@@ -192,7 +240,7 @@ router.get("/dashboard", async (req: Request, res: Response) => {
       Notification.countDocuments({ userId: req.user!.id }),
       Notification.countDocuments({ userId: req.user!.id, "channels.inApp.readAt": { $exists: false } }),
       VendorProfile.findOne({ userId: req.user!.id }).lean(),
-      TORRecord.find({})
+      TORRecord.find(parsed)
         .select("parsedData.qualifications")
         .lean(),
     ]);
@@ -204,7 +252,9 @@ router.get("/dashboard", async (req: Request, res: Response) => {
       : [];
 
     apiSuccess(res, {
-      tor: { total: torTotal, newToday: torNewToday },
+      // total: AI-read TORs (the default list). newToday: added today, read or
+      // waiting. analyzing: open projects still waiting for the model.
+      tor: { total: torTotal, newToday: torNewToday, analyzing: torAnalyzing },
       bookmarks: { total: bookmarked, closingSoon: closingSoon[0]?.count ?? 0 },
       notifications: { total: notificationTotal, unread: notificationUnread },
       matching: {
