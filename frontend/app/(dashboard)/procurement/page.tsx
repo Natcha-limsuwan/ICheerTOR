@@ -2,6 +2,7 @@
 
 
 import { getToken } from "@/lib/api/client";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { useState, useEffect, useCallback } from "react";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -47,6 +48,10 @@ interface TORItem {
   officialPortalUrl?: string;
   tags: string[];
   bidWindow?: { state: "closed" | "upcoming" | "today" | "unknown" };
+  match?: {
+    matchScore: number | null;
+    counts: { pass: number; fail: number; unknown: number };
+  } | null;
   parsedData?: {
     keyDates?: {
       submissionDate?: { date?: string | null };
@@ -65,9 +70,11 @@ const formatDate = (value: string) =>
 
 export default function ProcurementPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [phase, setPhase] = useState("");
-  const [sortBy, setSortBy] = useState("postingDate");
+  const [status, setStatus] = useState("");
+  const [sortBy, setSortBy] = useState("announcedDate");
   const [page, setPage] = useState(1);
   const [records, setRecords] = useState<TORItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -80,7 +87,10 @@ export default function ProcurementPage() {
       const params = new URLSearchParams();
       if (search) params.set("q", search);
       if (phase) params.set("phase", phase);
+      if (status) params.set("status", status);
       params.set("sortBy", sortBy);
+      params.set("sortOrder", "desc");
+      params.set("includeMatch", "true");
       params.set("page", String(page));
       params.set("limit", String(limit));
 
@@ -96,7 +106,7 @@ export default function ProcurementPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, phase, sortBy, page]);
+  }, [search, phase, status, sortBy, page]);
 
   useEffect(() => {
     const debounce = setTimeout(fetchRecords, 300);
@@ -108,7 +118,7 @@ export default function ProcurementPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold">จัดซื้อจัดจ้าง</h1>
+        <h1 className="text-2xl font-bold">สวัสดี, {user?.name ?? "ผู้ใช้"}</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
           ค้นหาและติดตาม TOR ซอฟต์แวร์จากหน่วยงานกรุงเทพมหานคร
         </p>
@@ -153,6 +163,22 @@ export default function ProcurementPage() {
           </Select>
         </FormControl>
 
+        <FormControl size="small" sx={{ minWidth: 120 }}>
+          <InputLabel>สถานะ</InputLabel>
+          <Select
+            value={status}
+            label="สถานะ"
+            onChange={(e) => {
+              setStatus(e.target.value);
+              setPage(1);
+            }}
+          >
+            <MenuItem value="">ทั้งหมด</MenuItem>
+            <MenuItem value="open">เปิด</MenuItem>
+            <MenuItem value="closed">ปิด</MenuItem>
+          </Select>
+        </FormControl>
+
         <FormControl size="small" sx={{ minWidth: 150 }}>
           <InputLabel>เรียงตาม</InputLabel>
           <Select
@@ -160,7 +186,7 @@ export default function ProcurementPage() {
             label="เรียงตาม"
             onChange={(e) => setSortBy(e.target.value)}
           >
-            <MenuItem value="postingDate">วันที่ประกาศ</MenuItem>
+            <MenuItem value="announcedDate">วันที่ประกาศ</MenuItem>
             <MenuItem value="medianPrice">ราคากลาง</MenuItem>
             <MenuItem value="submissionDeadline">กำหนดส่ง</MenuItem>
           </Select>
@@ -241,6 +267,11 @@ export default function ProcurementPage() {
                       label={displayPhaseLabel(tor)}
                       value={displayPhase(tor)}
                     />
+                    <span className={`text-xs font-bold ${tor.match?.matchScore != null ? "text-green-600" : "text-[var(--color-text-secondary)]"}`}>
+                      {tor.match?.matchScore != null
+                        ? `ตรงกัน ${Math.round(tor.match.matchScore * 100)}%`
+                        : "ยังประเมินไม่ได้"}
+                    </span>
                     {tor.officialPortalUrl && (
                       <a
                         href={tor.officialPortalUrl}

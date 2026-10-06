@@ -101,7 +101,7 @@ export default function AdminSidebar() {
       {/* Bottom — Back to app */}
       <div className="px-3 py-3 border-t border-[var(--color-border)] mt-auto">
         <Link
-          href="/dashboard"
+          href="/procurement"
           className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-[var(--color-text-secondary)] hover:bg-gray-50 hover:text-[var(--color-text-primary)] transition-colors no-underline"
         >
           <ArrowBackIcon sx={{ fontSize: 20 }} />

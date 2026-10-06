@@ -47,6 +47,23 @@ router.get("/", async (req: Request, res: Response) => {
   );
 });
 
+/** GET /api/bookmarks/tor/:torRecordId — Bookmark state for one TOR. */
+router.get("/tor/:torRecordId", async (req: Request, res: Response) => {
+  await connectDB();
+
+  const bookmark = await Bookmark.findOne({
+    userId: req.user!.id,
+    torRecordId: req.params.torRecordId,
+  })
+    .select("_id")
+    .lean();
+
+  apiSuccess(res, {
+    bookmarked: Boolean(bookmark),
+    bookmarkId: bookmark?._id.toString() ?? null,
+  });
+});
+
 /** POST /api/bookmarks — Create a bookmark. */
 router.post("/", async (req: Request, res: Response) => {
   await connectDB();

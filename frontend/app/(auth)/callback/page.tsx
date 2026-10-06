@@ -23,7 +23,7 @@ function CallbackContent() {
     if (token) {
       setToken(token);
       refreshUser().then(() => {
-        router.replace("/dashboard");
+        router.replace("/procurement");
       });
     } else {
       router.replace("/login");

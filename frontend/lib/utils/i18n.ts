@@ -19,7 +19,6 @@ const dict: Record<string, Record<Locale, string>> = {
   "nav.profile": { th: "โปรไฟล์", en: "Profile" },
   "nav.bookmarks": { th: "บันทึกไว้", en: "Bookmarks" },
   "nav.admin": { th: "ผู้ดูแลระบบ", en: "Admin" },
-  "nav.dashboard": { th: "แดชบอร์ด", en: "Dashboard" },
   "nav.compare": { th: "เปรียบเทียบ", en: "Compare" },
 
   // Auth

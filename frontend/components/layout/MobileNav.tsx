@@ -7,7 +7,6 @@ import IconButton from "@mui/material/IconButton";
 import Drawer from "@mui/material/Drawer";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
-import DashboardIcon from "@mui/icons-material/Dashboard";
 import SearchIcon from "@mui/icons-material/Search";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import PersonIcon from "@mui/icons-material/Person";
@@ -15,7 +14,6 @@ import BookmarkIcon from "@mui/icons-material/Bookmark";
 import RadarIcon from "@mui/icons-material/Radar";
 
 const navItems = [
-  { href: "/dashboard", label: "แดชบอร์ด", icon: <DashboardIcon /> },
   { href: "/procurement", label: "จัดซื้อจัดจ้าง", icon: <SearchIcon /> },
   { href: "/alerts", label: "การแจ้งเตือน", icon: <NotificationsIcon /> },
   { href: "/profile", label: "โปรไฟล์", icon: <PersonIcon /> },

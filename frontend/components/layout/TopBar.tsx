@@ -37,7 +37,7 @@ export default function TopBar() {
           {isAdminSection && (
             <Button
               component={Link}
-              href="/dashboard"
+              href="/procurement"
               variant="outlined"
               size="small"
               startIcon={<ArrowBackIcon sx={{ fontSize: 18 }} />}

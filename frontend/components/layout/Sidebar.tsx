@@ -2,13 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import DashboardIcon from "@mui/icons-material/Dashboard";
 import SearchIcon from "@mui/icons-material/Search";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import PersonIcon from "@mui/icons-material/Person";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
-import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import { useAuth } from "@/components/providers/AuthProvider";
 
 interface NavItem {
@@ -20,12 +18,10 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: "/dashboard", label: "แดชบอร์ด", labelEn: "Dashboard", icon: <DashboardIcon /> },
   { href: "/procurement", label: "จัดซื้อจัดจ้าง", labelEn: "Procurement", icon: <SearchIcon /> },
   { href: "/alerts", label: "การแจ้งเตือน", labelEn: "Alerts", icon: <NotificationsIcon /> },
   { href: "/profile", label: "โปรไฟล์", labelEn: "Profile", icon: <PersonIcon /> },
   { href: "/bookmarks", label: "บันทึกไว้", labelEn: "Bookmarks", icon: <BookmarkIcon /> },
-  { href: "/compare", label: "เปรียบเทียบ", labelEn: "Compare", icon: <CompareArrowsIcon /> },
   { href: "/admin", label: "ผู้ดูแลระบบ", labelEn: "Admin", icon: <AdminPanelSettingsIcon />, staffOnly: true },
 ];
 

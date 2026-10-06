@@ -8,7 +8,6 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
 import LightbulbOutlinedIcon from "@mui/icons-material/LightbulbOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
-import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import ComputerOutlinedIcon from "@mui/icons-material/ComputerOutlined";
@@ -16,11 +15,14 @@ import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import FlagOutlinedIcon from "@mui/icons-material/FlagOutlined";
 import NotificationsActiveOutlinedIcon from "@mui/icons-material/NotificationsActiveOutlined";
+import BookmarkBorderOutlinedIcon from "@mui/icons-material/BookmarkBorderOutlined";
+import BookmarkOutlinedIcon from "@mui/icons-material/BookmarkOutlined";
+import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 
 type Qualification = { clauseNumber?: string | null; criterion: string; minimumValue?: number | string; unit?: string; isBoilerplate?: boolean; requiredCerts?: string[]; sourcePage?: number };
 type Detail = {
   _id: string; title: string; agencyName: string; phase: string; displayPhase?: string; budget?: number; medianPrice?: number; postingDate: string; submissionDeadline?: string; publicHearingStart?: string; publicHearingEnd?: string; sourceUrl: string; officialPortalUrl?: string; extractionStatus: string; bidWindow?: { state: "open" | "closed" | "upcoming" | "today" | "unknown" }; redFlags?: Array<{ reason: string; clauseText: string; recommendedAction?: string }>;
-  metadata?: { projectId?: string; projectType?: string; purchaseMethod?: string; announceType?: string; contractStatus?: string; phaseReason?: string };
+  metadata?: { projectId?: string; projectType?: string; purchaseMethod?: string; announceType?: string; contractStatus?: string };
   summary?: { overview: string; keyPoints?: string[]; deliverables?: string[] };
   parsedData?: {
     workType?: string; scopeOfWork?: { content?: string }; qualifications?: Qualification[]; medianPrice?: { value?: number | null }; documentPrices?: { budget?: { value?: number | null }; medianPrice?: { value?: number | null } };
@@ -29,6 +31,8 @@ type Detail = {
   };
 };
 type MatchResult = { matchScore: number | null; overallStatus: "eligible" | "ineligible" | "incomplete" | "unknown"; counts: { pass: number; fail: number; unknown: number } };
+type BookmarkStatus = { bookmarked: boolean; bookmarkId: string | null };
+type DocumentResponse = { available: boolean; fileName?: string; downloadUrl?: string; message?: string };
 
 const workType: Record<string, string> = { development: "พัฒนาระบบ", license: "ลิขสิทธิ์ซอฟต์แวร์", hardware: "ฮาร์ดแวร์", maintenance: "บำรุงรักษา", service: "บริการ", other: "อื่น ๆ" };
 const money = (value?: number | null) => value != null ? `฿${value.toLocaleString("th-TH")}` : "—";
@@ -56,17 +60,80 @@ export default function TORDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [tor, setTor] = useState<Detail | null>(null);
   const [match, setMatch] = useState<MatchResult | null>(null);
+  const [bookmarkId, setBookmarkId] = useState<string | null>(null);
+  const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  const [documentLoading, setDocumentLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
     const headers = { Authorization: `Bearer ${getToken()}` };
     Promise.all([
       fetch(`${apiUrl}/tor/${id}`, { headers }).then((r) => r.json()),
       fetch(`${apiUrl}/tor/${id}/match`, { headers }).then((r) => r.ok ? r.json() : null),
-    ]).then(([detail, matchResponse]) => {
+      fetch(`${apiUrl}/bookmarks/tor/${id}`, { headers }).then((r) => r.ok ? r.json() : null),
+    ]).then(([detail, matchResponse, bookmarkResponse]) => {
       setTor(detail.data ?? null);
       setMatch(matchResponse?.data ?? null);
+      const bookmark = bookmarkResponse?.data as BookmarkStatus | undefined;
+      setBookmarkId(bookmark?.bookmarked ? bookmark.bookmarkId : null);
     }).catch(() => setTor(null));
   }, [id]);
+
+  const toggleBookmark = async () => {
+    setBookmarkLoading(true);
+    setActionError(null);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+    const headers = { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` };
+    try {
+      if (bookmarkId) {
+        const response = await fetch(`${apiUrl}/bookmarks/${bookmarkId}`, { method: "DELETE", headers });
+        if (!response.ok) throw new Error("ไม่สามารถยกเลิกการบันทึกได้");
+        setBookmarkId(null);
+      } else {
+        const response = await fetch(`${apiUrl}/bookmarks`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ torRecordId: id }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error?.message ?? "ไม่สามารถบันทึก TOR ได้");
+        setBookmarkId(result.data?._id ?? null);
+      }
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการบันทึก");
+    } finally {
+      setBookmarkLoading(false);
+    }
+  };
+
+  const downloadDocument = async () => {
+    setDocumentLoading(true);
+    setActionError(null);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+    try {
+      const response = await fetch(`${apiUrl}/tor/${id}/document`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error?.message ?? "ไม่สามารถดาวน์โหลดเอกสารได้");
+      const document = result.data as DocumentResponse;
+      if (!document.available || !document.downloadUrl) {
+        throw new Error(document.message ?? "ยังไม่มีเอกสารให้ดาวน์โหลด");
+      }
+      const link = window.document.createElement("a");
+      link.href = document.downloadUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      if (document.fileName) link.download = document.fileName;
+      link.click();
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการดาวน์โหลด");
+    } finally {
+      setDocumentLoading(false);
+    }
+  };
+
   if (!tor) return <div className="flex min-h-[60vh] items-center justify-center text-slate-500">กำลังโหลดรายละเอียด TOR...</div>;
 
   const parsed = tor.parsedData;
@@ -99,8 +166,9 @@ export default function TORDetailPage() {
       : "ยังไม่ประกาศวันที่";
 
   return <div className="mx-auto max-w-[1340px] animate-fade-in pb-10 text-slate-800">
-    <div className="mb-7 flex flex-wrap items-center justify-between gap-4"><p className="text-sm text-slate-500"><Link href="/procurement" className="no-underline text-slate-500 hover:text-[#0759be]">จัดซื้อจัดจ้าง</Link><span className="mx-3">›</span>รายละเอียดโครงการ</p>{tor.officialPortalUrl && <a href={tor.officialPortalUrl} target="_blank" rel="noreferrer" className="detail-action detail-action-outline"><OpenInNewIcon fontSize="small" />ไปที่ประกาศต้นทาง</a>}</div>
-    <div className="mb-7"><div className="mb-4 flex gap-2"><span className={`rounded-full px-4 py-1.5 text-sm font-semibold ${bidClosed ? "bg-slate-200 text-slate-700" : "bg-blue-100 text-[#1762be]"}`}>● {displayStatus}</span>{completed && <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">วิเคราะห์ TOR แล้ว</span>}</div><h1 className="text-3xl font-bold md:text-4xl">{tor.title}</h1><p className="mt-4 flex items-center gap-2 text-lg text-slate-500"><ApartmentOutlinedIcon />{tor.agencyName}</p></div>
+    <div className="mb-7 flex flex-wrap items-start justify-between gap-4"><p className="text-sm text-slate-500"><Link href="/procurement" className="no-underline text-slate-500 hover:text-[#0759be]">จัดซื้อจัดจ้าง</Link><span className="mx-3">›</span>รายละเอียดโครงการ</p><div className="flex flex-wrap justify-end gap-2"><button type="button" onClick={toggleBookmark} disabled={bookmarkLoading} className={bookmarkId ? "detail-action detail-action-primary disabled:cursor-wait disabled:opacity-60" : "detail-action detail-action-outline cursor-pointer disabled:cursor-wait disabled:opacity-60"}>{bookmarkId ? <BookmarkOutlinedIcon fontSize="small" /> : <BookmarkBorderOutlinedIcon fontSize="small" />}{bookmarkLoading ? "กำลังบันทึก..." : bookmarkId ? "บันทึกแล้ว" : "บันทึกไว้"}</button><button type="button" onClick={downloadDocument} disabled={documentLoading} className="detail-action detail-action-outline cursor-pointer disabled:cursor-wait disabled:opacity-60"><DownloadOutlinedIcon fontSize="small" />{documentLoading ? "กำลังเตรียมเอกสาร..." : "ดาวน์โหลดเอกสาร"}</button>{tor.officialPortalUrl && <a href={tor.officialPortalUrl} target="_blank" rel="noreferrer" className="detail-action detail-action-outline"><OpenInNewIcon fontSize="small" />ไปที่ประกาศต้นทาง</a>}</div></div>
+    {actionError && <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{actionError}</div>}
+    <div className="mb-7"><div className="mb-4 flex gap-2"><span className={`rounded-full px-4 py-1.5 text-sm font-semibold ${bidClosed ? "bg-slate-200 text-slate-700" : "bg-blue-100 text-[#1762be]"}`}>● {displayStatus}</span></div><h1 className="text-3xl font-bold md:text-4xl">{tor.title}</h1><p className="mt-4 flex items-center gap-2 text-lg text-slate-500"><ApartmentOutlinedIcon />{tor.agencyName}</p></div>
     <DeadlineNotice label={deadlineKind} deadline={deadline} remainingDays={remainingDays} />
     <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Stat label={scheduleLabel} value={period} /><Stat label="งบประมาณที่จัดสรร" value={money(tor.budget ?? parsed?.medianPrice?.value)} /><Stat label="ราคากลาง" value={money(tor.medianPrice ?? parsed?.medianPrice?.value)} /><Stat label="ความเหมาะสมกับทีม" value={match?.matchScore != null ? `${Math.round(match.matchScore * 100)}%` : "กรอกโปรไฟล์เพื่อดูผล"} note={match?.matchScore != null ? `ผ่าน ${match.counts.pass} / ตรวจได้ ${match.counts.pass + match.counts.fail} ข้อ` : undefined} /></div>
     {!completed ? <section className="detail-panel"><Title icon={<WarningAmberOutlinedIcon />}>สถานะการวิเคราะห์เอกสาร</Title><p className="text-slate-600">รายการนี้ยังไม่มีผล extraction ที่สมบูรณ์ จะแสดงรายละเอียดเชิงลึกเมื่อสถานะเป็น completed</p></section> : <div className="grid gap-7 xl:grid-cols-[minmax(0,1fr)_360px]"><main className="space-y-7">
@@ -108,23 +176,21 @@ export default function TORDetailPage() {
       {(tor.summary?.deliverables?.length || parsed?.techRequirements?.length) && <section className="detail-panel"><Title icon={<ComputerOutlinedIcon />}>สิ่งส่งมอบและข้อกำหนดทางเทคนิค</Title>{tor.summary?.deliverables?.length ? <Pills items={tor.summary.deliverables} /> : null}{parsed?.techRequirements?.length ? <Pills items={parsed.techRequirements.map((item) => `${item.name}${item.isMandatory ? " • จำเป็น" : ""}`)} /> : null}</section>}
       <section className="detail-panel"><Title icon={<FactCheckOutlinedIcon />}>คุณสมบัติผู้ยื่นข้อเสนอ</Title><Qualifications items={specific} empty="ไม่พบเงื่อนไขเฉพาะโครงการ" />{standard.length ? <details className="mt-5 rounded-xl bg-slate-50 p-4"><summary className="cursor-pointer font-semibold">เงื่อนไขทั่วไปตามระเบียบ ({standard.length} ข้อ)</summary><Qualifications items={standard} /></details> : null}</section>
       {(parsed?.keyDates?.submissionDate?.date || parsed?.keyDates?.documentFeePeriod || parsed?.keyDates?.contractDurationDays?.value != null || parsed?.keyDates?.warrantyMonths?.value != null) && <section className="detail-panel"><Title icon={<CalendarMonthOutlinedIcon />}>กำหนดการและระยะเวลาโครงการ</Title><div className="grid gap-3 sm:grid-cols-2"><Row label="วันยื่นข้อเสนอ" value={parsed?.keyDates?.submissionDate?.date ? `${date(parsed.keyDates.submissionDate.date)} ${parsed.keyDates.submissionDate.startTime ?? ""}–${parsed.keyDates.submissionDate.endTime ?? ""}` : undefined} /><Row label="ช่วงซื้อเอกสาร" value={parsed?.keyDates?.documentFeePeriod ? `${date(parsed.keyDates.documentFeePeriod.from)} – ${date(parsed.keyDates.documentFeePeriod.to)}` : undefined} /><Row label="ระยะเวลาดำเนินงาน" value={parsed?.keyDates?.contractDurationDays?.value != null ? `${parsed.keyDates.contractDurationDays.value} วัน` : undefined} /><Row label="ระยะเวลารับประกัน" value={parsed?.keyDates?.warrantyMonths?.value != null ? `${parsed.keyDates.warrantyMonths.value} เดือน` : undefined} /></div></section>}
-      <div className="grid gap-7 md:grid-cols-2"><section className="detail-panel"><Title icon={<AccountBalanceWalletOutlinedIcon />}>การแจกแจงงบประมาณ</Title><Row label="งบประมาณที่จัดสรร" value={money(tor.budget)} /><Row label="ราคากลาง" value={money(tor.medianPrice)} /><Row label="วงเงินตาม TOR" value={money(parsed?.documentPrices?.budget?.value)} /></section><section className="detail-panel"><Title icon={<BarChartOutlinedIcon />}>เกณฑ์การประเมิน</Title><p className="whitespace-pre-wrap text-sm leading-7 text-slate-600">{parsed?.evaluationCriteria?.content ?? "ยังไม่มีรายละเอียดเกณฑ์การประเมิน"}</p>{parsed?.evaluationCriteria?.weights?.map((item) => <div key={item.criterion} className="mt-3"><div className="flex justify-between text-sm"><span>{item.criterion}</span><strong>{item.weight}%</strong></div><div className="mt-1 h-2 rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#0759be]" style={{ width: `${item.weight}%` }} /></div></div>)}</section></div>
+      <section className="detail-panel"><Title icon={<BarChartOutlinedIcon />}>เกณฑ์การประเมิน</Title><p className="whitespace-pre-wrap text-sm leading-7 text-slate-600">{parsed?.evaluationCriteria?.content ?? "ยังไม่มีรายละเอียดเกณฑ์การประเมิน"}</p>{parsed?.evaluationCriteria?.weights?.map((item) => <div key={item.criterion} className="mt-3"><div className="flex justify-between text-sm"><span>{item.criterion}</span><strong>{item.weight}%</strong></div><div className="mt-1 h-2 rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#0759be]" style={{ width: `${item.weight}%` }} /></div></div>)}</section>
       {parsed?.paymentTerms?.length ? <section className="detail-panel"><Title icon={<ReceiptLongOutlinedIcon />}>เงื่อนไขการส่งมอบและชำระเงิน</Title>{parsed.paymentTerms.map((item) => <div key={item.installment} className="mb-3 rounded-xl bg-slate-50 p-4"><strong>งวดที่ {item.installment}{item.percent != null ? ` • ${item.percent}%` : ""}</strong><p className="mt-1 text-sm text-slate-600">{item.condition}</p></div>)}</section> : null}
-    </main><aside className="space-y-6"><section className="detail-panel"><Title icon={<ReceiptLongOutlinedIcon />}>ข้อมูลการจัดซื้อจัดจ้าง</Title><Row label="ประเภทงาน" value={workType[parsed?.workType ?? ""]} /><Row label="ประเภทโครงการ" value={tor.metadata?.projectType} /><Row label="วิธีจัดซื้อ" value={tor.metadata?.purchaseMethod} /><Row label="ประเภทประกาศ" value={tor.metadata?.announceType} /><Row label="เลขที่โครงการ" value={tor.metadata?.projectId} /><Row label="สถานะ" value={tor.metadata?.contractStatus} />{tor.metadata?.phaseReason && <p className="mt-4 text-xs leading-5 text-slate-500">{tor.metadata.phaseReason}</p>}</section><section className="rounded-2xl border-l-4 border-red-600 bg-red-50 p-6"><Title icon={<FlagOutlinedIcon />}>การวิเคราะห์ความเสี่ยง</Title>{tor.redFlags?.length ? tor.redFlags.map((item) => <div key={item.reason} className="mb-3 rounded-xl bg-white p-4 text-sm"><strong>{item.reason}</strong><p className="mt-2">{item.clauseText}</p>{item.recommendedAction && <p className="mt-2 text-red-700">คำแนะนำ: {item.recommendedAction}</p>}</div>) : <p className="text-sm text-emerald-700">ไม่พบความเสี่ยงที่ต้องแจ้งเตือน</p>}</section></aside></div>}
+    </main><aside className="space-y-6"><section className="detail-panel"><Title icon={<ReceiptLongOutlinedIcon />}>ข้อมูลการจัดซื้อจัดจ้าง</Title><Row label="ประเภทงาน" value={workType[parsed?.workType ?? ""]} /><Row label="ประเภทโครงการ" value={tor.metadata?.projectType} /><Row label="วิธีจัดซื้อ" value={tor.metadata?.purchaseMethod} /><Row label="ประเภทประกาศ" value={tor.metadata?.announceType} /><Row label="เลขที่โครงการ" value={tor.metadata?.projectId} /><Row label="สถานะ" value={tor.metadata?.contractStatus} /></section><section className="rounded-2xl border-l-4 border-red-600 bg-red-50 p-6"><Title icon={<FlagOutlinedIcon />}>การวิเคราะห์ความเสี่ยง</Title>{tor.redFlags?.length ? tor.redFlags.map((item) => <div key={item.reason} className="mb-3 rounded-xl bg-white p-4 text-sm"><strong>{item.reason}</strong><p className="mt-2">{item.clauseText}</p>{item.recommendedAction && <p className="mt-2 text-red-700">คำแนะนำ: {item.recommendedAction}</p>}</div>) : <p className="text-sm text-emerald-700">ไม่พบความเสี่ยงที่ต้องแจ้งเตือน</p>}</section></aside></div>}
   </div>;
 }
 function DeadlineNotice({ label, deadline, remainingDays }: { label: string; deadline?: string | null; remainingDays: number | null }) {
-  const state = remainingDays == null
-    ? { message: "ยังไม่ประกาศ deadline", className: "border-slate-200 bg-slate-50 text-slate-600" }
-    : remainingDays < 0
-      ? { message: `เลยกำหนดแล้ว ${Math.abs(remainingDays).toLocaleString("th-TH")} วัน`, className: "border-slate-300 bg-slate-100 text-slate-700" }
-      : remainingDays === 0
-        ? { message: "ครบกำหนดวันนี้", className: "border-red-300 bg-red-50 text-red-700" }
-        : remainingDays <= 3
-          ? { message: `เหลือ ${remainingDays.toLocaleString("th-TH")} วัน`, className: "border-red-300 bg-red-50 text-red-700" }
-          : remainingDays <= 7
-            ? { message: `เหลือ ${remainingDays.toLocaleString("th-TH")} วัน`, className: "border-amber-300 bg-amber-50 text-amber-800" }
-            : { message: `เหลือ ${remainingDays.toLocaleString("th-TH")} วัน`, className: "border-blue-200 bg-blue-50 text-blue-800" };
+  if (remainingDays == null || remainingDays < 0) return null;
+
+  const state = remainingDays === 0
+    ? { message: "ครบกำหนดวันนี้", className: "border-red-300 bg-red-50 text-red-700" }
+    : remainingDays <= 3
+      ? { message: `เหลือ ${remainingDays.toLocaleString("th-TH")} วัน`, className: "border-red-300 bg-red-50 text-red-700" }
+      : remainingDays <= 7
+        ? { message: `เหลือ ${remainingDays.toLocaleString("th-TH")} วัน`, className: "border-amber-300 bg-amber-50 text-amber-800" }
+        : { message: `เหลือ ${remainingDays.toLocaleString("th-TH")} วัน`, className: "border-blue-200 bg-blue-50 text-blue-800" };
 
   return <div role="status" className={`mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border px-4 py-3 ${state.className}`}><NotificationsActiveOutlinedIcon fontSize="small" /><strong>{state.message}</strong><span className="text-sm opacity-80">{deadline ? `${label}: ${date(deadline)}` : label}</span></div>;
 }
