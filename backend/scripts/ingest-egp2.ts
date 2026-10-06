@@ -38,6 +38,7 @@ import {
 } from "../src/services/ingestion/egp2-client";
 import { scoreSoftware, type FilterResult } from "../src/services/ingestion/software-filter";
 import { resolvePhase } from "../src/services/ingestion/phase-mapper";
+import { buildAnnouncementSearchUrl } from "../src/services/ingestion/egp-document-url";
 import TORRecord from "../src/db/models/tor-record";
 
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -196,9 +197,7 @@ async function main() {
             // than filling submissionDeadline and overstating what we know.
             publicHearingEnd: hearingEnd,
             sourceUrl: `https://egp2.bangkok.go.th/project-detail/${row.projectId}`,
-            officialPortalUrl:
-              `https://process5.gprocurement.go.th/egp-agpc01-web/announcement/search` +
-              `?projectId=${row.projectNumber}`,
+            officialPortalUrl: buildAnnouncementSearchUrl(row.projectNumber),
             deduplicationHash: dedupeHash(row.projectNumber),
             tags,
             // The reference price comes straight from the agency, so it is

@@ -27,9 +27,13 @@ const PROCESS5 = "https://process5.gprocurement.go.th";
 export const EGP_DOWNLOAD_ENDPOINT = `${PROCESS5}/egp-upload-service/v1/downloadFileTest`;
 export const EGP_REFERER = `${PROCESS5}/egp-agpc01-web/`;
 
-/** Public e-GP announcement search — a stable landing page for a project. */
+/**
+ * Public e-GP announcement page for a project — what users open. The old
+ * "/announcement/search?projectId=" form no longer lands on the project.
+ * Behind Cloudflare: works in a browser, not from a server-side fetch.
+ */
 export function buildAnnouncementSearchUrl(projectId: string): string {
-  return `${PROCESS5}/egp-agpc01-web/announcement/search?projectId=${encodeURIComponent(projectId)}`;
+  return `${PROCESS5}/egp-agpc01-web/announcement?keywordSearch=${encodeURIComponent(projectId)}`;
 }
 
 /** Direct archive URL, once a zipId is known. */
