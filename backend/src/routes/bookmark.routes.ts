@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { connectDB } from "../db/connection.js";
 import Bookmark from "../db/models/bookmark.js";
+import { displayPhase } from "../services/ingestion/data-checks.js";
 import { apiSuccess, Errors } from "../utils/api-response.js";
 import { authenticate } from "../middleware/auth.js";
 
@@ -24,7 +25,26 @@ router.get("/", async (req: Request, res: Response) => {
     Bookmark.countDocuments({ userId: req.user!.id }),
   ]);
 
-  apiSuccess(res, bookmarks, { total, page, limit });
+  const now = new Date();
+  apiSuccess(
+    res,
+    bookmarks.map((bookmark) => {
+      const tor = bookmark.torRecordId;
+      if (!tor || typeof tor !== "object" || !("phase" in tor)) return bookmark;
+      const populatedTor = tor as unknown as {
+        phase: "public_hearing" | "bidding" | "awarded" | "cancelled";
+        submissionDeadline?: Date | null;
+      };
+      return {
+        ...bookmark,
+        torRecordId: {
+          ...tor,
+          displayPhase: displayPhase(populatedTor.phase, populatedTor.submissionDeadline, now),
+        },
+      };
+    }),
+    { total, page, limit },
+  );
 });
 
 /** POST /api/bookmarks — Create a bookmark. */

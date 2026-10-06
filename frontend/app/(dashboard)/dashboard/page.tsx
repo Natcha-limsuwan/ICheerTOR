@@ -11,41 +11,6 @@ import BookmarkIcon from "@mui/icons-material/Bookmark";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 
-const summaryCards = [
-  {
-    title: "TOR ทั้งหมด",
-    value: "342",
-    subtitle: "+12 ใหม่วันนี้",
-    icon: <SearchIcon />,
-    color: "var(--color-primary)",
-    bg: "#EBF0FF",
-  },
-  {
-    title: "บันทึกไว้",
-    value: "8",
-    subtitle: "2 ใกล้หมดเขต",
-    icon: <BookmarkIcon />,
-    color: "var(--color-secondary)",
-    bg: "#FFF8EB",
-  },
-  {
-    title: "แจ้งเตือนใหม่",
-    value: "5",
-    subtitle: "3 ยังไม่ได้อ่าน",
-    icon: <NotificationsIcon />,
-    color: "var(--color-info)",
-    bg: "#E8F7FA",
-  },
-  {
-    title: "อัตราจับคู่",
-    value: "73%",
-    subtitle: "เทียบกับเดือนก่อน +5%",
-    icon: <TrendingUpIcon />,
-    color: "var(--color-success)",
-    bg: "#E8F8ED",
-  },
-];
-
 interface TOROpportunity {
   _id: string;
   title: string;
@@ -54,11 +19,24 @@ interface TOROpportunity {
   budget?: number;
   submissionDeadline?: string;
   phase: string;
+  displayPhase: string;
+  match: {
+    matchScore: number | null;
+    counts: { pass: number; fail: number; unknown: number };
+  } | null;
+}
+
+interface DashboardSummary {
+  tor: { total: number; newToday: number };
+  bookmarks: { total: number; closingSoon: number };
+  notifications: { total: number; unread: number };
+  matching: { averageScore: number | null; evaluated: number };
 }
 
 const phaseLabels: Record<string, string> = {
   public_hearing: "รับฟังความเห็น",
   bidding: "เสนอราคา",
+  closed: "ปิดรับข้อเสนอแล้ว",
   awarded: "ประกาศผลแล้ว",
   cancelled: "ยกเลิก",
 };
@@ -66,17 +44,28 @@ const phaseLabels: Record<string, string> = {
 export default function DashboardPage() {
   const { user } = useAuth();
   const [opportunities, setOpportunities] = useState<TOROpportunity[]>([]);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loadingOpportunities, setLoadingOpportunities] = useState(true);
 
   useEffect(() => {
     async function fetchOpportunities() {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api"}/tor?sortBy=postingDate&limit=3`,
-          { headers: { Authorization: `Bearer ${getToken()}` } },
-        );
-        const json = await response.json();
-        if (json.data) setOpportunities(json.data);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+        const headers = { Authorization: `Bearer ${getToken()}` };
+        const [opportunitiesResponse, summaryResponse] = await Promise.all([
+          fetch(`${apiUrl}/tor?sortBy=postingDate&limit=100&includeMatch=true`, { headers }),
+          fetch(`${apiUrl}/tor/dashboard`, { headers }),
+        ]);
+        const [opportunitiesJson, summaryJson] = await Promise.all([
+          opportunitiesResponse.json(),
+          summaryResponse.ok ? summaryResponse.json() : null,
+        ]);
+        if (opportunitiesJson.data) {
+          const scored = (opportunitiesJson.data as TOROpportunity[])
+            .filter((item) => item.match?.matchScore != null);
+          setOpportunities(scored.slice(0, 3));
+        }
+        if (summaryJson?.data) setSummary(summaryJson.data as DashboardSummary);
       } catch (error) {
         console.error("Failed to fetch dashboard opportunities:", error);
       } finally {
@@ -86,6 +75,41 @@ export default function DashboardPage() {
 
     fetchOpportunities();
   }, []);
+
+  const summaryCards = [
+    {
+      title: "TOR ทั้งหมด",
+      value: summary?.tor.total.toLocaleString("th-TH") ?? "—",
+      subtitle: summary ? `เพิ่ม ${summary.tor.newToday.toLocaleString("th-TH")} วันนี้` : "กำลังโหลด...",
+      icon: <SearchIcon />,
+      color: "var(--color-primary)",
+      bg: "#EBF0FF",
+    },
+    {
+      title: "บันทึกไว้",
+      value: summary?.bookmarks.total.toLocaleString("th-TH") ?? "—",
+      subtitle: summary ? `${summary.bookmarks.closingSoon.toLocaleString("th-TH")} ใกล้หมดเขตใน 7 วัน` : "กำลังโหลด...",
+      icon: <BookmarkIcon />,
+      color: "var(--color-secondary)",
+      bg: "#FFF8EB",
+    },
+    {
+      title: "แจ้งเตือน",
+      value: summary?.notifications.total.toLocaleString("th-TH") ?? "—",
+      subtitle: summary ? `${summary.notifications.unread.toLocaleString("th-TH")} ยังไม่ได้อ่าน` : "กำลังโหลด...",
+      icon: <NotificationsIcon />,
+      color: "var(--color-info)",
+      bg: "#E8F7FA",
+    },
+    {
+      title: "คะแนนจับคู่เฉลี่ย",
+      value: summary?.matching.averageScore == null ? "—" : `${Math.round(summary.matching.averageScore * 100)}%`,
+      subtitle: summary?.matching.averageScore == null ? "กรอกโปรไฟล์และรอผลวิเคราะห์ TOR" : `จาก ${summary.matching.evaluated.toLocaleString("th-TH")} TOR ที่ตรวจได้`,
+      icon: <TrendingUpIcon />,
+      color: "var(--color-success)",
+      bg: "#E8F8ED",
+    },
+  ];
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -134,11 +158,11 @@ export default function DashboardPage() {
         )}
         {!loadingOpportunities && opportunities.length === 0 && (
           <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-white px-5 py-8 text-center text-sm text-[var(--color-text-secondary)]">
-            ยังไม่มีรายการ TOR ที่แสดงได้ในขณะนี้
+            ยังไม่มี TOR ที่ตรวจคุณสมบัติกับโปรไฟล์ได้ในขณะนี้
           </div>
         )}
         <div className="space-y-3">
-          {opportunities.map((item, i) => (
+          {opportunities.map((item) => (
             <Link key={item._id} href={`/procurement/${item._id}`} className="block no-underline">
               <Card
               sx={{
@@ -168,15 +192,17 @@ export default function DashboardPage() {
                   <div className="flex flex-col items-end gap-2">
                     <span
                       className={`text-xs font-medium px-2 py-1 rounded-full ${
-                        item.phase === "public_hearing"
+                        item.displayPhase === "public_hearing"
                           ? "bg-yellow-100 text-yellow-800"
+                          : item.displayPhase === "closed"
+                            ? "bg-slate-100 text-slate-700"
                           : "bg-blue-100 text-blue-800"
                       }`}
                     >
-                      {phaseLabels[item.phase] ?? item.phase}
+                      {phaseLabels[item.displayPhase] ?? item.displayPhase}
                     </span>
                     <span className="text-xs font-bold" style={{ color: "var(--color-success)" }}>
-                      ตรงกัน {95 - i * 7}%
+                      ตรงกัน {Math.round(item.match!.matchScore! * 100)}%
                     </span>
                   </div>
                 </div>

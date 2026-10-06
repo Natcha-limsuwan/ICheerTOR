@@ -2,11 +2,13 @@ import { Router, Request, Response } from "express";
 import { connectDB } from "../db/connection.js";
 import TORRecord from "../db/models/tor-record.js";
 import TORSource from "../db/models/tor-source.js";
+import Bookmark from "../db/models/bookmark.js";
+import Notification from "../db/models/notification.js";
 import UserCorrection from "../db/models/user-correction.js";
 import VendorProfile from "../db/models/vendor-profile.js";
 import { matchQualifications } from "../services/matching/qualification-matcher.js";
 import { resolveDownloadUrl } from "../services/ingestion/egp-document-url.js";
-import { bidWindow } from "../services/ingestion/data-checks.js";
+import { bidWindow, displayPhase } from "../services/ingestion/data-checks.js";
 import { apiSuccess, Errors } from "../utils/api-response.js";
 import { authenticate } from "../middleware/auth.js";
 
@@ -69,6 +71,8 @@ router.get("/", async (req: Request, res: Response) => {
   const openOnly = req.query.openOnly === "true";
   const needsCheck = req.query.needsCheck === "true";
   const techStack = req.query.techStack as string | undefined;
+  /** Attach the authenticated user's qualification result to each list row. */
+  const includeMatch = req.query.includeMatch === "true";
   const sortBy = (req.query.sortBy as string) ?? "postingDate";
   const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
   const page = Math.max(1, parseInt((req.query.page as string) ?? "1", 10));
@@ -114,25 +118,103 @@ router.get("/", async (req: Request, res: Response) => {
       sortField.postingDate = -1;
     }
 
-    const [records, total] = await Promise.all([
+    const [records, total, profile] = await Promise.all([
       TORRecord.find(filter)
         .sort(sortField)
         .skip((page - 1) * limit)
         .limit(limit)
-        .select(LIST_FIELDS)
+        .select(includeMatch ? `${LIST_FIELDS} parsedData.qualifications` : LIST_FIELDS)
         .lean(),
       TORRecord.countDocuments(filter),
+      includeMatch ? VendorProfile.findOne({ userId: req.user!.id }).lean() : null,
     ]);
 
     const now = new Date();
     apiSuccess(
       res,
-      records.map((r) => ({ ...r, bidWindow: bidWindow(r.submissionDeadline, now) })),
+      records.map((r) => {
+        const match = profile ? matchQualifications(profile, r.parsedData?.qualifications ?? []) : null;
+        // Qualifications are selected only to calculate the private match;
+        // list clients still receive the compact list representation.
+        const { parsedData: rawParsedData, ...record } = r;
+        const { qualifications: _qualifications, ...parsedData } = rawParsedData ?? {};
+        return {
+          ...record,
+          ...(Object.keys(parsedData).length ? { parsedData } : {}),
+          bidWindow: bidWindow(r.submissionDeadline, now),
+          displayPhase: displayPhase(r.phase, r.submissionDeadline, now),
+          ...(includeMatch ? { match } : {}),
+        };
+      }),
       { total, page, limit },
     );
   } catch (error) {
     console.error("TOR search error:", error);
     Errors.internal(res, "Failed to search TOR records");
+  }
+});
+
+/**
+ * GET /api/tor/dashboard — Counts for the signed-in user's dashboard.
+ * This stays separate from the paginated list so card totals are never based
+ * on whichever page of TOR rows happens to be visible.
+ */
+router.get("/dashboard", async (req: Request, res: Response) => {
+  await connectDB();
+
+  try {
+    const now = new Date();
+    // Start of the current Bangkok calendar day, regardless of server TZ.
+    const bangkok = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+    const todayStart = new Date(
+      Date.UTC(bangkok.getUTCFullYear(), bangkok.getUTCMonth(), bangkok.getUTCDate()) - 7 * 60 * 60 * 1000,
+    );
+    const soon = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const [torTotal, torNewToday, bookmarked, closingSoon, notificationTotal, notificationUnread, profile, records] = await Promise.all([
+      TORRecord.countDocuments({}),
+      TORRecord.countDocuments({ createdAt: { $gte: todayStart } }),
+      Bookmark.countDocuments({ userId: req.user!.id }),
+      Bookmark.aggregate<{ count: number }>([
+        { $match: { userId: req.user!.id } },
+        {
+          $lookup: {
+            from: "torrecords",
+            localField: "torRecordId",
+            foreignField: "_id",
+            as: "tor",
+          },
+        },
+        { $unwind: "$tor" },
+        { $match: { "tor.submissionDeadline": { $gte: now, $lte: soon } } },
+        { $count: "count" },
+      ]),
+      Notification.countDocuments({ userId: req.user!.id }),
+      Notification.countDocuments({ userId: req.user!.id, "channels.inApp.readAt": { $exists: false } }),
+      VendorProfile.findOne({ userId: req.user!.id }).lean(),
+      TORRecord.find({})
+        .select("parsedData.qualifications")
+        .lean(),
+    ]);
+
+    const scores = profile
+      ? records
+          .map((record) => matchQualifications(profile, record.parsedData?.qualifications ?? []).matchScore)
+          .filter((score): score is number => score != null)
+      : [];
+
+    apiSuccess(res, {
+      tor: { total: torTotal, newToday: torNewToday },
+      bookmarks: { total: bookmarked, closingSoon: closingSoon[0]?.count ?? 0 },
+      notifications: { total: notificationTotal, unread: notificationUnread },
+      matching: {
+        averageScore: scores.length ? scores.reduce((sum, score) => sum + score, 0) / scores.length : null,
+        evaluated: scores.length,
+      },
+    });
+  } catch (error) {
+    console.error("Dashboard summary error:", error);
+    Errors.internal(res, "Failed to load dashboard summary");
   }
 });
 
@@ -155,7 +237,12 @@ router.get("/:id", async (req: Request, res: Response) => {
       .sort({ scrapedAt: -1 })
       .lean();
 
-    apiSuccess(res, { ...record, bidWindow: bidWindow(record.submissionDeadline), sources });
+    apiSuccess(res, {
+      ...record,
+      bidWindow: bidWindow(record.submissionDeadline),
+      displayPhase: displayPhase(record.phase, record.submissionDeadline),
+      sources,
+    });
   } catch (error) {
     console.error("TOR detail error:", error);
     Errors.internal(res, "Failed to fetch TOR record");

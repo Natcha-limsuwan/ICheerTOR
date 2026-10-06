@@ -24,6 +24,22 @@ export interface BidWindow {
   closedDaysAgo: number | null;
 }
 
+/**
+ * Status safe to show to bidders. e-GP leaves many projects in `bidding`
+ * while the agency evaluates bids, so the submitted closing time wins for
+ * display. The stored phase remains untouched for audit and source context.
+ */
+export type DisplayPhase = "public_hearing" | "bidding" | "closed" | "awarded" | "cancelled";
+
+export function displayPhase(
+  phase: Exclude<DisplayPhase, "closed">,
+  closesAt: Date | string | null | undefined,
+  now = new Date(),
+): DisplayPhase {
+  const window = bidWindow(closesAt, now);
+  return (phase === "public_hearing" || phase === "bidding") && window.state === "closed" ? "closed" : phase;
+}
+
 export type ConflictSeverity = "info" | "check";
 
 export interface DataConflict {

@@ -25,11 +25,20 @@ const phaseLabels: Record<string, string> = {
   cancelled: "ยกเลิก",
 };
 
+const displayPhase = (tor: TORItem) =>
+  tor.displayPhase ?? (tor.phase === "bidding" && tor.bidWindow?.state === "closed" ? "closed" : tor.phase);
+
+const displayPhaseLabel = (tor: TORItem) => {
+  const phase = displayPhase(tor);
+  return phase === "closed" ? "ปิดรับข้อเสนอแล้ว" : phaseLabels[phase] ?? phase;
+};
+
 interface TORItem {
   _id: string;
   title: string;
   agencyName: string;
   phase: string;
+  displayPhase?: string;
   medianPrice?: number;
   budget?: number;
   postingDate: string;
@@ -37,7 +46,22 @@ interface TORItem {
   sourceUrl: string;
   officialPortalUrl?: string;
   tags: string[];
+  bidWindow?: { state: "closed" | "upcoming" | "today" | "unknown" };
+  parsedData?: {
+    keyDates?: {
+      submissionDate?: { date?: string | null };
+      documentFeePeriod?: { from: string; to: string } | null;
+    };
+  };
 }
+
+const formatDate = (value: string) =>
+  new Intl.DateTimeFormat("th-TH", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Bangkok",
+  }).format(new Date(value));
 
 export default function ProcurementPage() {
   const router = useRouter();
@@ -187,10 +211,15 @@ export default function ProcurementPage() {
                           ฿{tor.medianPrice.toLocaleString()}
                         </span>
                       )}
-                      {tor.submissionDeadline && (
+                      {tor.parsedData?.keyDates?.documentFeePeriod && (
+                        <span className="text-xs text-[var(--color-text-secondary)]">
+                          ช่วงซื้อเอกสาร: {formatDate(tor.parsedData.keyDates.documentFeePeriod.from)} – {formatDate(tor.parsedData.keyDates.documentFeePeriod.to)}
+                        </span>
+                      )}
+                      {(tor.parsedData?.keyDates?.submissionDate?.date ?? tor.submissionDeadline) && (
                         <span className="text-xs text-[var(--color-text-secondary)]">
                           กำหนดส่ง:{" "}
-                          {new Date(tor.submissionDeadline).toLocaleDateString("th-TH")}
+                          {formatDate(tor.parsedData?.keyDates?.submissionDate?.date ?? tor.submissionDeadline!)}
                         </span>
                       )}
                     </div>
@@ -201,7 +230,7 @@ export default function ProcurementPage() {
                             key={tag}
                             className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded"
                           >
-                            {tag}
+                            {tag === "bidding" && displayPhase(tor) === "closed" ? "ปิดรับแล้ว" : tag}
                           </span>
                         ))}
                       </div>
@@ -209,8 +238,8 @@ export default function ProcurementPage() {
                   </div>
                   <div className="flex flex-col items-end gap-2 shrink-0">
                     <PillBadge
-                      label={phaseLabels[tor.phase] ?? tor.phase}
-                      value={tor.phase}
+                      label={displayPhaseLabel(tor)}
+                      value={displayPhase(tor)}
                     />
                     {tor.officialPortalUrl && (
                       <a

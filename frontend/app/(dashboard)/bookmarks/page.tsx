@@ -1,7 +1,7 @@
 "use client";
 
 
-import { api, getToken } from "@/lib/api/client";
+import { getToken } from "@/lib/api/client";
 import { useState, useEffect } from "react";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -15,7 +15,9 @@ import BookmarkIcon from "@mui/icons-material/Bookmark";
 const phaseLabels: Record<string, string> = {
   public_hearing: "รับฟังความเห็น",
   bidding: "เสนอราคา",
+  closed: "ปิดรับข้อเสนอแล้ว",
   awarded: "ประกาศผลแล้ว",
+  cancelled: "ยกเลิก",
 };
 
 interface BookmarkItem {
@@ -25,6 +27,7 @@ interface BookmarkItem {
     title: string;
     agencyName: string;
     phase: string;
+    displayPhase?: string;
     medianPrice?: number;
     submissionDeadline?: string;
     tags: string[];
@@ -117,8 +120,8 @@ export default function BookmarksPage() {
                   </Link>
                   <div className="flex items-center gap-2 shrink-0">
                     <PillBadge
-                      label={phaseLabels[tor.phase] ?? tor.phase}
-                      value={tor.phase}
+                      label={phaseLabels[tor.displayPhase ?? tor.phase] ?? (tor.displayPhase ?? tor.phase)}
+                      value={tor.displayPhase ?? tor.phase}
                     />
                     <IconButton
                       size="small"

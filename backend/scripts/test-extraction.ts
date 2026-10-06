@@ -16,7 +16,7 @@ import { validateExtraction } from "../src/services/ai/validate-extraction";
 import { hasDroppedDigits, isPlausibleMedianPrice, resolvePrices } from "../src/services/ai/resolve-prices";
 import { analyzeRedFlags, dailyPenaltyPercent } from "../src/services/ai/red-flag-analyzer";
 import { matchQualifications } from "../src/services/matching/qualification-matcher";
-import { bidWindow, computeDataChecks } from "../src/services/ingestion/data-checks";
+import { bidWindow, computeDataChecks, displayPhase } from "../src/services/ingestion/data-checks";
 import { parseThaiAmountWords } from "../src/services/ai/thai-number";
 import type { TorExtractionV4 } from "../src/services/ai/prompts/v4";
 import type { IParsedData, IQualification } from "../src/db/models/tor-record";
@@ -310,11 +310,13 @@ function testMatcher() {
     q({ criterion: "ไม่เป็นบุคคลล้มละลาย", isBoilerplate: true }),
     q({ criterion: "มูลค่าสุทธิเป็นบวก", type: "net_worth", minimumValue: 0, alternativeGroup: "A" }),
     q({ criterion: "ทุนจดทะเบียน 8 ล้าน", type: "registered_capital", minimumValue: 8_000_000, alternativeGroup: "A" }),
+    q({ criterion: "ทุนจดทะเบียน 20 ล้าน", type: "registered_capital", minimumValue: 20_000_000, alternativeGroup: "A" }),
     q({ criterion: "เงินฝาก ¼ ของงบ", minimumValue: 6_179_737.5, alternativeGroup: "A" }),
   ];
   const r = matchQualifications(profile, quals);
-  check("ข้อมาตรฐานไม่ถูกตรวจ", r.standardClausesSkipped === 1 && r.criteria.length === 3);
+  check("ข้อมาตรฐานไม่ถูกตรวจ", r.standardClausesSkipped === 1 && r.criteria.length === 4);
   check("ทุนผ่าน 1 ข้อในกลุ่ม → กลุ่มผ่าน → eligible", r.overallStatus === "eligible", r.overallStatus);
+  check("ข้อทางเลือกนับเป็น 1 ข้อในคะแนน", r.counts.pass === 1 && r.counts.fail === 0 && r.matchScore === 1, JSON.stringify(r.counts));
 
   const poor = matchQualifications({ ...profile, registeredCapital: 1_000_000 } as IVendorProfile, quals);
   check("ทุนไม่ผ่าน แต่ข้ออื่นในกลุ่มตรวจไม่ได้ → incomplete", poor.overallStatus === "incomplete", poor.overallStatus);
@@ -330,6 +332,14 @@ function testDataChecks() {
   const closed = bidWindow("2026-06-22T05:00:00Z", now);
   check("หมดเขต 22 มิ.ย. → closed 104 วัน", closed.state === "closed" && closed.closedDaysAgo === 104, show(closed));
   check("ไม่มีวัน → unknown", bidWindow(null, now).state === "unknown");
+  check(
+    "เลยวันยื่นแล้ว → แสดงปิดรับข้อเสนอ",
+    displayPhase("bidding", "2026-06-22T05:00:00Z", now) === "closed",
+  );
+  check(
+    "ประกาศผลแล้วไม่ถูกทับด้วยวันยื่น",
+    displayPhase("awarded", "2026-10-10T05:00:00Z", now) === "awarded",
+  );
 
   const base = { parsedData: { keyDates: {} }, extraction: { issues: [] } } as never;
   const old = computeDataChecks({ ...(base as object), phase: "bidding", submissionDeadline: new Date("2026-06-22T05:00:00Z") } as never, now);

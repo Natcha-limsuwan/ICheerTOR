@@ -106,10 +106,16 @@ export function matchQualifications(
     }
   });
 
+  // A group of alternatives is one requirement, not several chances to add
+  // points.  For example, "net worth OR registered capital OR credit line"
+  // must count once whether one, two, or all of its alternatives pass.
+  // Keep `criteria` uncollapsed for the explanation UI, but calculate the
+  // score and its displayed denominator from logical requirements.
+  const scoreStatuses = requirementStatuses(criteria);
   const counts = {
-    pass: criteria.filter((c) => c.status === "pass").length,
-    fail: criteria.filter((c) => c.status === "fail").length,
-    unknown: criteria.filter((c) => c.status === "unknown").length,
+    pass: scoreStatuses.filter((status) => status === "pass").length,
+    fail: scoreStatuses.filter((status) => status === "fail").length,
+    unknown: scoreStatuses.filter((status) => status === "unknown").length,
   };
   const checked = counts.pass + counts.fail;
   const matchScore = checked > 0 ? counts.pass / checked : null;

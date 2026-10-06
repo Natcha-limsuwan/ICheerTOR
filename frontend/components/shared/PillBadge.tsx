@@ -12,6 +12,7 @@ const colorMap: Record<string, { bg: string; text: string }> = {
   // Phases
   public_hearing: { bg: "#FFF8EB", text: "#92400E" },
   bidding: { bg: "#EBF0FF", text: "#1E40AF" },
+  closed: { bg: "#F1F5F9", text: "#475569" },
   awarded: { bg: "#E8F8ED", text: "#166534" },
   cancelled: { bg: "#FEF2F2", text: "#991B1B" },
   // Status
