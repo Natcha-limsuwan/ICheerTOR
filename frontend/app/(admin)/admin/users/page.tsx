@@ -68,9 +68,9 @@ const roleLabels: Record<string, string> = {
 };
 
 export default function AdminUsersPage() {
-  const { user } = useAuth();
+  const { user: currentUser } = useAuth();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const currentRole = ((user as any)?.role as string) ?? "user";
+  const currentRole = ((currentUser as any)?.role as string) ?? "user";
 
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -165,9 +165,17 @@ export default function AdminUsersPage() {
         }),
       });
       if (res.ok) {
+        const actionText =
+          actionDialog.action === "suspend"
+            ? "ระงับ"
+            : actionDialog.action === "ban"
+            ? "แบน"
+            : actionDialog.action === "approve"
+            ? "อนุมัติ"
+            : "คืนสถานะ";
         setSnackbar({
           open: true,
-          message: `ดำเนินการ ${actionDialog.action === "suspend" ? "ระงับ" : "คืนสถานะ"} ผู้ใช้เรียบร้อยแล้ว`,
+          message: `ดำเนินการ${actionText}ผู้ใช้เรียบร้อยแล้ว`,
           severity: "success",
         });
         fetchUsers();
@@ -343,26 +351,36 @@ export default function AdminUsersPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  users.map((user) => {
-                    const sc = statusColors[user.status] ?? statusColors.pending;
-                    const rc = roleColors[user.role] ?? roleColors.user;
+                  users.map((u) => {
+                    const sc = statusColors[u.status] ?? statusColors.pending;
+                    const rc = roleColors[u.role] ?? roleColors.user;
+                    const isSelf =
+                      !!currentUser &&
+                      (u.email === currentUser.email ||
+                        (Boolean(currentUser.id) && u._id === currentUser.id));
+                    const canManageRole =
+                      !isSelf &&
+                      (currentRole === "developer" ||
+                        (currentRole === "admin" && u.role !== "developer"));
+                    const canManageStatus = !isSelf && u.role !== "developer";
+
                     return (
-                      <TableRow key={user._id}>
-                        <TableCell>{user.name}</TableCell>
+                      <TableRow key={u._id}>
+                        <TableCell>{u.name}</TableCell>
                         <TableCell>
-                          <span className="text-sm">{user.email}</span>
+                          <span className="text-sm">{u.email}</span>
                         </TableCell>
                         <TableCell>
-                          {user.email !== user?.email ? (
+                          {canManageRole ? (
                             <Tooltip title="คลิกเพื่อเปลี่ยน Role">
                               <Chip
-                                label={roleLabels[user.role] ?? user.role}
+                                label={roleLabels[u.role] ?? u.role}
                                 size="small"
                                 onClick={() =>
                                   setRoleDialog({
                                     open: true,
-                                    user,
-                                    newRole: user.role === "admin" ? "user" : "admin",
+                                    user: u,
+                                    newRole: u.role === "admin" ? "user" : "admin",
                                     reason: "",
                                   })
                                 }
@@ -381,13 +399,81 @@ export default function AdminUsersPage() {
                               />
                             </Tooltip>
                           ) : (
+                            <Tooltip title={isSelf ? "ไม่สามารถเปลี่ยน Role บัญชีของตัวเองได้" : ""}>
+                              <Chip
+                                label={roleLabels[u.role] ?? u.role}
+                                size="small"
+                                sx={{
+                                  backgroundColor: rc.bg,
+                                  color: rc.color,
+                                  fontWeight: 600,
+                                  fontSize: "0.7rem",
+                                  height: 22,
+                                }}
+                              />
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {canManageStatus ? (
+                            <Tooltip
+                              title={
+                                u.status === "active"
+                                  ? "คลิกเพื่อระงับการใช้งาน"
+                                  : u.status === "pending"
+                                  ? "คลิกเพื่ออนุมัติการใช้งาน"
+                                  : "คลิกเพื่อคืนสถานะการใช้งาน"
+                              }
+                            >
+                              <Chip
+                                label={u.status}
+                                size="small"
+                                onClick={() => {
+                                  if (u.status === "active") {
+                                    setActionDialog({
+                                      open: true,
+                                      user: u,
+                                      action: "suspend",
+                                      reason: "",
+                                    });
+                                  } else if (u.status === "pending") {
+                                    setActionDialog({
+                                      open: true,
+                                      user: u,
+                                      action: "approve",
+                                      reason: "",
+                                    });
+                                  } else {
+                                    setActionDialog({
+                                      open: true,
+                                      user: u,
+                                      action: "reinstate",
+                                      reason: "",
+                                    });
+                                  }
+                                }}
+                                sx={{
+                                  backgroundColor: sc.bg,
+                                  color: sc.color,
+                                  fontWeight: 500,
+                                  fontSize: "0.7rem",
+                                  height: 22,
+                                  cursor: "pointer",
+                                  "&:hover": {
+                                    opacity: 0.8,
+                                    boxShadow: "0 0 0 2px " + sc.color,
+                                  },
+                                }}
+                              />
+                            </Tooltip>
+                          ) : (
                             <Chip
-                              label={roleLabels[user.role] ?? user.role}
+                              label={u.status}
                               size="small"
                               sx={{
-                                backgroundColor: rc.bg,
-                                color: rc.color,
-                                fontWeight: 600,
+                                backgroundColor: sc.bg,
+                                color: sc.color,
+                                fontWeight: 500,
                                 fontSize: "0.7rem",
                                 height: 22,
                               }}
@@ -395,28 +481,15 @@ export default function AdminUsersPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Chip
-                            label={user.status}
-                            size="small"
-                            sx={{
-                              backgroundColor: sc.bg,
-                              color: sc.color,
-                              fontWeight: 500,
-                              fontSize: "0.7rem",
-                              height: 22,
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {user.isVerified ? (
+                          {u.isVerified ? (
                             <VerifiedIcon sx={{ color: "var(--color-success)", fontSize: 18 }} />
                           ) : (
                             "—"
                           )}
                         </TableCell>
                         <TableCell>
-                          {user.lastLoginAt
-                            ? new Date(user.lastLoginAt).toLocaleDateString("th-TH", {
+                          {u.lastLoginAt
+                            ? new Date(u.lastLoginAt).toLocaleDateString("th-TH", {
                                 day: "numeric",
                                 month: "short",
                                 year: "2-digit",
@@ -426,15 +499,15 @@ export default function AdminUsersPage() {
                         <TableCell>
                           <div className="flex gap-1 items-center">
                             {/* Role change button */}
-                            {user.email !== user?.email && (
+                            {canManageRole && (
                               <Tooltip title="เปลี่ยน Role ผู้ใช้">
                                 <IconButton
                                   size="small"
                                   onClick={() =>
                                     setRoleDialog({
                                       open: true,
-                                      user,
-                                      newRole: user.role === "admin" ? "user" : "admin",
+                                      user: u,
+                                      newRole: u.role === "admin" ? "user" : "admin",
                                       reason: "",
                                     })
                                   }
@@ -444,14 +517,14 @@ export default function AdminUsersPage() {
                               </Tooltip>
                             )}
                             {/* Suspend */}
-                            {user.status === "active" && user.email !== user?.email && (
+                            {canManageStatus && u.status === "active" && (
                               <Tooltip title="ระงับการใช้งาน">
                                 <IconButton
                                   size="small"
                                   onClick={() =>
                                     setActionDialog({
                                       open: true,
-                                      user,
+                                      user: u,
                                       action: "suspend",
                                       reason: "",
                                     })
@@ -462,15 +535,34 @@ export default function AdminUsersPage() {
                               </Tooltip>
                             )}
                             {/* Reinstate */}
-                            {user.status === "suspended" && user.email !== user?.email && (
-                              <Tooltip title="คืนสถานะการใช้งาน">
+                            {canManageStatus &&
+                              (u.status === "suspended" || u.status === "banned") && (
+                                <Tooltip title="คืนสถานะการใช้งาน">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() =>
+                                      setActionDialog({
+                                        open: true,
+                                        user: u,
+                                        action: "reinstate",
+                                        reason: "",
+                                      })
+                                    }
+                                  >
+                                    <CheckCircleIcon sx={{ fontSize: 16, color: "var(--color-success)" }} />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            {/* Approve */}
+                            {canManageStatus && u.status === "pending" && (
+                              <Tooltip title="อนุมัติการใช้งาน">
                                 <IconButton
                                   size="small"
                                   onClick={() =>
                                     setActionDialog({
                                       open: true,
-                                      user,
-                                      action: "reinstate",
+                                      user: u,
+                                      action: "approve",
                                       reason: "",
                                     })
                                   }
@@ -478,6 +570,14 @@ export default function AdminUsersPage() {
                                   <CheckCircleIcon sx={{ fontSize: 16, color: "var(--color-success)" }} />
                                 </IconButton>
                               </Tooltip>
+                            )}
+                            {isSelf && (
+                              <span className="text-xs text-[var(--color-text-secondary)] italic">
+                                บัญชีของคุณ
+                              </span>
+                            )}
+                            {!isSelf && !canManageRole && !canManageStatus && (
+                              <span className="text-xs text-[var(--color-text-secondary)]">—</span>
                             )}
                           </div>
                         </TableCell>
@@ -507,7 +607,15 @@ export default function AdminUsersPage() {
       {/* Action Dialog */}
       <Dialog open={actionDialog.open} onClose={() => setActionDialog({ open: false, reason: "" })}>
         <DialogTitle>
-          ยืนยันการ{actionDialog.action === "suspend" ? "ระงับ" : "คืนสถานะ"}ผู้ใช้
+          ยืนยันการ{
+            actionDialog.action === "suspend"
+              ? "ระงับ"
+              : actionDialog.action === "ban"
+              ? "แบน"
+              : actionDialog.action === "approve"
+              ? "อนุมัติ"
+              : "คืนสถานะ"
+          }ผู้ใช้
         </DialogTitle>
         <DialogContent>
           <p className="text-sm mb-3">
@@ -528,7 +636,7 @@ export default function AdminUsersPage() {
           <Button
             variant="contained"
             onClick={handleAction}
-            color={actionDialog.action === "suspend" ? "warning" : "success"}
+            color={actionDialog.action === "suspend" ? "warning" : actionDialog.action === "ban" ? "error" : "success"}
           >
             ยืนยัน
           </Button>

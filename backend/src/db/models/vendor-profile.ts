@@ -36,6 +36,7 @@ export interface IVendorProfile extends Document {
   pastContracts: IPastContract[];
   maxContractValue: number;
   techStacks: string[];
+  interestedCategories?: string[];
   credentials: ICredential[];
   teamSize?: number;
   /** Key staff by role — TORs often require e.g. "PM ≥ 1 คน มี PMP". */
@@ -90,6 +91,7 @@ const VendorProfileSchema = new Schema<IVendorProfile>(
     pastContracts: { type: [PastContractSchema], default: [] },
     maxContractValue: { type: Number, default: 0 },
     techStacks: { type: [String], default: [] },
+    interestedCategories: { type: [String], default: [] },
     credentials: { type: [CredentialSchema], default: [] },
     teamSize: { type: Number, min: 1 },
     personnel: { type: [PersonnelSchema], default: [] },
