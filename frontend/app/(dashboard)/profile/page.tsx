@@ -1,7 +1,7 @@
 "use client";
 
 import { getToken } from "@/lib/api/client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -46,6 +46,37 @@ const PRESET_PROJECT_TYPES = [
   "อินเทอร์เน็ตของสรรพสิ่ง / สมาร์ทซิตี้ (IoT & Smart City)",
   "พัฒนาระบบและบำรุงรักษา (Maintenance & Support)",
   "จัดหาและติดตั้งระบบสารสนเทศ (IT Procurement & Setup)",
+];
+
+const PRESET_TECH_STACKS = [
+  "React",
+  "Next.js",
+  "Vue.js",
+  "Angular",
+  "Node.js",
+  "TypeScript",
+  "JavaScript",
+  "Python",
+  "Java",
+  "Spring Boot",
+  "Go",
+  "C# / .NET",
+  "PHP",
+  "PostgreSQL",
+  "MySQL",
+  "MongoDB",
+  "Redis",
+  "Docker",
+  "Kubernetes",
+  "AWS",
+  "Google Cloud (GCP)",
+  "Microsoft Azure",
+  "Flutter",
+  "React Native",
+  "iOS (Swift)",
+  "Android (Kotlin)",
+  "AI & Machine Learning",
+  "Data Analytics / BI",
 ];
 
 export default function ProfilePage() {
@@ -166,6 +197,8 @@ export default function ProfilePage() {
     setPendingUrl(null);
   };
 
+  const topRef = useRef<HTMLDivElement>(null);
+
   const handleSave = async () => {
     setSaving(true);
     setMessage(null);
@@ -190,6 +223,10 @@ export default function ProfilePage() {
       setMessage({ type: "error", text: "เกิดข้อผิดพลาด" });
     } finally {
       setSaving(false);
+      setTimeout(() => {
+        topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }, 50);
     }
   };
 
@@ -198,6 +235,18 @@ export default function ProfilePage() {
       setProfile((p) => ({ ...p, techStacks: [...p.techStacks, newTech.trim()] }));
       setNewTech("");
     }
+  };
+
+  const toggleTech = (tech: string) => {
+    setProfile((p) => {
+      const exists = p.techStacks.includes(tech);
+      return {
+        ...p,
+        techStacks: exists
+          ? p.techStacks.filter((t) => t !== tech)
+          : [...p.techStacks, tech],
+      };
+    });
   };
 
   const addCategory = () => {
@@ -221,7 +270,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl animate-fade-in">
+    <div ref={topRef} className="space-y-6 max-w-4xl mx-auto w-full animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold">โปรไฟล์บริษัท</h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
@@ -270,30 +319,91 @@ export default function ProfilePage() {
       {/* Tech Stacks */}
       <Card sx={{ borderRadius: "var(--radius-card)" }}>
         <CardContent sx={{ p: 3 }}>
-          <h2 className="text-lg font-semibold mb-4">เทคโนโลยี</h2>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {profile.techStacks.map((tech) => (
-              <Chip
-                key={tech}
-                label={tech}
-                onDelete={() =>
-                  setProfile((p) => ({ ...p, techStacks: p.techStacks.filter((t) => t !== tech) }))
-                }
-              />
-            ))}
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold">เทคโนโลยี</h2>
+            <span className="text-xs text-[var(--color-text-secondary)]">
+              เลือกแล้ว {profile.techStacks.length} รายการ
+            </span>
           </div>
-          <div className="flex gap-2">
-            <TextField
-              placeholder="เพิ่มเทคโนโลยี..."
-              value={newTech}
-              onChange={(e) => setNewTech(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addTech()}
-              size="small"
-              sx={{ flex: 1 }}
-            />
-            <Button variant="outlined" onClick={addTech} startIcon={<AddIcon />}>
-              เพิ่ม
-            </Button>
+          <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+            เลือกเทคโนโลยี ภาษาโปรแกรม เฟรมเวิร์ก หรือเครื่องมือที่ทีมของคุณเชี่ยวชาญเพื่อช่วยจับคู่กับ TOR
+          </p>
+
+          {/* Quick Select Presets */}
+          <div className="mb-4">
+            <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">
+              เลือกจากเทคโนโลยียอดนิยม (คลิกเพื่อเลือก / ยกเลิก):
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {PRESET_TECH_STACKS.map((tech) => {
+                const isSelected = profile.techStacks.includes(tech);
+                return (
+                  <Chip
+                    key={tech}
+                    label={tech}
+                    clickable
+                    color={isSelected ? "primary" : "default"}
+                    variant={isSelected ? "filled" : "outlined"}
+                    icon={isSelected ? <CheckIcon fontSize="small" /> : undefined}
+                    onClick={() => toggleTech(tech)}
+                    sx={{
+                      cursor: "pointer",
+                      fontSize: "0.8rem",
+                      py: 0.5,
+                      transition: "all 0.15s ease",
+                      ...(isSelected && {
+                        fontWeight: 600,
+                      }),
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Selected Techs */}
+          {profile.techStacks.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">
+                รายการที่เลือกไว้:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {profile.techStacks.map((tech) => (
+                  <Chip
+                    key={tech}
+                    label={tech}
+                    color="primary"
+                    variant="filled"
+                    onDelete={() =>
+                      setProfile((p) => ({
+                        ...p,
+                        techStacks: p.techStacks.filter((t) => t !== tech),
+                      }))
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Custom Input */}
+          <div className="pt-3 border-t border-gray-100">
+            <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">
+              หรือพิมพ์เพิ่มเทคโนโลยีอื่น ๆ:
+            </p>
+            <div className="flex gap-2">
+              <TextField
+                placeholder="พิมพ์เพิ่มเทคโนโลยี (เช่น Rust, GraphQL)..."
+                value={newTech}
+                onChange={(e) => setNewTech(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTech())}
+                size="small"
+                sx={{ flex: 1 }}
+              />
+              <Button variant="outlined" onClick={addTech} startIcon={<AddIcon />}>
+                เพิ่ม
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
