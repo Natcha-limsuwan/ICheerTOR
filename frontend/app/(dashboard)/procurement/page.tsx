@@ -249,9 +249,9 @@ export default function ProcurementPage() {
                         </span>
                       )}
                     </div>
-                    {tor.tags.length > 0 && (
+                    {tor.tags.some((tag) => tag !== "open") && (
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {tor.tags.slice(0, 4).map((tag) => (
+                        {tor.tags.filter((tag) => tag !== "open").slice(0, 4).map((tag) => (
                           <span
                             key={tag}
                             className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded"
