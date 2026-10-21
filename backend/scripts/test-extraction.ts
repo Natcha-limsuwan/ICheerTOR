@@ -11,7 +11,10 @@
  *   docker compose --profile tools run --rm tools npm run test:extraction
  */
 
-import { readArchiveFacts, readSubmissionDate } from "../src/services/ingestion/archive-facts";
+import { isDraftAnnouncement, readAgencyName, readArchiveFacts, readDeptCode, readSubmissionDate } from "../src/services/ingestion/archive-facts";
+import { parseRss } from "../src/services/ingestion/egp-rss-client";
+import { classifyTitle, diffWindow } from "../src/services/ingestion/rss-poll";
+import { thaiFiscalYear } from "../src/services/ingestion/rss-ingest";
 import { validateExtraction } from "../src/services/ai/validate-extraction";
 import { hasDroppedDigits, isPlausibleMedianPrice, resolvePrices } from "../src/services/ai/resolve-prices";
 import { analyzeRedFlags, dailyPenaltyPercent } from "../src/services/ai/red-flag-analyzer";
@@ -361,11 +364,66 @@ function testDataChecks() {
   check("admin ตรวจแล้ว → ไม่ขึ้นคิวอีก แต่ยังแสดงข้อขัดกัน", !resolved.needsCheck && resolved.conflicts.length === 1);
 }
 
+/* 6 ─────────────────────────────────────────────────────────────────── */
+
+function testRss() {
+  console.log("\n[6] e-GP RSS");
+  const xml = `<?xml version="1.0" encoding="Windows-874" ?><rss version="2.0"><channel>
+    <title>ประกาศจัดซื้อจัดจ้างภาครัฐ</title><countbyday>391</countbyday>
+    <item>
+      <title>ประกวดราคาจ้างตามโครงการพัฒนาระบบดิจิทัลรองรับการให้บริการ ด้วยวิธีประกวดราคาอิเล็กทรอนิกส์ (e-bidding)</title>
+      <link>https://process5.gprocurement.go.th/egp-template-service/dwnt/view-pdf-file?templateId=abc&amp;x=1</link>
+      <description>69099585615, ประกวดราคาอิเล็กทรอนิกส์ (e-bidding), ประกาศเชิญชวน</description>
+      <pubDate>2026-10-07</pubDate><guid></guid>
+    </item>
+    <item><title>ไม่มีเลขโครงการ</title><description>, , ประกาศเชิญชวน</description><pubDate>2026-10-07</pubDate></item>
+  </channel></rss>`;
+  const feed = parseRss(xml, "D0");
+  check("อ่าน countbyday", feed.countByDay === 391);
+  check("ข้ามรายการที่ไม่มีเลขโครงการ", feed.items.length === 1);
+  const it = feed.items[0];
+  check(
+    "แยก field ได้ครบ",
+    it.projectNumber === "69099585615" && it.method.includes("e-bidding") && it.announceLabel === "ประกาศเชิญชวน" &&
+      it.pubDate === "2026-10-07" && it.link?.endsWith("abc&x=1") === true,
+    show(it),
+  );
+
+  const item = (n: number) => ({ ...it, projectNumber: String(69000000000 + n) });
+  const prev = Array.from({ length: 20 }, (_, i) => item(i).projectNumber);
+  const moved = diffWindow(prev, [item(100), item(101), ...Array.from({ length: 18 }, (_, i) => item(i))]);
+  check("รายการใหม่ 2 รายการ ไม่หลุด", moved.fresh.length === 2 && !moved.gap);
+  const jumped = diffWindow(prev, Array.from({ length: 20 }, (_, i) => item(200 + i)));
+  check("ใหม่ทั้ง 20 = อาจมีรายการหลุด", jumped.gap);
+  check("รอบแรก (ไม่มีหน้าต่างเดิม) ไม่นับว่าหลุด", !diffWindow([], jumped.fresh).gap);
+
+  check("ชื่อพัฒนาระบบ → เก็บ", classifyTitle(it.title).verdict === "kept");
+  check("ซื้อทราย…ปรับปรุงระบบส่งน้ำ → ไม่เก็บ", classifyTitle("ประกวดราคาซื้อทรายหยาบน้ำจืด ของงานปรับปรุงระบบส่งน้ำ").verdict !== "kept");
+  check("ปีงบ: 7 ต.ค. 2026 → 2570", thaiFiscalYear("2026-10-07") === 2570);
+  check("ปีงบ: 30 ก.ย. 2026 → 2569", thaiFiscalYear("2026-09-30") === 2569);
+
+  const docs = [
+    { fileName: "annoudoc_310000110000062_69099311880.pdf", text: "(สำเนา)\nประกาศกรุงเทพมหานคร\nเรื่อง ประกวดราคาจ้าง…" },
+    { fileName: "doc_310000110000062_69099311880.pdf", text: "เอกสารประกวดราคา" },
+  ];
+  check("ชื่อหน่วยงานจากหัวประกาศ", readAgencyName(docs) === "กรุงเทพมหานคร");
+  check(
+    "หัวประกาศของกรม",
+    readAgencyName([{ fileName: "annoudoc_1.pdf", text: "(สำเนา)\nประกาศกรมตรวจบัญชีสหกรณ์\nเรื่อง …" }]) === "กรมตรวจบัญชีสหกรณ์",
+  );
+  check("รหัสหน่วยงานจากชื่อไฟล์ doc_", readDeptCode(docs) === "310000110000062");
+  const draft = [{ fileName: "annoudoc_0300600000_1.pdf", text: "ร่าง\nประกาศกรมสรรพสามิต\nเรื่อง …" }];
+  check("ประกาศมีคำว่า ร่าง → draft แม้มาจาก endpoint ประกาศจริง", isDraftAnnouncement(draft) && readArchiveFacts(draft, "final").documentStage === "draft");
+  check("ชื่อหน่วยงานของประกาศร่าง", readAgencyName(draft) === "กรมสรรพสามิต");
+  check("ประกาศจริง → final", readArchiveFacts(docs, "final").documentStage === "final");
+}
+
 testArchiveFacts();
 testValidator();
 testResolvePrices();
 testRedFlags();
 testMatcher();
 testDataChecks();
+testRss();
 console.log(`\n${passed} ผ่าน, ${failed} ไม่ผ่าน`);
 process.exit(failed ? 1 : 0);
