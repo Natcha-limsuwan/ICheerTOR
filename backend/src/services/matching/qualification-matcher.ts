@@ -599,6 +599,10 @@ function evaluateTechStack(profile: IVendorProfile, q: IQualification): Evaluati
   };
 }
 
+function normalizeCert(s: string): string {
+  return s.toLowerCase().replace(/iso\/iec/g, "iso").replace(/[^a-z0-9ก-๙]/g, "");
+}
+
 function evaluateCertification(profile: IVendorProfile, q: IQualification): Evaluation {
   const required = q.requiredCerts?.length
     ? q.requiredCerts
@@ -612,7 +616,12 @@ function evaluateCertification(profile: IVendorProfile, q: IQualification): Eval
     .map((c) => c.name.trim().toLowerCase())
     .filter(Boolean);
   const missing = required.filter((requiredCredential) =>
-    !creds.some((credential) => equivalentName(normalize(credential), normalize(requiredCredential))),
+    !creds.some((credential) => {
+      if (equivalentName(normalize(credential), normalize(requiredCredential))) return true;
+      const normC = normalizeCert(credential);
+      const normReq = normalizeCert(requiredCredential);
+      return normC.length > 0 && normReq.length > 0 && (normC.includes(normReq) || normReq.includes(normC));
+    }),
   );
   const pass = missing.length === 0;
 
