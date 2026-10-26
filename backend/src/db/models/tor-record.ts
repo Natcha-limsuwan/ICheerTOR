@@ -308,8 +308,11 @@ export interface ISourceMetadata {
   /** Why the software filter kept this record — needed to tune the keywords. */
   filterScore?: number;
   filterReason?: string;
-  /** Which system this record came from, so mixed sources stay traceable. */
-  source?: "egp2" | "govspending";
+  /** Which system this record came from, so mixed sources stay traceable.
+   *  egp-rss = the CGD e-GP RSS feed (nationwide, see egp-rss-client.ts). */
+  source?: "egp2" | "govspending" | "egp-rss";
+  /** e-GP department code from the bidding document's file name ("3100…" = BMA). */
+  deptCode?: string | null;
   /** egp2's own GUID — needed to call its per-project endpoints. */
   egp2ProjectId?: string;
   /** Announcement stage name, e.g. "ประกาศเชิญชวน". */
@@ -587,7 +590,8 @@ const SourceMetadataSchema = new Schema(
     winnerName: { type: String, default: null },
     filterScore: { type: Number },
     filterReason: { type: String },
-    source: { type: String, enum: ["egp2", "govspending"] },
+    source: { type: String, enum: ["egp2", "govspending", "egp-rss"] },
+    deptCode: { type: String, default: null },
     egp2ProjectId: { type: String, index: true },
     announceType: { type: String },
     orgGroupName: { type: String, index: true },

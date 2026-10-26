@@ -75,6 +75,18 @@ export interface DatedSentence {
 export interface ArchiveFacts {
   /** Which archive the documents came from. Null when unknown. */
   documentStage: DocumentStage | null;
+  /**
+   * The procuring agency, from the announcement's heading "ประกาศ<agency>"
+   * — e.g. "กรุงเทพมหานคร", "กรมตรวจบัญชีสหกรณ์". The only place a project
+   * from the RSS feed names its agency.
+   */
+  agencyName: string | null;
+  /**
+   * Leading digits of the e-GP department code in the bidding document's file
+   * name (doc_<code>_<project>.pdf): "3100…" is BMA, "0700…" the Ministry of
+   * Agriculture's departments. Full code kept; callers take the prefix.
+   */
+  deptCode: string | null;
   submissionDate: SubmissionDate;
   contractDuration: ContractDuration | null;
   /** "ประกาศ ณ วันที่ / ลงวันที่ ..." of the announcement, when filled in. ISO date. */
@@ -289,9 +301,42 @@ function readAmount(docs: TextDocument[], pattern: RegExp): StatedAmount | null 
  * announcement first: it is the official source for the submission date and
  * the reference price, and the bidding document only repeats them.
  */
+/** "(สำเนา) / ประกาศกรมพัฒนาที่ดิน / เรื่อง …" → "กรมพัฒนาที่ดิน". */
+export function readAgencyName(docs: TextDocument[]): string | null {
+  for (const doc of docs.filter((d) => ANNOUNCEMENT_FILE.test(d.fileName))) {
+    for (const line of doc.text.split("\n").slice(0, 6)) {
+      const m = /^\s*ประกาศ\s*([^\s].{1,120}?)\s*$/.exec(line);
+      if (m && !/^(ณ|ขึ้นเว็บ|เชิญชวน|ผู้ชนะ)/.test(m[1])) return m[1].trim();
+    }
+  }
+  return null;
+}
+
+/** "doc_310000110000062_69049037828.pdf" → "310000110000062". */
+export function readDeptCode(docs: TextDocument[]): string | null {
+  for (const doc of docs) {
+    const m = /^doc_(\d{4,20})_\d+/i.exec(doc.fileName);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+/**
+ * A draft announcement is stamped "ร่าง" above its heading. During the public
+ * hearing both e-GP archive endpoints serve this same draft, so the stamp —
+ * not the endpoint the archive came from — says whether it is a draft.
+ */
+export function isDraftAnnouncement(docs: TextDocument[]): boolean {
+  return docs
+    .filter((d) => ANNOUNCEMENT_FILE.test(d.fileName))
+    .some((d) => d.text.split("\n").slice(0, 3).some((l) => /^\s*ร่าง\s*$/.test(l)));
+}
+
 export function readArchiveFacts(docs: TextDocument[], documentStage: DocumentStage | null = null): ArchiveFacts {
   return {
-    documentStage,
+    documentStage: isDraftAnnouncement(docs) ? "draft" : documentStage,
+    agencyName: readAgencyName(docs),
+    deptCode: readDeptCode(docs),
     submissionDate: readSubmissionDate(docs),
     contractDuration: readContractDuration(docs),
     announcedDate: readAnnouncedDate(docs),
