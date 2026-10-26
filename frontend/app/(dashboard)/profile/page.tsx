@@ -79,6 +79,23 @@ const PRESET_TECH_STACKS = [
   "Data Analytics / BI",
 ];
 
+const PRESET_CREDENTIALS = [
+  "ISO/IEC 29110",
+  "ISO/IEC 27001",
+  "ISO 9001",
+  "ISO/IEC 20000-1",
+  "CMMI Level 2",
+  "CMMI Level 3",
+  "CMMI Level 5",
+  "ขึ้นทะเบียนผู้ประกอบการดิจิทัล (depa d-list)",
+  "ขึ้นทะเบียนผู้ประกอบการ SME (THAI SME-GP)",
+  "หนังสือแต่งตั้งตัวแทนจำหน่าย (Authorized Reseller/Partner)",
+  "CSA STAR (Cloud Security)",
+  "มาตรฐาน มรท. 8001",
+  "PMP (Project Management Professional)",
+  "CISSP",
+];
+
 export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<ProfileData>({
@@ -95,6 +112,8 @@ export default function ProfilePage() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [newTech, setNewTech] = useState("");
   const [newCategory, setNewCategory] = useState("");
+  const [newCertName, setNewCertName] = useState("");
+  const [newCertIssuer, setNewCertIssuer] = useState("");
 
   // Navigation warning dialog
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
@@ -265,6 +284,44 @@ export default function ProfilePage() {
         interestedCategories: exists
           ? p.interestedCategories.filter((c) => c !== cat)
           : [...p.interestedCategories, cat],
+      };
+    });
+  };
+
+  const addCredential = () => {
+    const trimmedName = newCertName.trim();
+    if (!trimmedName) return;
+    if (profile.credentials.some((c) => c.name.toLowerCase() === trimmedName.toLowerCase())) return;
+
+    setProfile((p) => ({
+      ...p,
+      credentials: [
+        ...p.credentials,
+        {
+          name: trimmedName,
+          ...(newCertIssuer.trim() ? { issuedBy: newCertIssuer.trim() } : {}),
+        },
+      ],
+    }));
+    setNewCertName("");
+    setNewCertIssuer("");
+  };
+
+  const removeCredential = (name: string) => {
+    setProfile((p) => ({
+      ...p,
+      credentials: p.credentials.filter((c) => c.name.toLowerCase() !== name.toLowerCase()),
+    }));
+  };
+
+  const toggleCredential = (certName: string) => {
+    setProfile((p) => {
+      const exists = p.credentials.some((c) => c.name.toLowerCase() === certName.toLowerCase());
+      return {
+        ...p,
+        credentials: exists
+          ? p.credentials.filter((c) => c.name.toLowerCase() !== certName.toLowerCase())
+          : [...p.credentials, { name: certName }],
       };
     });
   };
@@ -493,6 +550,103 @@ export default function ProfilePage() {
                 sx={{ flex: 1 }}
               />
               <Button variant="outlined" onClick={addCategory} startIcon={<AddIcon />}>
+                เพิ่ม
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Certifications and Standards */}
+      <Card sx={{ borderRadius: "var(--radius-card)" }}>
+        <CardContent sx={{ p: 3 }}>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold">มาตรฐานและใบรับรอง</h2>
+            <span className="text-xs text-[var(--color-text-secondary)]">
+              เลือกแล้ว {profile.credentials.length} รายการ
+            </span>
+          </div>
+          <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+            เลือกหรือระบุมาตรฐานและใบรับรองขององค์กร (เช่น ISO, CMMI หรือหนังสือรับรองต่าง ๆ) เพื่อใช้จับคู่คุณสมบัติกับ TOR
+          </p>
+
+          {/* Quick Select Presets */}
+          <div className="mb-4">
+            <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">
+              เลือกจากมาตรฐานยอดนิยมใน TOR ภาครัฐ (คลิกเพื่อเลือก / ยกเลิก):
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {PRESET_CREDENTIALS.map((cert) => {
+                const isSelected = profile.credentials.some(
+                  (c) => c.name.toLowerCase() === cert.toLowerCase()
+                );
+                return (
+                  <Chip
+                    key={cert}
+                    label={cert}
+                    clickable
+                    color={isSelected ? "primary" : "default"}
+                    variant={isSelected ? "filled" : "outlined"}
+                    icon={isSelected ? <CheckIcon fontSize="small" /> : undefined}
+                    onClick={() => toggleCredential(cert)}
+                    sx={{
+                      cursor: "pointer",
+                      fontSize: "0.8rem",
+                      py: 0.5,
+                      transition: "all 0.15s ease",
+                      ...(isSelected && {
+                        fontWeight: 600,
+                      }),
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Selected Credentials */}
+          {profile.credentials.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">
+                รายการที่เลือกไว้:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {profile.credentials.map((cred, idx) => (
+                  <Chip
+                    key={`${cred.name}-${idx}`}
+                    label={cred.issuedBy ? `${cred.name} (${cred.issuedBy})` : cred.name}
+                    color="primary"
+                    variant="filled"
+                    onDelete={() => removeCredential(cred.name)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Custom Input */}
+          <div className="pt-3 border-t border-gray-100">
+            <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">
+              หรือพิมพ์เพิ่มมาตรฐาน / ใบรับรองอื่น ๆ:
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <TextField
+                placeholder="ชื่อมาตรฐาน / ใบรับรอง (เช่น ISO 22301, CISSP)..."
+                value={newCertName}
+                onChange={(e) => setNewCertName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCredential())}
+                size="small"
+                sx={{ flex: 2 }}
+              />
+              <TextField
+                placeholder="หน่วยงานที่ออก เช่น BSI, depa (ไม่บังคับ)..."
+                value={newCertIssuer}
+                onChange={(e) => setNewCertIssuer(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCredential())}
+                size="small"
+                sx={{ flex: 1.5 }}
+              />
+              <Button variant="outlined" onClick={addCredential} startIcon={<AddIcon />} sx={{ whiteSpace: "nowrap" }}>
                 เพิ่ม
               </Button>
             </div>

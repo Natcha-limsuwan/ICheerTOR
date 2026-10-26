@@ -268,6 +268,10 @@ function evaluateTechStack(profile: IVendorProfile, q: IQualification): Evaluati
   };
 }
 
+function normalizeCert(s: string): string {
+  return s.toLowerCase().replace(/iso\/iec/g, "iso").replace(/[^a-z0-9ก-๙]/g, "");
+}
+
 function evaluateCertification(profile: IVendorProfile, q: IQualification): Evaluation {
   const required = typeof q.minimumValue === "string" ? q.minimumValue.trim().toLowerCase() : "";
   if (!required) return unknown(q, "อ่านชื่อใบรับรองจาก TOR ไม่ได้");
@@ -275,7 +279,13 @@ function evaluateCertification(profile: IVendorProfile, q: IQualification): Eval
   const creds = (profile.credentials ?? [])
     .map((c) => c.name.trim().toLowerCase())
     .filter(Boolean);
-  const pass = creds.some((c) => c.includes(required) || required.includes(c));
+
+  const normRequired = normalizeCert(required);
+  const pass = creds.some((c) => {
+    if (c.includes(required) || required.includes(c)) return true;
+    const normC = normalizeCert(c);
+    return normC.length > 0 && normRequired.length > 0 && (normC.includes(normRequired) || normRequired.includes(normC));
+  });
 
   return {
     status: pass ? "pass" : "fail",
