@@ -9,6 +9,7 @@ import { resolveDownloadUrl } from "../services/ingestion/egp-document-url.js";
 import { bidWindow, displayPhase } from "../services/ingestion/data-checks.js";
 import { apiSuccess, Errors } from "../utils/api-response.js";
 import { authenticate } from "../middleware/auth.js";
+import { buildTorSearchFilter } from "../services/search/tor-search.js";
 
 const router = Router();
 
@@ -42,6 +43,7 @@ const LIST_FIELDS = [
   "metadata.contractStatus",
   "metadata.phaseReason",
   "parsedData.workType",
+  "parsedData.techRequirements",
   "parsedData.keyDates.documentStage",
   "parsedData.keyDates.announcedDate",
   "parsedData.keyDates.submissionDate",
@@ -118,10 +120,31 @@ function openOpportunityFilter(now = new Date()): Record<string, unknown> {
 router.get("/", async (req: Request, res: Response) => {
   await connectDB();
 
-  const q = req.query.q as string | undefined;
+  if (req.query.q !== undefined && typeof req.query.q !== "string") {
+    Errors.badRequest(res, "q must be a string");
+    return;
+  }
+  let searchFilter: Record<string, unknown>;
+  try {
+    searchFilter = buildTorSearchFilter((req.query.q as string | undefined) ?? "");
+  } catch (error) {
+    Errors.badRequest(res, (error as Error).message);
+    return;
+  }
   const agency = req.query.agency as string | undefined;
   const budgetMin = req.query.budgetMin as string | undefined;
   const budgetMax = req.query.budgetMax as string | undefined;
+  for (const value of [req.query.budgetMin, req.query.budgetMax]) {
+    if (value === undefined || value === "") continue;
+    if (typeof value !== "string" || !value.trim() || !Number.isFinite(Number(value)) || Number(value) < 0) {
+      Errors.badRequest(res, "ราคาต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป");
+      return;
+    }
+  }
+  if (budgetMin && budgetMax && Number(budgetMin) > Number(budgetMax)) {
+    Errors.badRequest(res, "ราคาต่ำสุดต้องไม่มากกว่าราคาสูงสุด");
+    return;
+  }
   const phase = req.query.phase as string | undefined;
   const status = req.query.status as string | undefined;
   const openOnly = req.query.openOnly === "true";
@@ -147,7 +170,6 @@ router.get("/", async (req: Request, res: Response) => {
   try {
     const filter: Record<string, unknown> = {};
 
-    if (q) filter.$text = { $search: q };
     if (agency) filter.agencyName = { $regex: agency, $options: "i" };
     if (budgetMin || budgetMax) {
       filter.medianPrice = {};
@@ -158,6 +180,7 @@ router.get("/", async (req: Request, res: Response) => {
     if (needsCheck) filter["dataChecks.needsCheck"] = true;
 
     const tagConditions: Record<string, unknown>[] = [];
+    if (Object.keys(searchFilter).length) tagConditions.push(searchFilter);
     const inScope = scopeFilter(scope);
     if (Object.keys(inScope).length) tagConditions.push(inScope);
     // e-GP can leave projects tagged open after their actionable deadline.
@@ -206,7 +229,14 @@ router.get("/", async (req: Request, res: Response) => {
     apiSuccess(
       res,
       records.map((r) => {
-        const match = profile ? matchQualifications(profile, r.parsedData?.qualifications ?? []) : null;
+        const match = profile ? matchQualifications(profile, r.parsedData?.qualifications ?? [], {
+          title: r.title,
+          scopeOfWork: r.summary?.overview,
+          workType: r.parsedData?.workType,
+          budget: r.budget ?? r.medianPrice ?? r.parsedData?.medianPrice?.value,
+          contractDurationDays: r.parsedData?.keyDates?.contractDurationDays?.value,
+          techRequirements: r.parsedData?.techRequirements,
+        }) : null;
         // Qualifications are selected only to calculate the private match;
         // list clients still receive the compact list representation.
         const { parsedData: rawParsedData, ...record } = r;
@@ -366,7 +396,14 @@ router.get("/:id/match", async (req: Request, res: Response) => {
     return;
   }
 
-  const result = matchQualifications(profile, tor.parsedData.qualifications);
+  const result = matchQualifications(profile, tor.parsedData.qualifications, {
+    title: tor.title,
+    scopeOfWork: tor.summary?.overview ?? tor.parsedData.scopeOfWork?.content,
+    workType: tor.parsedData.workType,
+    budget: tor.budget ?? tor.medianPrice ?? tor.parsedData.medianPrice?.value,
+    contractDurationDays: tor.parsedData.keyDates?.contractDurationDays?.value,
+    techRequirements: tor.parsedData.techRequirements,
+  });
 
   apiSuccess(res, { torRecordId: req.params.id, ...result });
 });

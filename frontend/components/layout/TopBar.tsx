@@ -76,6 +76,8 @@ export default function TopBar() {
 
               {/* User avatar + menu */}
               <IconButton
+                data-tour="account-menu"
+                aria-label="เมนูผู้ใช้"
                 onClick={(e) => setAnchorEl(e.currentTarget)}
                 size="small"
               >

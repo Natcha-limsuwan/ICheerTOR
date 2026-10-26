@@ -7,6 +7,8 @@ export interface IPastContract {
   value: number;
   year: number;
   agencyName?: string;
+  /** Explicit evidence for TOR clauses that require government experience. */
+  agencyType?: "government" | "private" | "unknown";
 }
 
 export interface ICredential {
@@ -53,6 +55,7 @@ const PastContractSchema = new Schema<IPastContract>(
     value: { type: Number, required: true, min: 0 },
     year: { type: Number, required: true },
     agencyName: { type: String },
+    agencyType: { type: String, enum: ["government", "private", "unknown"], default: "unknown" },
   },
   { _id: false },
 );

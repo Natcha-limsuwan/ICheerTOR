@@ -30,7 +30,17 @@ type Detail = {
     techRequirements?: Array<{ name: string; isMandatory: boolean }>; paymentTerms?: Array<{ installment: number; percent: number | null; condition: string }>;
   };
 };
-type MatchResult = { matchScore: number | null; overallStatus: "eligible" | "ineligible" | "incomplete" | "unknown"; counts: { pass: number; fail: number; unknown: number } };
+type MatchDimension = "experience" | "technology" | "personnel" | "capacity" | "preference";
+type MatchBreakdownItem = { label: string; weight: number; score: number | null; coverage: number; applicable: boolean; reasons: string[] };
+type MatchResult = {
+  matchScore: number | null;
+  fitScore: number | null;
+  dataCoverage: number;
+  overallStatus: "eligible" | "ineligible" | "incomplete" | "unknown";
+  eligibilityStatus: "eligible" | "ineligible" | "incomplete" | "unknown";
+  counts: { pass: number; fail: number; unknown: number };
+  breakdown: Record<MatchDimension, MatchBreakdownItem>;
+};
 type BookmarkStatus = { bookmarked: boolean; bookmarkId: string | null };
 type DocumentResponse = { available: boolean; fileName?: string; downloadUrl?: string; message?: string };
 
@@ -53,6 +63,12 @@ const daysUntil = (value?: string | null) => {
   if (Number.isNaN(deadline.getTime())) return null;
   return Math.round((bangkokDay(deadline) - bangkokDay(new Date())) / 86_400_000);
 };
+const eligibilityCopy = {
+  eligible: { label: "ผ่านเงื่อนไขบังคับ", className: "border-emerald-200 bg-emerald-50 text-emerald-800" },
+  ineligible: { label: "มีเงื่อนไขบังคับที่ไม่ผ่าน", className: "border-red-200 bg-red-50 text-red-800" },
+  incomplete: { label: "ต้องตรวจเงื่อนไขเพิ่มเติม", className: "border-amber-200 bg-amber-50 text-amber-800" },
+  unknown: { label: "ยังตรวจคุณสมบัติบังคับไม่ได้", className: "border-slate-200 bg-slate-50 text-slate-700" },
+} as const;
 function Title({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) { return <div className="mb-5 flex items-center gap-3 border-b border-slate-100 pb-4 text-xl font-bold text-slate-800"><span className="text-[#0759be]">{icon}</span>{children}</div>; }
 function Row({ label, value }: { label: string; value?: string }) { return value ? <div className="flex justify-between gap-4 border-b border-slate-100 py-2 last:border-0"><span className="text-slate-500">{label}</span><strong className="text-right">{value}</strong></div> : null; }
 
@@ -170,7 +186,8 @@ export default function TORDetailPage() {
     {actionError && <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{actionError}</div>}
     <div className="mb-7"><div className="mb-4 flex gap-2"><span className={`rounded-full px-4 py-1.5 text-sm font-semibold ${bidClosed ? "bg-slate-200 text-slate-700" : "bg-blue-100 text-[#1762be]"}`}>● {displayStatus}</span></div><h1 className="text-3xl font-bold md:text-4xl">{tor.title}</h1><p className="mt-4 flex items-center gap-2 text-lg text-slate-500"><ApartmentOutlinedIcon />{tor.agencyName}</p></div>
     <DeadlineNotice label={deadlineKind} deadline={deadline} remainingDays={remainingDays} />
-    <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Stat label={scheduleLabel} value={period} /><Stat label="งบประมาณที่จัดสรร" value={money(tor.budget ?? parsed?.medianPrice?.value)} /><Stat label="ราคากลาง" value={money(tor.medianPrice ?? parsed?.medianPrice?.value)} /><Stat label="ความเหมาะสมกับทีม" value={match?.matchScore != null ? `${Math.round(match.matchScore * 100)}%` : "กรอกโปรไฟล์เพื่อดูผล"} note={match?.matchScore != null ? `ผ่าน ${match.counts.pass} / ตรวจได้ ${match.counts.pass + match.counts.fail} ข้อ` : undefined} /></div>
+    <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Stat label={scheduleLabel} value={period} /><Stat label="งบประมาณที่จัดสรร" value={money(tor.budget ?? parsed?.medianPrice?.value)} /><Stat label="ราคากลาง" value={money(tor.medianPrice ?? parsed?.medianPrice?.value)} /><Stat label="ความเหมาะสมกับทีม" value={match?.matchScore != null ? `${Math.round(match.matchScore * 100)}%` : "กรอกโปรไฟล์เพื่อดูผล"} note={match?.matchScore != null ? `ข้อมูลที่ใช้ประเมิน ${Math.round(match.dataCoverage * 100)}%` : undefined} /></div>
+    {match && <MatchSummary match={match} />}
     {!completed ? <section className="detail-panel"><Title icon={<WarningAmberOutlinedIcon />}>สถานะการวิเคราะห์เอกสาร</Title><p className="text-slate-600">รายการนี้ยังไม่มีผล extraction ที่สมบูรณ์ จะแสดงรายละเอียดเชิงลึกเมื่อสถานะเป็น completed</p></section> : <div className="grid gap-7 xl:grid-cols-[minmax(0,1fr)_360px]"><main className="space-y-7">
       {overview && <section className="detail-panel"><Title icon={<LightbulbOutlinedIcon />}>สรุปโครงการและขอบเขตงาน</Title><p className="whitespace-pre-wrap leading-8 text-slate-600">{overview}</p>{tor.summary?.keyPoints?.length ? <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-600">{tor.summary.keyPoints.map((item) => <li key={item}>{item}</li>)}</ul> : null}</section>}
       {(tor.summary?.deliverables?.length || parsed?.techRequirements?.length) && <section className="detail-panel"><Title icon={<ComputerOutlinedIcon />}>สิ่งส่งมอบและข้อกำหนดทางเทคนิค</Title>{tor.summary?.deliverables?.length ? <Pills items={tor.summary.deliverables} /> : null}{parsed?.techRequirements?.length ? <Pills items={parsed.techRequirements.map((item) => `${item.name}${item.isMandatory ? " • จำเป็น" : ""}`)} /> : null}</section>}
@@ -195,5 +212,28 @@ function DeadlineNotice({ label, deadline, remainingDays }: { label: string; dea
   return <div role="status" className={`mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border px-4 py-3 ${state.className}`}><NotificationsActiveOutlinedIcon fontSize="small" /><strong>{state.message}</strong><span className="text-sm opacity-80">{deadline ? `${label}: ${date(deadline)}` : label}</span></div>;
 }
 function Stat({ label, value, note }: { label: string; value: string; note?: string }) { return <div className="detail-stat"><p>{label}</p><strong>{value}</strong>{note && <span>{note}</span>}</div>; }
+function MatchSummary({ match }: { match: MatchResult }) {
+  const status = eligibilityCopy[match.eligibilityStatus ?? match.overallStatus];
+  const dimensions = Object.values(match.breakdown ?? {}).filter((item) => item.applicable);
+  return <section className="detail-panel mb-8">
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <Title icon={<FactCheckOutlinedIcon />}>เหตุผลของคะแนนความเหมาะสม</Title>
+      <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${status.className}`}>{status.label}</span>
+    </div>
+    <p className="mb-5 text-sm text-slate-600">
+      ผ่าน {match.counts.pass} ข้อ · ไม่ผ่าน {match.counts.fail} ข้อ · ต้องตรวจเพิ่ม {match.counts.unknown} ข้อ
+      <span className="ml-2">ข้อมูลครอบคลุม {Math.round(match.dataCoverage * 100)}%</span>
+    </p>
+    <div className="grid gap-4 md:grid-cols-2">
+      {dimensions.map((item) => <div key={item.label} className="rounded-xl border border-slate-200 p-4">
+        <div className="flex items-center justify-between gap-3 text-sm"><strong>{item.label}</strong><span>{item.score == null ? "ข้อมูลไม่พอ" : `${Math.round(item.score * 100)}%`}</span></div>
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#0759be]" style={{ width: `${Math.round((item.score ?? 0) * 100)}%` }} /></div>
+        <p className="mt-2 text-xs text-slate-500">น้ำหนัก {item.weight}% · ตรวจได้ {Math.round(item.coverage * 100)}%</p>
+        {item.reasons[0] && <p className="mt-1 text-xs text-slate-600">{item.reasons[0]}</p>}
+      </div>)}
+    </div>
+    <p className="mt-4 text-xs text-slate-500">คะแนนใช้ช่วยคัดกรองโอกาส ไม่แทนการตรวจเอกสาร TOR ฉบับจริง โดยข้อมูลที่ยังตรวจไม่ได้จะถูกคิดเป็นค่ากลางและแสดงในความครอบคลุม</p>
+  </section>;
+}
 function Pills({ items }: { items: string[] }) { return <div className="mb-4 flex flex-wrap gap-2">{items.map((item) => <span key={item} className="rounded-full bg-blue-50 px-3 py-1.5 text-sm text-[#0759be]">{item}</span>)}</div>; }
 function Qualifications({ items, empty }: { items: Qualification[]; empty?: string }) { return items.length ? <div className="divide-y divide-slate-100">{items.map((item, i) => <div key={`${item.clauseNumber}-${i}`} className="py-4"><p className="font-medium leading-6">{item.clauseNumber && <span className="mr-2 text-[#0759be]">ข้อ {item.clauseNumber}</span>}{item.criterion}</p>{item.minimumValue != null && <p className="mt-1 text-sm text-slate-500">ขั้นต่ำ: {typeof item.minimumValue === "number" && item.unit === "THB" ? money(item.minimumValue) : `${item.minimumValue} ${item.unit ?? ""}`}</p>}{item.requiredCerts?.length ? <p className="mt-1 text-sm text-slate-500">ใบรับรอง: {item.requiredCerts.join(", ")}</p> : null}</div>)}</div> : <p className="text-slate-500">{empty}</p>; }

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import TextField from "@mui/material/TextField";
+import MenuItem from "@mui/material/MenuItem";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Dialog from "@mui/material/Dialog";
@@ -22,15 +23,34 @@ import Alert from "@mui/material/Alert";
 interface Credential {
   name: string;
   issuedBy?: string;
+  expiresAt?: string;
+}
+
+interface PastContract {
+  description: string;
+  value: number;
+  year: number;
+  agencyName?: string;
+  agencyType?: "government" | "private" | "unknown";
+}
+
+interface Personnel {
+  role: string;
+  count: number;
+  certifications: string[];
 }
 
 interface ProfileData {
   companyName: string;
   companyAge: number;
+  foundedYear: number | null;
+  registeredCapital: number | null;
+  pastContracts: PastContract[];
   techStacks: string[];
   interestedCategories: string[];
   credentials: Credential[];
   teamSize: number;
+  personnel: Personnel[];
 }
 
 const PRESET_PROJECT_TYPES = [
@@ -84,10 +104,14 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData>({
     companyName: "",
     companyAge: 0,
+    foundedYear: null,
+    registeredCapital: null,
+    pastContracts: [],
     techStacks: [],
     interestedCategories: [],
     credentials: [],
     teamSize: 1,
+    personnel: [],
   });
   const [initialProfile, setInitialProfile] = useState<ProfileData | null>(null);
   const [isNew, setIsNew] = useState(true);
@@ -110,10 +134,14 @@ export default function ProfilePage() {
           const loadedData: ProfileData = {
             companyName: data.companyName ?? "",
             companyAge: data.companyAge ?? 0,
+            foundedYear: data.foundedYear ?? null,
+            registeredCapital: data.registeredCapital ?? null,
+            pastContracts: data.pastContracts ?? [],
             techStacks: data.techStacks ?? [],
             interestedCategories: data.interestedCategories ?? [],
             credentials: data.credentials ?? [],
             teamSize: data.teamSize ?? 1,
+            personnel: data.personnel ?? [],
           };
           setProfile(loadedData);
           setInitialProfile(loadedData);
@@ -122,20 +150,28 @@ export default function ProfilePage() {
           setInitialProfile({
             companyName: "",
             companyAge: 0,
+            foundedYear: null,
+            registeredCapital: null,
+            pastContracts: [],
             techStacks: [],
             interestedCategories: [],
             credentials: [],
             teamSize: 1,
+            personnel: [],
           });
         }
       } catch {
         setInitialProfile({
           companyName: "",
           companyAge: 0,
+          foundedYear: null,
+          registeredCapital: null,
+          pastContracts: [],
           techStacks: [],
           interestedCategories: [],
           credentials: [],
           teamSize: 1,
+          personnel: [],
         });
       }
     }
@@ -200,16 +236,29 @@ export default function ProfilePage() {
   const topRef = useRef<HTMLDivElement>(null);
 
   const handleSave = async () => {
-    setSaving(true);
     setMessage(null);
+    if (!profile.companyName.trim()) {
+      setMessage({ type: "error", text: "กรุณากรอกชื่อบริษัท" });
+      return;
+    }
+    if (profile.pastContracts.some((contract) => !contract.description.trim() || contract.value <= 0 || contract.year <= 0)) {
+      setMessage({ type: "error", text: "กรุณากรอกรายละเอียด มูลค่า และปีของผลงานให้ครบ" });
+      return;
+    }
+    if (profile.personnel.some((person) => !person.role.trim() || person.count <= 0)) {
+      setMessage({ type: "error", text: "กรุณากรอกตำแหน่งและจำนวนบุคลากรให้ครบ" });
+      return;
+    }
+    if (profile.credentials.some((credential) => !credential.name.trim())) {
+      setMessage({ type: "error", text: "กรุณากรอกชื่อใบรับรองให้ครบ" });
+      return;
+    }
+    setSaving(true);
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api"}/profile`, {
         method: isNew ? "POST" : "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({
-          ...profile,
-          pastContracts: [],
-        }),
+        body: JSON.stringify(profile),
       });
       if (res.ok) {
         setMessage({ type: "success", text: "บันทึกโปรไฟล์สำเร็จ" });
@@ -297,10 +346,25 @@ export default function ProfilePage() {
               size="small"
             />
             <TextField
-              label="อายุบริษัท (ปี)"
+              label="ปีที่ก่อตั้ง (ค.ศ.)"
               type="number"
-              value={profile.companyAge}
-              onChange={(e) => setProfile({ ...profile, companyAge: Number(e.target.value) })}
+              value={profile.foundedYear ?? ""}
+              onChange={(e) => {
+                const foundedYear = e.target.value ? Number(e.target.value) : null;
+                setProfile({
+                  ...profile,
+                  foundedYear,
+                  companyAge: foundedYear ? Math.max(0, new Date().getFullYear() - foundedYear) : profile.companyAge,
+                });
+              }}
+              fullWidth
+              size="small"
+            />
+            <TextField
+              label="ทุนจดทะเบียน (บาท)"
+              type="number"
+              value={profile.registeredCapital ?? ""}
+              onChange={(e) => setProfile({ ...profile, registeredCapital: e.target.value ? Number(e.target.value) : null })}
               fullWidth
               size="small"
             />
@@ -312,6 +376,210 @@ export default function ProfilePage() {
               fullWidth
               size="small"
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card sx={{ borderRadius: "var(--radius-card)" }}>
+        <CardContent sx={{ p: 3 }}>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">ผลงานที่ผ่านมา</h2>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                ใช้เทียบประเภทงาน มูลค่า และความใหม่ของประสบการณ์
+              </p>
+            </div>
+            <Button
+              variant="outlined"
+              startIcon={<AddIcon />}
+              onClick={() => setProfile((current) => ({
+                ...current,
+                pastContracts: [...current.pastContracts, { description: "", value: 0, year: new Date().getFullYear(), agencyName: "", agencyType: "unknown" }],
+              }))}
+            >
+              เพิ่มผลงาน
+            </Button>
+          </div>
+          <div className="space-y-4">
+            {profile.pastContracts.map((contract, index) => (
+              <div key={index} className="rounded-xl border border-slate-200 p-4">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <TextField
+                    label="รายละเอียดผลงาน"
+                    value={contract.description}
+                    onChange={(e) => setProfile((current) => ({
+                      ...current,
+                      pastContracts: current.pastContracts.map((item, itemIndex) => itemIndex === index ? { ...item, description: e.target.value } : item),
+                    }))}
+                    size="small"
+                    fullWidth
+                  />
+                  <TextField
+                    label="หน่วยงาน/ลูกค้า"
+                    value={contract.agencyName ?? ""}
+                    onChange={(e) => setProfile((current) => ({
+                      ...current,
+                      pastContracts: current.pastContracts.map((item, itemIndex) => itemIndex === index ? { ...item, agencyName: e.target.value } : item),
+                    }))}
+                    size="small"
+                    fullWidth
+                  />
+                  <TextField
+                    label="มูลค่าสัญญา (บาท)"
+                    type="number"
+                    value={contract.value}
+                    onChange={(e) => setProfile((current) => ({
+                      ...current,
+                      pastContracts: current.pastContracts.map((item, itemIndex) => itemIndex === index ? { ...item, value: Number(e.target.value) } : item),
+                    }))}
+                    size="small"
+                    fullWidth
+                  />
+                  <TextField
+                    label="ปีที่ส่งมอบ (ค.ศ.)"
+                    type="number"
+                    value={contract.year}
+                    onChange={(e) => setProfile((current) => ({
+                      ...current,
+                      pastContracts: current.pastContracts.map((item, itemIndex) => itemIndex === index ? { ...item, year: Number(e.target.value) } : item),
+                    }))}
+                    size="small"
+                    fullWidth
+                  />
+                  <TextField
+                    select
+                    label="ประเภทหน่วยงาน"
+                    value={contract.agencyType ?? "unknown"}
+                    onChange={(e) => setProfile((current) => ({
+                      ...current,
+                      pastContracts: current.pastContracts.map((item, itemIndex) => itemIndex === index ? { ...item, agencyType: e.target.value as PastContract["agencyType"] } : item),
+                    }))}
+                    size="small"
+                    fullWidth
+                  >
+                    <MenuItem value="unknown">ยังไม่ระบุ</MenuItem>
+                    <MenuItem value="government">หน่วยงานรัฐ/รัฐวิสาหกิจ</MenuItem>
+                    <MenuItem value="private">เอกชน</MenuItem>
+                  </TextField>
+                </div>
+                <Button
+                  color="error"
+                  size="small"
+                  sx={{ mt: 1 }}
+                  onClick={() => setProfile((current) => ({
+                    ...current,
+                    pastContracts: current.pastContracts.filter((_, itemIndex) => itemIndex !== index),
+                  }))}
+                >
+                  ลบผลงานนี้
+                </Button>
+              </div>
+            ))}
+            {!profile.pastContracts.length && <p className="text-sm text-slate-500">ยังไม่มีข้อมูลผลงาน คะแนนหมวดประสบการณ์จะแสดงว่าข้อมูลไม่ครบ</p>}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card sx={{ borderRadius: "var(--radius-card)" }}>
+        <CardContent sx={{ p: 3 }}>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">บุคลากรหลัก</h2>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">กรอกชื่อตำแหน่งให้ใกล้กับคำที่ใช้ใน TOR เช่น Project Manager หรือ System Analyst</p>
+            </div>
+            <Button
+              variant="outlined"
+              startIcon={<AddIcon />}
+              onClick={() => setProfile((current) => ({
+                ...current,
+                personnel: [...current.personnel, { role: "", count: 1, certifications: [] }],
+              }))}
+            >
+              เพิ่มตำแหน่ง
+            </Button>
+          </div>
+          <div className="space-y-4">
+            {profile.personnel.map((person, index) => (
+              <div key={index} className="rounded-xl border border-slate-200 p-4">
+                <div className="grid gap-3 md:grid-cols-[1fr_140px_1fr]">
+                  <TextField
+                    label="ตำแหน่ง"
+                    value={person.role}
+                    onChange={(e) => setProfile((current) => ({
+                      ...current,
+                      personnel: current.personnel.map((item, itemIndex) => itemIndex === index ? { ...item, role: e.target.value } : item),
+                    }))}
+                    size="small"
+                  />
+                  <TextField
+                    label="จำนวนคน"
+                    type="number"
+                    value={person.count}
+                    onChange={(e) => setProfile((current) => ({
+                      ...current,
+                      personnel: current.personnel.map((item, itemIndex) => itemIndex === index ? { ...item, count: Number(e.target.value) } : item),
+                    }))}
+                    size="small"
+                  />
+                  <TextField
+                    label="ใบรับรอง (คั่นด้วยจุลภาค)"
+                    value={person.certifications.join(", ")}
+                    onChange={(e) => setProfile((current) => ({
+                      ...current,
+                      personnel: current.personnel.map((item, itemIndex) => itemIndex === index ? {
+                        ...item,
+                        certifications: e.target.value.split(",").map((value) => value.trim()).filter(Boolean),
+                      } : item),
+                    }))}
+                    size="small"
+                  />
+                </div>
+                <Button
+                  color="error"
+                  size="small"
+                  sx={{ mt: 1 }}
+                  onClick={() => setProfile((current) => ({
+                    ...current,
+                    personnel: current.personnel.filter((_, itemIndex) => itemIndex !== index),
+                  }))}
+                >
+                  ลบตำแหน่งนี้
+                </Button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card sx={{ borderRadius: "var(--radius-card)" }}>
+        <CardContent sx={{ p: 3 }}>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">ใบรับรองบริษัท</h2>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">ใบรับรองที่หมดอายุจะไม่นับว่าผ่าน</p>
+            </div>
+            <Button
+              variant="outlined"
+              startIcon={<AddIcon />}
+              onClick={() => setProfile((current) => ({
+                ...current,
+                credentials: [...current.credentials, { name: "", issuedBy: "", expiresAt: "" }],
+              }))}
+            >
+              เพิ่มใบรับรอง
+            </Button>
+          </div>
+          <div className="space-y-4">
+            {profile.credentials.map((credential, index) => (
+              <div key={index} className="rounded-xl border border-slate-200 p-4">
+                <div className="grid gap-3 md:grid-cols-3">
+                  <TextField label="ชื่อใบรับรอง" value={credential.name} onChange={(e) => setProfile((current) => ({ ...current, credentials: current.credentials.map((item, itemIndex) => itemIndex === index ? { ...item, name: e.target.value } : item) }))} size="small" />
+                  <TextField label="ออกโดย" value={credential.issuedBy ?? ""} onChange={(e) => setProfile((current) => ({ ...current, credentials: current.credentials.map((item, itemIndex) => itemIndex === index ? { ...item, issuedBy: e.target.value } : item) }))} size="small" />
+                  <TextField label="วันหมดอายุ" type="date" value={credential.expiresAt?.slice(0, 10) ?? ""} slotProps={{ inputLabel: { shrink: true } }} onChange={(e) => setProfile((current) => ({ ...current, credentials: current.credentials.map((item, itemIndex) => itemIndex === index ? { ...item, expiresAt: e.target.value } : item) }))} size="small" />
+                </div>
+                <Button color="error" size="small" sx={{ mt: 1 }} onClick={() => setProfile((current) => ({ ...current, credentials: current.credentials.filter((_, itemIndex) => itemIndex !== index) }))}>ลบใบรับรองนี้</Button>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>

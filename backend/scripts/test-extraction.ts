@@ -316,10 +316,36 @@ function testMatcher() {
   const r = matchQualifications(profile, quals);
   check("ข้อมาตรฐานไม่ถูกตรวจ", r.standardClausesSkipped === 1 && r.criteria.length === 4);
   check("ทุนผ่าน 1 ข้อในกลุ่ม → กลุ่มผ่าน → eligible", r.overallStatus === "eligible", r.overallStatus);
-  check("ข้อทางเลือกนับเป็น 1 ข้อในคะแนน", r.counts.pass === 1 && r.counts.fail === 0 && r.matchScore === 1, JSON.stringify(r.counts));
+  check("ข้อทางเลือกนับเป็น 1 ข้อในสถานะคุณสมบัติ", r.counts.pass === 1 && r.counts.fail === 0, JSON.stringify(r.counts));
+  check("ไม่มีหลักฐานด้านความเหมาะสม → ยังไม่สร้างคะแนน", r.matchScore === null && r.dataCoverage === 0);
 
   const poor = matchQualifications({ ...profile, registeredCapital: 1_000_000 } as IVendorProfile, quals);
   check("ทุนไม่ผ่าน แต่ข้ออื่นในกลุ่มตรวจไม่ได้ → incomplete", poor.overallStatus === "incomplete", poor.overallStatus);
+
+  const partial = matchQualifications(
+    { ...profile, techStacks: ["React"] } as IVendorProfile,
+    [
+      q({ criterion: "ใช้ React", type: "tech_stack", minimumValue: "React" }),
+      q({ criterion: "Project Manager 1 คน", type: "personnel", minimumValue: 1 }),
+    ],
+    { title: "พัฒนาระบบเว็บ", workType: "development", budget: 5_000_000, techRequirements: [{ name: "React", category: "framework", isMandatory: true }] },
+  );
+  check("ข้อมูลบางส่วนไม่ทำให้คะแนนพุ่งเป็น 100%", partial.matchScore != null && partial.matchScore < 1, String(partial.matchScore));
+  check("รายงาน coverage แยกจากคะแนน", partial.dataCoverage > 0 && partial.dataCoverage < 1, String(partial.dataCoverage));
+  check("มี breakdown ครบห้าหมวด", Object.keys(partial.breakdown).length === 5);
+
+  const governmentUnknown = matchQualifications(
+    { ...profile, pastContracts: [{ description: "พัฒนาระบบเว็บ", value: 10_000_000, year: 2025 }] } as IVendorProfile,
+    [q({ criterion: "ผลงานภาครัฐ 5 ล้านบาท", type: "contract_value", minimumValue: 5_000_000, requiresGovernment: true })],
+    { title: "พัฒนาระบบเว็บ", workType: "development" },
+  );
+  check("ไม่เดาประเภทหน่วยงานจากชื่อ → unknown", governmentUnknown.counts.unknown === 1 && governmentUnknown.overallStatus === "incomplete");
+
+  const expiredCertificate = matchQualifications(
+    { ...profile, credentials: [{ name: "ISO 27001", expiresAt: new Date("2025-01-01") }] } as IVendorProfile,
+    [q({ criterion: "ต้องมี ISO 27001", type: "certification", minimumValue: "ISO 27001", requiredCerts: ["ISO 27001"] })],
+  );
+  check("ใบรับรองหมดอายุไม่นับว่าผ่าน", expiredCertificate.counts.fail === 1 && expiredCertificate.overallStatus === "ineligible");
 }
 
 /* 5 ─────────────────────────────────────────────────────────────────── */
