@@ -11,12 +11,15 @@
  *   docker compose --profile tools run --rm tools npm run test:extraction
  */
 
-import { readArchiveFacts, readSubmissionDate } from "../src/services/ingestion/archive-facts";
+import { isDraftAnnouncement, readAgencyName, readArchiveFacts, readDeptCode, readSubmissionDate } from "../src/services/ingestion/archive-facts";
+import { parseRss } from "../src/services/ingestion/egp-rss-client";
+import { classifyTitle, diffWindow } from "../src/services/ingestion/rss-poll";
+import { thaiFiscalYear } from "../src/services/ingestion/rss-ingest";
 import { validateExtraction } from "../src/services/ai/validate-extraction";
 import { hasDroppedDigits, isPlausibleMedianPrice, resolvePrices } from "../src/services/ai/resolve-prices";
 import { analyzeRedFlags, dailyPenaltyPercent } from "../src/services/ai/red-flag-analyzer";
 import { matchQualifications } from "../src/services/matching/qualification-matcher";
-import { bidWindow, computeDataChecks } from "../src/services/ingestion/data-checks";
+import { bidWindow, computeDataChecks, displayPhase } from "../src/services/ingestion/data-checks";
 import { parseThaiAmountWords } from "../src/services/ai/thai-number";
 import type { TorExtractionV4 } from "../src/services/ai/prompts/v4";
 import type { IParsedData, IQualification } from "../src/db/models/tor-record";
@@ -310,14 +313,42 @@ function testMatcher() {
     q({ criterion: "ไม่เป็นบุคคลล้มละลาย", isBoilerplate: true }),
     q({ criterion: "มูลค่าสุทธิเป็นบวก", type: "net_worth", minimumValue: 0, alternativeGroup: "A" }),
     q({ criterion: "ทุนจดทะเบียน 8 ล้าน", type: "registered_capital", minimumValue: 8_000_000, alternativeGroup: "A" }),
+    q({ criterion: "ทุนจดทะเบียน 20 ล้าน", type: "registered_capital", minimumValue: 20_000_000, alternativeGroup: "A" }),
     q({ criterion: "เงินฝาก ¼ ของงบ", minimumValue: 6_179_737.5, alternativeGroup: "A" }),
   ];
   const r = matchQualifications(profile, quals);
-  check("ข้อมาตรฐานไม่ถูกตรวจ", r.standardClausesSkipped === 1 && r.criteria.length === 3);
+  check("ข้อมาตรฐานไม่ถูกตรวจ", r.standardClausesSkipped === 1 && r.criteria.length === 4);
   check("ทุนผ่าน 1 ข้อในกลุ่ม → กลุ่มผ่าน → eligible", r.overallStatus === "eligible", r.overallStatus);
+  check("ข้อทางเลือกนับเป็น 1 ข้อในสถานะคุณสมบัติ", r.counts.pass === 1 && r.counts.fail === 0, JSON.stringify(r.counts));
+  check("ไม่มีหลักฐานด้านความเหมาะสม → ยังไม่สร้างคะแนน", r.matchScore === null && r.dataCoverage === 0);
 
   const poor = matchQualifications({ ...profile, registeredCapital: 1_000_000 } as IVendorProfile, quals);
   check("ทุนไม่ผ่าน แต่ข้ออื่นในกลุ่มตรวจไม่ได้ → incomplete", poor.overallStatus === "incomplete", poor.overallStatus);
+
+  const partial = matchQualifications(
+    { ...profile, techStacks: ["React"] } as IVendorProfile,
+    [
+      q({ criterion: "ใช้ React", type: "tech_stack", minimumValue: "React" }),
+      q({ criterion: "Project Manager 1 คน", type: "personnel", minimumValue: 1 }),
+    ],
+    { title: "พัฒนาระบบเว็บ", workType: "development", budget: 5_000_000, techRequirements: [{ name: "React", category: "framework", isMandatory: true }] },
+  );
+  check("ข้อมูลบางส่วนไม่ทำให้คะแนนพุ่งเป็น 100%", partial.matchScore != null && partial.matchScore < 1, String(partial.matchScore));
+  check("รายงาน coverage แยกจากคะแนน", partial.dataCoverage > 0 && partial.dataCoverage < 1, String(partial.dataCoverage));
+  check("มี breakdown ครบห้าหมวด", Object.keys(partial.breakdown).length === 5);
+
+  const governmentUnknown = matchQualifications(
+    { ...profile, pastContracts: [{ description: "พัฒนาระบบเว็บ", value: 10_000_000, year: 2025 }] } as IVendorProfile,
+    [q({ criterion: "ผลงานภาครัฐ 5 ล้านบาท", type: "contract_value", minimumValue: 5_000_000, requiresGovernment: true })],
+    { title: "พัฒนาระบบเว็บ", workType: "development" },
+  );
+  check("ไม่เดาประเภทหน่วยงานจากชื่อ → unknown", governmentUnknown.counts.unknown === 1 && governmentUnknown.overallStatus === "incomplete");
+
+  const expiredCertificate = matchQualifications(
+    { ...profile, credentials: [{ name: "ISO 27001", expiresAt: new Date("2025-01-01") }] } as IVendorProfile,
+    [q({ criterion: "ต้องมี ISO 27001", type: "certification", minimumValue: "ISO 27001", requiredCerts: ["ISO 27001"] })],
+  );
+  check("ใบรับรองหมดอายุไม่นับว่าผ่าน", expiredCertificate.counts.fail === 1 && expiredCertificate.overallStatus === "ineligible");
 }
 
 /* 5 ─────────────────────────────────────────────────────────────────── */
@@ -330,6 +361,14 @@ function testDataChecks() {
   const closed = bidWindow("2026-06-22T05:00:00Z", now);
   check("หมดเขต 22 มิ.ย. → closed 104 วัน", closed.state === "closed" && closed.closedDaysAgo === 104, show(closed));
   check("ไม่มีวัน → unknown", bidWindow(null, now).state === "unknown");
+  check(
+    "เลยวันยื่นแล้ว → แสดงปิดรับข้อเสนอ",
+    displayPhase("bidding", "2026-06-22T05:00:00Z", now) === "closed",
+  );
+  check(
+    "ประกาศผลแล้วไม่ถูกทับด้วยวันยื่น",
+    displayPhase("awarded", "2026-10-10T05:00:00Z", now) === "awarded",
+  );
 
   const base = { parsedData: { keyDates: {} }, extraction: { issues: [] } } as never;
   const old = computeDataChecks({ ...(base as object), phase: "bidding", submissionDeadline: new Date("2026-06-22T05:00:00Z") } as never, now);
@@ -351,11 +390,66 @@ function testDataChecks() {
   check("admin ตรวจแล้ว → ไม่ขึ้นคิวอีก แต่ยังแสดงข้อขัดกัน", !resolved.needsCheck && resolved.conflicts.length === 1);
 }
 
+/* 6 ─────────────────────────────────────────────────────────────────── */
+
+function testRss() {
+  console.log("\n[6] e-GP RSS");
+  const xml = `<?xml version="1.0" encoding="Windows-874" ?><rss version="2.0"><channel>
+    <title>ประกาศจัดซื้อจัดจ้างภาครัฐ</title><countbyday>391</countbyday>
+    <item>
+      <title>ประกวดราคาจ้างตามโครงการพัฒนาระบบดิจิทัลรองรับการให้บริการ ด้วยวิธีประกวดราคาอิเล็กทรอนิกส์ (e-bidding)</title>
+      <link>https://process5.gprocurement.go.th/egp-template-service/dwnt/view-pdf-file?templateId=abc&amp;x=1</link>
+      <description>69099585615, ประกวดราคาอิเล็กทรอนิกส์ (e-bidding), ประกาศเชิญชวน</description>
+      <pubDate>2026-10-07</pubDate><guid></guid>
+    </item>
+    <item><title>ไม่มีเลขโครงการ</title><description>, , ประกาศเชิญชวน</description><pubDate>2026-10-07</pubDate></item>
+  </channel></rss>`;
+  const feed = parseRss(xml, "D0");
+  check("อ่าน countbyday", feed.countByDay === 391);
+  check("ข้ามรายการที่ไม่มีเลขโครงการ", feed.items.length === 1);
+  const it = feed.items[0];
+  check(
+    "แยก field ได้ครบ",
+    it.projectNumber === "69099585615" && it.method.includes("e-bidding") && it.announceLabel === "ประกาศเชิญชวน" &&
+      it.pubDate === "2026-10-07" && it.link?.endsWith("abc&x=1") === true,
+    show(it),
+  );
+
+  const item = (n: number) => ({ ...it, projectNumber: String(69000000000 + n) });
+  const prev = Array.from({ length: 20 }, (_, i) => item(i).projectNumber);
+  const moved = diffWindow(prev, [item(100), item(101), ...Array.from({ length: 18 }, (_, i) => item(i))]);
+  check("รายการใหม่ 2 รายการ ไม่หลุด", moved.fresh.length === 2 && !moved.gap);
+  const jumped = diffWindow(prev, Array.from({ length: 20 }, (_, i) => item(200 + i)));
+  check("ใหม่ทั้ง 20 = อาจมีรายการหลุด", jumped.gap);
+  check("รอบแรก (ไม่มีหน้าต่างเดิม) ไม่นับว่าหลุด", !diffWindow([], jumped.fresh).gap);
+
+  check("ชื่อพัฒนาระบบ → เก็บ", classifyTitle(it.title).verdict === "kept");
+  check("ซื้อทราย…ปรับปรุงระบบส่งน้ำ → ไม่เก็บ", classifyTitle("ประกวดราคาซื้อทรายหยาบน้ำจืด ของงานปรับปรุงระบบส่งน้ำ").verdict !== "kept");
+  check("ปีงบ: 7 ต.ค. 2026 → 2570", thaiFiscalYear("2026-10-07") === 2570);
+  check("ปีงบ: 30 ก.ย. 2026 → 2569", thaiFiscalYear("2026-09-30") === 2569);
+
+  const docs = [
+    { fileName: "annoudoc_310000110000062_69099311880.pdf", text: "(สำเนา)\nประกาศกรุงเทพมหานคร\nเรื่อง ประกวดราคาจ้าง…" },
+    { fileName: "doc_310000110000062_69099311880.pdf", text: "เอกสารประกวดราคา" },
+  ];
+  check("ชื่อหน่วยงานจากหัวประกาศ", readAgencyName(docs) === "กรุงเทพมหานคร");
+  check(
+    "หัวประกาศของกรม",
+    readAgencyName([{ fileName: "annoudoc_1.pdf", text: "(สำเนา)\nประกาศกรมตรวจบัญชีสหกรณ์\nเรื่อง …" }]) === "กรมตรวจบัญชีสหกรณ์",
+  );
+  check("รหัสหน่วยงานจากชื่อไฟล์ doc_", readDeptCode(docs) === "310000110000062");
+  const draft = [{ fileName: "annoudoc_0300600000_1.pdf", text: "ร่าง\nประกาศกรมสรรพสามิต\nเรื่อง …" }];
+  check("ประกาศมีคำว่า ร่าง → draft แม้มาจาก endpoint ประกาศจริง", isDraftAnnouncement(draft) && readArchiveFacts(draft, "final").documentStage === "draft");
+  check("ชื่อหน่วยงานของประกาศร่าง", readAgencyName(draft) === "กรมสรรพสามิต");
+  check("ประกาศจริง → final", readArchiveFacts(docs, "final").documentStage === "final");
+}
+
 testArchiveFacts();
 testValidator();
 testResolvePrices();
 testRedFlags();
 testMatcher();
 testDataChecks();
+testRss();
 console.log(`\n${passed} ผ่าน, ${failed} ไม่ผ่าน`);
 process.exit(failed ? 1 : 0);

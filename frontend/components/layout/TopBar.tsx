@@ -7,17 +7,38 @@ import RadarIcon from "@mui/icons-material/Radar";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import Avatar from "@mui/material/Avatar";
+import Badge from "@mui/material/Badge";
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getToken } from "@/lib/api/client";
 
 export default function TopBar() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const isAdminSection = pathname.startsWith("/admin");
+
+  useEffect(() => {
+    if (!user) return;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+    const token = getToken();
+    if (!token) return;
+
+    fetch(`${apiUrl}/notifications/unread-count`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.data?.unreadCount != null) {
+          setUnreadCount(data.data.unreadCount);
+        }
+      })
+      .catch(() => {});
+  }, [user, pathname]);
 
   return (
     <header className="bg-white sticky top-0 z-40 border-b border-[var(--color-border)] shadow-sm h-16 flex items-center px-6">
@@ -37,7 +58,7 @@ export default function TopBar() {
           {isAdminSection && (
             <Button
               component={Link}
-              href="/dashboard"
+              href="/procurement"
               variant="outlined"
               size="small"
               startIcon={<ArrowBackIcon sx={{ fontSize: 18 }} />}
@@ -70,12 +91,17 @@ export default function TopBar() {
                 href="/alerts"
                 size="small"
                 sx={{ color: "var(--color-text-secondary)" }}
+                aria-label="การแจ้งเตือน"
               >
-                <NotificationsNoneIcon />
+                <Badge badgeContent={unreadCount} color="error" max={99}>
+                  <NotificationsNoneIcon />
+                </Badge>
               </IconButton>
 
               {/* User avatar + menu */}
               <IconButton
+                data-tour="account-menu"
+                aria-label="เมนูผู้ใช้"
                 onClick={(e) => setAnchorEl(e.currentTarget)}
                 size="small"
               >

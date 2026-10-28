@@ -1,7 +1,7 @@
 "use client";
 
 
-import { api, getToken } from "@/lib/api/client";
+import { getToken } from "@/lib/api/client";
 import { useState, useEffect } from "react";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -11,11 +11,14 @@ import Link from "next/link";
 import PillBadge from "@/components/shared/PillBadge";
 import EmptyState from "@/components/shared/EmptyState";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
+import { useToast } from "@/components/providers/ToastProvider";
 
 const phaseLabels: Record<string, string> = {
   public_hearing: "รับฟังความเห็น",
   bidding: "เสนอราคา",
+  closed: "ปิดรับข้อเสนอแล้ว",
   awarded: "ประกาศผลแล้ว",
+  cancelled: "ยกเลิก",
 };
 
 interface BookmarkItem {
@@ -25,6 +28,7 @@ interface BookmarkItem {
     title: string;
     agencyName: string;
     phase: string;
+    displayPhase?: string;
     medianPrice?: number;
     submissionDeadline?: string;
     tags: string[];
@@ -35,6 +39,7 @@ interface BookmarkItem {
 export default function BookmarksPage() {
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
 
   useEffect(() => {
     async function fetchBookmarks() {
@@ -53,10 +58,12 @@ export default function BookmarksPage() {
 
   const handleRemove = async (id: string) => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api"}/bookmarks/${id}`, { headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` }, method: "DELETE" });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api"}/bookmarks/${id}`, { headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` }, method: "DELETE" });
+      if (!res.ok) throw new Error("ไม่สามารถลบรายการได้");
       setBookmarks((prev) => prev.filter((b) => b._id !== id));
+      showToast("นำออกจากรายการที่บันทึกไว้แล้ว", "info");
     } catch {
-      // handle error
+      showToast("เกิดข้อผิดพลาด ไม่สามารถนำออกจากรายการได้", "error");
     }
   };
 
@@ -117,8 +124,8 @@ export default function BookmarksPage() {
                   </Link>
                   <div className="flex items-center gap-2 shrink-0">
                     <PillBadge
-                      label={phaseLabels[tor.phase] ?? tor.phase}
-                      value={tor.phase}
+                      label={phaseLabels[tor.displayPhase ?? tor.phase] ?? (tor.displayPhase ?? tor.phase)}
+                      value={tor.displayPhase ?? tor.phase}
                     />
                     <IconButton
                       size="small"
@@ -134,6 +141,8 @@ export default function BookmarksPage() {
           );
         })}
       </div>
+
+
     </div>
   );
 }

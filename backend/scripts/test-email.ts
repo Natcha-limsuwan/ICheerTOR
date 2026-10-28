@@ -62,7 +62,7 @@ async function main() {
       type: "system",
       title: "ทดสอบระบบแจ้งเตือนทางอีเมล",
       body: "นี่คืออีเมลทดสอบจากระบบ iCheerTOR หากคุณได้รับอีเมลนี้ แสดงว่าระบบแจ้งเตือนทางอีเมลทำงานปกติ",
-      linkUrl: "/dashboard",
+      linkUrl: "/procurement",
     });
 
     if (result.success) {
@@ -95,7 +95,7 @@ async function main() {
       type: "system",
       title: "ทดสอบระบบแจ้งเตือน",
       body: "นี่คือการทดสอบการส่งแจ้งเตือนผ่านระบบ dispatcher รวมถึง inApp และ email",
-      linkUrl: "/dashboard",
+      linkUrl: "/procurement",
     });
 
     console.log("\n📋 Dispatch result:");

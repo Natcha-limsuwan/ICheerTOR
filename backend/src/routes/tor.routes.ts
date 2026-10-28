@@ -6,9 +6,10 @@ import UserCorrection from "../db/models/user-correction.js";
 import VendorProfile from "../db/models/vendor-profile.js";
 import { matchQualifications } from "../services/matching/qualification-matcher.js";
 import { resolveDownloadUrl } from "../services/ingestion/egp-document-url.js";
-import { bidWindow } from "../services/ingestion/data-checks.js";
+import { bidWindow, displayPhase } from "../services/ingestion/data-checks.js";
 import { apiSuccess, Errors } from "../utils/api-response.js";
 import { authenticate } from "../middleware/auth.js";
+import { buildTorSearchFilter } from "../services/search/tor-search.js";
 
 const router = Router();
 
@@ -16,7 +17,7 @@ const router = Router();
 router.use(authenticate);
 
 /**
- * Fields a list/dashboard row needs: the egp2 data plus the few extraction
+ * Fields a procurement-list row needs: the egp2 data plus the few extraction
  * results that help decide whether to open a project. Qualifications, scope
  * text, conflicts and risk evidence are 10–20 KB per record and only come
  * with GET /api/tor/:id.
@@ -42,7 +43,9 @@ const LIST_FIELDS = [
   "metadata.contractStatus",
   "metadata.phaseReason",
   "parsedData.workType",
+  "parsedData.techRequirements",
   "parsedData.keyDates.documentStage",
+  "parsedData.keyDates.announcedDate",
   "parsedData.keyDates.submissionDate",
   "parsedData.keyDates.documentFeePeriod",
   "parsedData.keyDates.contractDurationDays.value",
@@ -56,19 +59,109 @@ const LIST_FIELDS = [
 ].join(" ");
 
 /**
+ * Which records a list shows. The default is what the product is built on —
+ * TORs the AI has read; the others are opt-in, so the response shape never
+ * changes, only how many rows come back.
+ *
+ *   parsed (default)  extractionStatus "completed"
+ *   new               parsed + still-open projects not read yet (just
+ *                     ingested, or failed) — so a project in public hearing
+ *                     is not hidden while it waits for the model
+ *   all               every record (admin, history)
+ */
+export type ListScope = "parsed" | "new" | "all";
+
+export function scopeFilter(scope: ListScope, now = new Date()): Record<string, unknown> {
+  if (scope === "all") return {};
+  const parsed = { extractionStatus: "completed" };
+  if (scope === "parsed") return parsed;
+  return {
+    $or: [
+      parsed,
+      {
+        extractionStatus: { $in: ["pending", "processing", "failed"] },
+        phase: { $in: ["public_hearing", "bidding"] },
+        $or: [{ submissionDeadline: { $exists: false } }, { submissionDeadline: null }, { submissionDeadline: { $gte: now } }],
+      },
+    ],
+  };
+}
+
+const LIST_SCOPES: ListScope[] = ["parsed", "new", "all"];
+
+/** Projects a bidder can still act on. A confirmed submission deadline takes
+ * precedence; otherwise public hearings use their own closing date. */
+function openOpportunityFilter(now = new Date()): Record<string, unknown> {
+  const noSubmissionDeadline = {
+    $or: [{ submissionDeadline: { $exists: false } }, { submissionDeadline: null }],
+  };
+  const hearingStillOpenOrUndated = {
+    $or: [
+      { publicHearingEnd: { $gte: now } },
+      { publicHearingEnd: { $exists: false } },
+      { publicHearingEnd: null },
+    ],
+  };
+
+  return {
+    phase: { $in: ["public_hearing", "bidding"] },
+    tags: "open",
+    $or: [
+      { submissionDeadline: { $gte: now } },
+      { $and: [noSubmissionDeadline, hearingStillOpenOrUndated] },
+    ],
+  };
+}
+
+/**
  * GET /api/tor — Search and list TOR records with filtering.
+ * ?scope=parsed|new|all (default parsed) — see scopeFilter.
  */
 router.get("/", async (req: Request, res: Response) => {
   await connectDB();
 
-  const q = req.query.q as string | undefined;
+  if (req.query.q !== undefined && typeof req.query.q !== "string") {
+    Errors.badRequest(res, "q must be a string");
+    return;
+  }
+  let searchFilter: Record<string, unknown>;
+  try {
+    searchFilter = buildTorSearchFilter((req.query.q as string | undefined) ?? "");
+  } catch (error) {
+    Errors.badRequest(res, (error as Error).message);
+    return;
+  }
   const agency = req.query.agency as string | undefined;
   const budgetMin = req.query.budgetMin as string | undefined;
   const budgetMax = req.query.budgetMax as string | undefined;
+  for (const value of [req.query.budgetMin, req.query.budgetMax]) {
+    if (value === undefined || value === "") continue;
+    if (typeof value !== "string" || !value.trim() || !Number.isFinite(Number(value)) || Number(value) < 0) {
+      Errors.badRequest(res, "ราคาต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป");
+      return;
+    }
+  }
+  if (budgetMin && budgetMax && Number(budgetMin) > Number(budgetMax)) {
+    Errors.badRequest(res, "ราคาต่ำสุดต้องไม่มากกว่าราคาสูงสุด");
+    return;
+  }
   const phase = req.query.phase as string | undefined;
+  const status = req.query.status as string | undefined;
   const openOnly = req.query.openOnly === "true";
   const needsCheck = req.query.needsCheck === "true";
   const techStack = req.query.techStack as string | undefined;
+  /** Attach the authenticated user's qualification result to each list row. */
+  const includeMatch = req.query.includeMatch === "true";
+  const scopeParam = (req.query.scope as string | undefined) ?? "parsed";
+  if (!LIST_SCOPES.includes(scopeParam as ListScope)) {
+    Errors.badRequest(res, `scope must be one of: ${LIST_SCOPES.join(", ")}`);
+    return;
+  }
+  const scope = scopeParam as ListScope;
+  if (status && status !== "open" && status !== "closed") {
+    Errors.badRequest(res, "status must be open or closed");
+    return;
+  }
   const sortBy = (req.query.sortBy as string) ?? "postingDate";
   const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
   const page = Math.max(1, parseInt((req.query.page as string) ?? "1", 10));
@@ -77,7 +170,6 @@ router.get("/", async (req: Request, res: Response) => {
   try {
     const filter: Record<string, unknown> = {};
 
-    if (q) filter.$text = { $search: q };
     if (agency) filter.agencyName = { $regex: agency, $options: "i" };
     if (budgetMin || budgetMax) {
       filter.medianPrice = {};
@@ -88,14 +180,13 @@ router.get("/", async (req: Request, res: Response) => {
     if (needsCheck) filter["dataChecks.needsCheck"] = true;
 
     const tagConditions: Record<string, unknown>[] = [];
-    // "Open" = egp2 says so AND the bid day has not passed. egp2 keeps a
-    // project open until the contract is signed, long after bids close.
-    if (openOnly) {
-      tagConditions.push({ tags: "open" });
-      tagConditions.push({
-        $or: [{ submissionDeadline: { $exists: false } }, { submissionDeadline: null }, { submissionDeadline: { $gte: new Date() } }],
-      });
-    }
+    if (Object.keys(searchFilter).length) tagConditions.push(searchFilter);
+    const inScope = scopeFilter(scope);
+    if (Object.keys(inScope).length) tagConditions.push(inScope);
+    // e-GP can leave projects tagged open after their actionable deadline.
+    const openCondition = openOpportunityFilter();
+    if (openOnly || status === "open") tagConditions.push(openCondition);
+    if (status === "closed") tagConditions.push({ $nor: [openCondition] });
     if (techStack) {
       const stacks = techStack.split(",").map((s) => s.trim()).filter(Boolean);
       if (stacks.length) tagConditions.push({ tags: { $in: stacks } });
@@ -107,27 +198,61 @@ router.get("/", async (req: Request, res: Response) => {
     }
 
     const sortField: Record<string, 1 | -1> = {};
-    const validSortFields = ["postingDate", "medianPrice", "publicHearingEnd", "submissionDeadline"];
-    if (validSortFields.includes(sortBy)) {
-      sortField[sortBy] = sortOrder;
+    const sortFields: Record<string, string> = {
+      announcedDate: "parsedData.keyDates.announcedDate",
+      postingDate: "postingDate",
+      medianPrice: "medianPrice",
+      publicHearingEnd: "publicHearingEnd",
+      submissionDeadline: "submissionDeadline",
+    };
+    const resolvedSortField = sortFields[sortBy];
+    if (resolvedSortField) {
+      sortField[resolvedSortField] = sortOrder;
+      // Keep pagination stable when several announcements share the same day.
+      if (sortBy === "announcedDate") sortField.postingDate = sortOrder;
     } else {
       sortField.postingDate = -1;
     }
 
-    const [records, total] = await Promise.all([
+    const [records, total, profile] = await Promise.all([
       TORRecord.find(filter)
         .sort(sortField)
         .skip((page - 1) * limit)
         .limit(limit)
-        .select(LIST_FIELDS)
+        .select(includeMatch ? `${LIST_FIELDS} parsedData.qualifications` : LIST_FIELDS)
         .lean(),
       TORRecord.countDocuments(filter),
+      includeMatch ? VendorProfile.findOne({ userId: req.user!.id }).lean() : null,
     ]);
 
     const now = new Date();
     apiSuccess(
       res,
-      records.map((r) => ({ ...r, bidWindow: bidWindow(r.submissionDeadline, now) })),
+      records.map((r) => {
+        const match = profile ? matchQualifications(profile, r.parsedData?.qualifications ?? [], {
+          title: r.title,
+          scopeOfWork: r.summary?.overview,
+          workType: r.parsedData?.workType,
+          budget: r.budget ?? r.medianPrice ?? r.parsedData?.medianPrice?.value,
+          contractDurationDays: r.parsedData?.keyDates?.contractDurationDays?.value,
+          techRequirements: r.parsedData?.techRequirements,
+        }) : null;
+        // Qualifications are selected only to calculate the private match;
+        // list clients still receive the compact list representation.
+        const { parsedData: rawParsedData, ...record } = r;
+        const { qualifications: _qualifications, ...parsedData } = rawParsedData ?? {};
+        return {
+          ...record,
+          ...(Object.keys(parsedData).length ? { parsedData } : {}),
+          bidWindow: bidWindow(r.submissionDeadline, now),
+          displayPhase: displayPhase(
+            r.phase,
+            r.submissionDeadline ?? (r.phase === "public_hearing" ? r.publicHearingEnd : undefined),
+            now,
+          ),
+          ...(includeMatch ? { match } : {}),
+        };
+      }),
       { total, page, limit },
     );
   } catch (error) {
@@ -155,7 +280,15 @@ router.get("/:id", async (req: Request, res: Response) => {
       .sort({ scrapedAt: -1 })
       .lean();
 
-    apiSuccess(res, { ...record, bidWindow: bidWindow(record.submissionDeadline), sources });
+    apiSuccess(res, {
+      ...record,
+      bidWindow: bidWindow(record.submissionDeadline),
+      displayPhase: displayPhase(
+        record.phase,
+        record.submissionDeadline ?? (record.phase === "public_hearing" ? record.publicHearingEnd : undefined),
+      ),
+      sources,
+    });
   } catch (error) {
     console.error("TOR detail error:", error);
     Errors.internal(res, "Failed to fetch TOR record");
@@ -263,7 +396,14 @@ router.get("/:id/match", async (req: Request, res: Response) => {
     return;
   }
 
-  const result = matchQualifications(profile, tor.parsedData.qualifications);
+  const result = matchQualifications(profile, tor.parsedData.qualifications, {
+    title: tor.title,
+    scopeOfWork: tor.summary?.overview ?? tor.parsedData.scopeOfWork?.content,
+    workType: tor.parsedData.workType,
+    budget: tor.budget ?? tor.medianPrice ?? tor.parsedData.medianPrice?.value,
+    contractDurationDays: tor.parsedData.keyDates?.contractDurationDays?.value,
+    techRequirements: tor.parsedData.techRequirements,
+  });
 
   apiSuccess(res, { torRecordId: req.params.id, ...result });
 });

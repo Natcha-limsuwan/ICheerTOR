@@ -1,7 +1,7 @@
 "use client";
 
 
-import { api, getToken } from "@/lib/api/client";
+import { getToken } from "@/lib/api/client";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -22,6 +22,7 @@ interface TORItem {
   title: string;
   agencyName: string;
   phase: string;
+  displayPhase?: string;
   medianPrice?: number;
   budget?: number;
   submissionDeadline?: string;
@@ -31,7 +32,9 @@ interface TORItem {
 const phaseLabels: Record<string, string> = {
   public_hearing: "รับฟังความเห็น",
   bidding: "เสนอราคา",
+  closed: "ปิดรับข้อเสนอแล้ว",
   awarded: "ประกาศผลแล้ว",
+  cancelled: "ยกเลิก",
 };
 
 function CompareContent() {
@@ -125,7 +128,7 @@ function CompareContent() {
                     } else if (row.key === "tags") {
                       display = Array.isArray(val) ? (val as string[]).join(", ") : "—";
                     } else if (row.key === "phase") {
-                      display = phaseLabels[val as string] ?? (val as string);
+                      display = phaseLabels[item.displayPhase ?? (val as string)] ?? (item.displayPhase ?? (val as string));
                     } else {
                       display = (val as string) ?? "—";
                     }

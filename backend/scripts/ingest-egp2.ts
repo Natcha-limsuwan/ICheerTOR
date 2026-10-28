@@ -27,7 +27,6 @@ import { config } from "dotenv";
 config({ path: ".env" });
 
 import mongoose from "mongoose";
-import crypto from "crypto";
 
 import {
   fetchAllProjects,
@@ -38,6 +37,8 @@ import {
 } from "../src/services/ingestion/egp2-client";
 import { scoreSoftware, type FilterResult } from "../src/services/ingestion/software-filter";
 import { resolvePhase } from "../src/services/ingestion/phase-mapper";
+import { buildAnnouncementSearchUrl } from "../src/services/ingestion/egp-document-url";
+import { torDedupeHash } from "../src/services/ingestion/dedupe";
 import TORRecord from "../src/db/models/tor-record";
 
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -62,9 +63,8 @@ const STAGES: Array<{ id: string; name: string }> = [
 ];
 
 /** Stable key for a project, so re-runs update rather than duplicate. */
-function dedupeHash(projectNumber: string): string {
-  return crypto.createHash("sha256").update(`egp2:${projectNumber}`).digest("hex").slice(0, 32);
-}
+// Shared with the e-GP RSS ingest, so both sources land on the same record.
+const dedupeHash = torDedupeHash;
 
 function parseDate(value: string | null | undefined): Date | undefined {
   if (!value) return undefined;
@@ -196,9 +196,7 @@ async function main() {
             // than filling submissionDeadline and overstating what we know.
             publicHearingEnd: hearingEnd,
             sourceUrl: `https://egp2.bangkok.go.th/project-detail/${row.projectId}`,
-            officialPortalUrl:
-              `https://process5.gprocurement.go.th/egp-agpc01-web/announcement/search` +
-              `?projectId=${row.projectNumber}`,
+            officialPortalUrl: buildAnnouncementSearchUrl(row.projectNumber),
             deduplicationHash: dedupeHash(row.projectNumber),
             tags,
             // The reference price comes straight from the agency, so it is

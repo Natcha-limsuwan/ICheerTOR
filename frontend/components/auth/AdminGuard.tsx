@@ -9,7 +9,7 @@ const STAFF_ROLES = ["admin", "developer"];
 
 /**
  * Client-side admin guard.
- * Redirects non-staff users (admin/developer) to the dashboard.
+ * Redirects non-staff users (admin/developer) to procurement search.
  */
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -23,7 +23,7 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
     if (!user) {
       router.replace("/login");
     } else if (!isStaff) {
-      router.replace("/dashboard");
+      router.replace("/procurement");
     }
   }, [user, loading, isStaff, router]);
 

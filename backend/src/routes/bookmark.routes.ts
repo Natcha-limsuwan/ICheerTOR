@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { connectDB } from "../db/connection.js";
 import Bookmark from "../db/models/bookmark.js";
+import { displayPhase } from "../services/ingestion/data-checks.js";
 import { apiSuccess, Errors } from "../utils/api-response.js";
 import { authenticate } from "../middleware/auth.js";
 
@@ -24,7 +25,43 @@ router.get("/", async (req: Request, res: Response) => {
     Bookmark.countDocuments({ userId: req.user!.id }),
   ]);
 
-  apiSuccess(res, bookmarks, { total, page, limit });
+  const now = new Date();
+  apiSuccess(
+    res,
+    bookmarks.map((bookmark) => {
+      const tor = bookmark.torRecordId;
+      if (!tor || typeof tor !== "object" || !("phase" in tor)) return bookmark;
+      const populatedTor = tor as unknown as {
+        phase: "public_hearing" | "bidding" | "awarded" | "cancelled";
+        submissionDeadline?: Date | null;
+      };
+      return {
+        ...bookmark,
+        torRecordId: {
+          ...tor,
+          displayPhase: displayPhase(populatedTor.phase, populatedTor.submissionDeadline, now),
+        },
+      };
+    }),
+    { total, page, limit },
+  );
+});
+
+/** GET /api/bookmarks/tor/:torRecordId — Bookmark state for one TOR. */
+router.get("/tor/:torRecordId", async (req: Request, res: Response) => {
+  await connectDB();
+
+  const bookmark = await Bookmark.findOne({
+    userId: req.user!.id,
+    torRecordId: req.params.torRecordId,
+  })
+    .select("_id")
+    .lean();
+
+  apiSuccess(res, {
+    bookmarked: Boolean(bookmark),
+    bookmarkId: bookmark?._id.toString() ?? null,
+  });
 });
 
 /** POST /api/bookmarks — Create a bookmark. */
@@ -32,6 +69,15 @@ router.post("/", async (req: Request, res: Response) => {
   await connectDB();
 
   try {
+    const existing = await Bookmark.findOne({
+      userId: req.user!.id,
+      torRecordId: req.body.torRecordId,
+    });
+    if (existing) {
+      apiSuccess(res, existing, undefined, 200);
+      return;
+    }
+
     const bookmark = await Bookmark.create({
       userId: req.user!.id,
       torRecordId: req.body.torRecordId,
@@ -40,7 +86,11 @@ router.post("/", async (req: Request, res: Response) => {
     apiSuccess(res, bookmark, undefined, 201);
   } catch (error: unknown) {
     if ((error as { code?: number }).code === 11000) {
-      Errors.conflict(res, "Already bookmarked");
+      const existing = await Bookmark.findOne({
+        userId: req.user!.id,
+        torRecordId: req.body.torRecordId,
+      });
+      apiSuccess(res, existing, undefined, 200);
       return;
     }
     console.error("Bookmark creation error:", error);

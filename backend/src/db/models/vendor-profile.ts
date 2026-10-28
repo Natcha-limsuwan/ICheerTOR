@@ -7,6 +7,8 @@ export interface IPastContract {
   value: number;
   year: number;
   agencyName?: string;
+  /** Explicit evidence for TOR clauses that require government experience. */
+  agencyType?: "government" | "private" | "unknown";
 }
 
 export interface ICredential {
@@ -36,6 +38,7 @@ export interface IVendorProfile extends Document {
   pastContracts: IPastContract[];
   maxContractValue: number;
   techStacks: string[];
+  interestedCategories?: string[];
   credentials: ICredential[];
   teamSize?: number;
   /** Key staff by role — TORs often require e.g. "PM ≥ 1 คน มี PMP". */
@@ -52,6 +55,7 @@ const PastContractSchema = new Schema<IPastContract>(
     value: { type: Number, required: true, min: 0 },
     year: { type: Number, required: true },
     agencyName: { type: String },
+    agencyType: { type: String, enum: ["government", "private", "unknown"], default: "unknown" },
   },
   { _id: false },
 );
@@ -90,6 +94,7 @@ const VendorProfileSchema = new Schema<IVendorProfile>(
     pastContracts: { type: [PastContractSchema], default: [] },
     maxContractValue: { type: Number, default: 0 },
     techStacks: { type: [String], default: [] },
+    interestedCategories: { type: [String], default: [] },
     credentials: { type: [CredentialSchema], default: [] },
     teamSize: { type: Number, min: 1 },
     personnel: { type: [PersonnelSchema], default: [] },

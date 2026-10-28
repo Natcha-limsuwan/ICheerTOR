@@ -109,7 +109,7 @@ export default function AdminDashboardPage() {
         </div>
         <Button
           component={Link}
-          href="/dashboard"
+          href="/procurement"
           variant="outlined"
           startIcon={<ArrowBackIcon />}
           sx={{
