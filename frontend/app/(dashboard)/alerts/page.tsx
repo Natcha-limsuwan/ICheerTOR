@@ -8,8 +8,7 @@ import Chip from "@mui/material/Chip";
 import Switch from "@mui/material/Switch";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Button from "@mui/material/Button";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
+import { useToast } from "@/components/providers/ToastProvider";
 import Link from "next/link";
 import EmptyState from "@/components/shared/EmptyState";
 import NotificationsIcon from "@mui/icons-material/Notifications";
@@ -41,15 +40,7 @@ export default function AlertsPage() {
   const [loading, setLoading] = useState(true);
   const [prefsLoading, setPrefsLoading] = useState(false);
   const [prefs, setPrefs] = useState({ inApp: true, email: false });
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: "success" | "info" | "warning" | "error";
-  }>({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  const { showToast } = useToast();
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 
@@ -94,17 +85,9 @@ export default function AlertsPage() {
       });
 
       if (!res.ok) throw new Error("ไม่สามารถบันทึกการตั้งค่าได้");
-      setSnackbar({
-        open: true,
-        message: "บันทึกช่องทางการแจ้งเตือนเรียบร้อยแล้ว",
-        severity: "success",
-      });
+      showToast("บันทึกช่องทางการแจ้งเตือนเรียบร้อยแล้ว", "success");
     } catch {
-      setSnackbar({
-        open: true,
-        message: "เกิดข้อผิดพลาดในการบันทึกการตั้งค่า",
-        severity: "error",
-      });
+      showToast("เกิดข้อผิดพลาดในการบันทึกการตั้งค่า", "error");
     } finally {
       setPrefsLoading(false);
     }
@@ -150,11 +133,7 @@ export default function AlertsPage() {
             },
           })),
         );
-        setSnackbar({
-          open: true,
-          message: "ทำเครื่องหมายว่าอ่านแล้วทั้งหมดเรียบร้อย",
-          severity: "info",
-        });
+        showToast("ทำเครื่องหมายว่าอ่านแล้วทั้งหมดเรียบร้อย", "info");
       }
     } catch {
       // ignore
@@ -328,21 +307,7 @@ export default function AlertsPage() {
         })}
       </div>
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert
-          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-          severity={snackbar.severity}
-          variant="filled"
-          sx={{ width: "100%", borderRadius: "8px", fontWeight: 500 }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+
     </div>
   );
 }

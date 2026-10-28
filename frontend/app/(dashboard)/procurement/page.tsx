@@ -22,7 +22,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
-import Snackbar from "@mui/material/Snackbar";
+import { useToast } from "@/components/providers/ToastProvider";
 import { useRouter } from "next/navigation";
 import PillBadge from "@/components/shared/PillBadge";
 import EmptyState from "@/components/shared/EmptyState";
@@ -107,15 +107,7 @@ export default function ProcurementPage() {
     : budgetMin !== "" && budgetMax !== "" && Number(budgetMin) > Number(budgetMax)
       ? "ราคาต่ำสุดต้องไม่มากกว่าราคาสูงสุด" : "";
   const [bookmarksMap, setBookmarksMap] = useState<Record<string, string>>({});
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: "success" | "info" | "warning" | "error";
-  }>({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  const { showToast } = useToast();
 
   useEffect(() => {
     const token = getToken();
@@ -142,11 +134,7 @@ export default function ProcurementPage() {
     e.stopPropagation();
     const token = getToken();
     if (!token) {
-      setSnackbar({
-        open: true,
-        message: "กรุณาเข้าสู่ระบบก่อนบันทึกโครงการ",
-        severity: "warning",
-      });
+      showToast("กรุณาเข้าสู่ระบบก่อนบันทึกโครงการ", "warning");
       return;
     }
 
@@ -166,11 +154,7 @@ export default function ProcurementPage() {
           delete next[torId];
           return next;
         });
-        setSnackbar({
-          open: true,
-          message: "นำโครงการออกจากรายการที่บันทึกไว้แล้ว",
-          severity: "info",
-        });
+        showToast("นำโครงการออกจากรายการที่บันทึกไว้แล้ว", "info");
       } else {
         const res = await fetch(`${apiUrl}/bookmarks`, {
           method: "POST",
@@ -183,18 +167,10 @@ export default function ProcurementPage() {
         if (newId) {
           setBookmarksMap((prev) => ({ ...prev, [torId]: newId }));
         }
-        setSnackbar({
-          open: true,
-          message: "บันทึกโครงการในรายการที่บันทึกไว้เรียบร้อยแล้ว",
-          severity: "success",
-        });
+        showToast("บันทึกโครงการในรายการที่บันทึกไว้เรียบร้อยแล้ว", "success");
       }
     } catch (err) {
-      setSnackbar({
-        open: true,
-        message: err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการบันทึก",
-        severity: "error",
-      });
+      showToast(err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการบันทึก", "error");
     }
   };
 
@@ -524,21 +500,7 @@ export default function ProcurementPage() {
         </div>
       )}
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert
-          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-          severity={snackbar.severity}
-          variant="filled"
-          sx={{ width: "100%", borderRadius: "8px", fontWeight: 500 }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+
     </div>
   );
 }

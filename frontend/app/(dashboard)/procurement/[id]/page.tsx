@@ -18,8 +18,7 @@ import NotificationsActiveOutlinedIcon from "@mui/icons-material/NotificationsAc
 import BookmarkBorderOutlinedIcon from "@mui/icons-material/BookmarkBorderOutlined";
 import BookmarkOutlinedIcon from "@mui/icons-material/BookmarkOutlined";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
+import { useToast } from "@/components/providers/ToastProvider";
 
 type Qualification = { clauseNumber?: string | null; criterion: string; minimumValue?: number | string; unit?: string; isBoilerplate?: boolean; requiredCerts?: string[]; sourcePage?: number };
 type Detail = {
@@ -82,15 +81,7 @@ export default function TORDetailPage() {
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [documentLoading, setDocumentLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: "success" | "info" | "warning" | "error";
-  }>({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  const { showToast } = useToast();
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
     const headers = { Authorization: `Bearer ${getToken()}` };
@@ -109,11 +100,7 @@ export default function TORDetailPage() {
   const toggleBookmark = async () => {
     const token = getToken();
     if (!token) {
-      setSnackbar({
-        open: true,
-        message: "กรุณาเข้าสู่ระบบก่อนบันทึกโครงการ",
-        severity: "warning",
-      });
+      showToast("กรุณาเข้าสู่ระบบก่อนบันทึกโครงการ", "warning");
       return;
     }
 
@@ -126,11 +113,7 @@ export default function TORDetailPage() {
         const response = await fetch(`${apiUrl}/bookmarks/${bookmarkId}`, { method: "DELETE", headers });
         if (!response.ok) throw new Error("ไม่สามารถยกเลิกการบันทึกได้");
         setBookmarkId(null);
-        setSnackbar({
-          open: true,
-          message: "นำโครงการออกจากรายการที่บันทึกไว้แล้ว",
-          severity: "info",
-        });
+        showToast("นำโครงการออกจากรายการที่บันทึกไว้แล้ว", "info");
       } else {
         const response = await fetch(`${apiUrl}/bookmarks`, {
           method: "POST",
@@ -140,20 +123,12 @@ export default function TORDetailPage() {
         const result = await response.json();
         if (!response.ok) throw new Error(result.error?.message ?? "ไม่สามารถบันทึก TOR ได้");
         setBookmarkId(result.data?._id ?? null);
-        setSnackbar({
-          open: true,
-          message: "บันทึกโครงการในรายการที่บันทึกไว้เรียบร้อยแล้ว",
-          severity: "success",
-        });
+        showToast("บันทึกโครงการในรายการที่บันทึกไว้เรียบร้อยแล้ว", "success");
       }
     } catch (error) {
       const msg = error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการบันทึก";
       setActionError(msg);
-      setSnackbar({
-        open: true,
-        message: msg,
-        severity: "error",
-      });
+      showToast(msg, "error");
     } finally {
       setBookmarkLoading(false);
     }
@@ -233,21 +208,6 @@ export default function TORDetailPage() {
       <section className="detail-panel"><Title icon={<BarChartOutlinedIcon />}>เกณฑ์การประเมิน</Title><p className="whitespace-pre-wrap text-sm leading-7 text-slate-600">{parsed?.evaluationCriteria?.content ?? "ยังไม่มีรายละเอียดเกณฑ์การประเมิน"}</p>{parsed?.evaluationCriteria?.weights?.map((item) => <div key={item.criterion} className="mt-3"><div className="flex justify-between text-sm"><span>{item.criterion}</span><strong>{item.weight}%</strong></div><div className="mt-1 h-2 rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#0759be]" style={{ width: `${item.weight}%` }} /></div></div>)}</section>
       {parsed?.paymentTerms?.length ? <section className="detail-panel"><Title icon={<ReceiptLongOutlinedIcon />}>เงื่อนไขการส่งมอบและชำระเงิน</Title>{parsed.paymentTerms.map((item) => <div key={item.installment} className="mb-3 rounded-xl bg-slate-50 p-4"><strong>งวดที่ {item.installment}{item.percent != null ? ` • ${item.percent}%` : ""}</strong><p className="mt-1 text-sm text-slate-600">{item.condition}</p></div>)}</section> : null}
     </main><aside className="space-y-6"><section className="detail-panel"><Title icon={<ReceiptLongOutlinedIcon />}>ข้อมูลการจัดซื้อจัดจ้าง</Title><Row label="ประเภทงาน" value={workType[parsed?.workType ?? ""]} /><Row label="ประเภทโครงการ" value={tor.metadata?.projectType} /><Row label="วิธีจัดซื้อ" value={tor.metadata?.purchaseMethod} /><Row label="ประเภทประกาศ" value={tor.metadata?.announceType} /><Row label="เลขที่โครงการ" value={tor.metadata?.projectId} /><Row label="สถานะ" value={tor.metadata?.contractStatus} /></section><section className="rounded-2xl border-l-4 border-red-600 bg-red-50 p-6"><Title icon={<FlagOutlinedIcon />}>การวิเคราะห์ความเสี่ยง</Title>{tor.redFlags?.length ? tor.redFlags.map((item) => <div key={item.reason} className="mb-3 rounded-xl bg-white p-4 text-sm"><strong>{item.reason}</strong><p className="mt-2">{item.clauseText}</p>{item.recommendedAction && <p className="mt-2 text-red-700">คำแนะนำ: {item.recommendedAction}</p>}</div>) : <p className="text-sm text-emerald-700">ไม่พบความเสี่ยงที่ต้องแจ้งเตือน</p>}</section></aside></div>}
-    <Snackbar
-      open={snackbar.open}
-      autoHideDuration={4000}
-      onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-    >
-      <Alert
-        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        severity={snackbar.severity}
-        variant="filled"
-        sx={{ width: "100%", borderRadius: "8px", fontWeight: 500 }}
-      >
-        {snackbar.message}
-      </Alert>
-    </Snackbar>
   </div>;
 }
 function DeadlineNotice({ label, deadline, remainingDays }: { label: string; deadline?: string | null; remainingDays: number | null }) {

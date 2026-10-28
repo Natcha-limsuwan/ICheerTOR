@@ -11,8 +11,7 @@ import Link from "next/link";
 import PillBadge from "@/components/shared/PillBadge";
 import EmptyState from "@/components/shared/EmptyState";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
+import { useToast } from "@/components/providers/ToastProvider";
 
 const phaseLabels: Record<string, string> = {
   public_hearing: "รับฟังความเห็น",
@@ -40,15 +39,7 @@ interface BookmarkItem {
 export default function BookmarksPage() {
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: "success" | "info" | "warning" | "error";
-  }>({
-    open: false,
-    message: "",
-    severity: "info",
-  });
+  const { showToast } = useToast();
 
   useEffect(() => {
     async function fetchBookmarks() {
@@ -70,17 +61,9 @@ export default function BookmarksPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api"}/bookmarks/${id}`, { headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` }, method: "DELETE" });
       if (!res.ok) throw new Error("ไม่สามารถลบรายการได้");
       setBookmarks((prev) => prev.filter((b) => b._id !== id));
-      setSnackbar({
-        open: true,
-        message: "นำออกจากรายการที่บันทึกไว้แล้ว",
-        severity: "info",
-      });
+      showToast("นำออกจากรายการที่บันทึกไว้แล้ว", "info");
     } catch {
-      setSnackbar({
-        open: true,
-        message: "เกิดข้อผิดพลาด ไม่สามารถนำออกจากรายการได้",
-        severity: "error",
-      });
+      showToast("เกิดข้อผิดพลาด ไม่สามารถนำออกจากรายการได้", "error");
     }
   };
 
@@ -159,21 +142,7 @@ export default function BookmarksPage() {
         })}
       </div>
 
-        <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert
-          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-          severity={snackbar.severity}
-          variant="filled"
-          sx={{ width: "100%", borderRadius: "8px", fontWeight: 500 }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+
     </div>
   );
 }
