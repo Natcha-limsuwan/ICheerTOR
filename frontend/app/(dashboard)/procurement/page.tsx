@@ -20,6 +20,9 @@ import InputLabel from "@mui/material/InputLabel";
 import Pagination from "@mui/material/Pagination";
 import SearchIcon from "@mui/icons-material/Search";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import BookmarkIcon from "@mui/icons-material/Bookmark";
+import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
+import Snackbar from "@mui/material/Snackbar";
 import { useRouter } from "next/navigation";
 import PillBadge from "@/components/shared/PillBadge";
 import EmptyState from "@/components/shared/EmptyState";
@@ -103,6 +106,97 @@ export default function ProcurementPage() {
     ? "ราคาต้องเป็นตัวเลขตั้งแต่ 0 ขึ้นไป"
     : budgetMin !== "" && budgetMax !== "" && Number(budgetMin) > Number(budgetMax)
       ? "ราคาต่ำสุดต้องไม่มากกว่าราคาสูงสุด" : "";
+  const [bookmarksMap, setBookmarksMap] = useState<Record<string, string>>({});
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "info" | "warning" | "error";
+  }>({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+    fetch(`${apiUrl}/bookmarks?limit=100`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (json?.data && Array.isArray(json.data)) {
+          const map: Record<string, string> = {};
+          for (const bm of json.data) {
+            const torId = bm.torRecordId?._id ?? bm.torRecordId;
+            if (torId) map[torId] = bm._id;
+          }
+          setBookmarksMap(map);
+        }
+      })
+      .catch(() => {});
+  }, [user]);
+
+  const toggleCardBookmark = async (torId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const token = getToken();
+    if (!token) {
+      setSnackbar({
+        open: true,
+        message: "กรุณาเข้าสู่ระบบก่อนบันทึกโครงการ",
+        severity: "warning",
+      });
+      return;
+    }
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+    const existingBookmarkId = bookmarksMap[torId];
+    const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+
+    try {
+      if (existingBookmarkId) {
+        const res = await fetch(`${apiUrl}/bookmarks/${existingBookmarkId}`, {
+          method: "DELETE",
+          headers,
+        });
+        if (!res.ok) throw new Error("ไม่สามารถยกเลิกการบันทึกได้");
+        setBookmarksMap((prev) => {
+          const next = { ...prev };
+          delete next[torId];
+          return next;
+        });
+        setSnackbar({
+          open: true,
+          message: "นำโครงการออกจากรายการที่บันทึกไว้แล้ว",
+          severity: "info",
+        });
+      } else {
+        const res = await fetch(`${apiUrl}/bookmarks`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ torRecordId: torId }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error?.message ?? "ไม่สามารถบันทึก TOR ได้");
+        const newId = json.data?._id;
+        if (newId) {
+          setBookmarksMap((prev) => ({ ...prev, [torId]: newId }));
+        }
+        setSnackbar({
+          open: true,
+          message: "บันทึกโครงการในรายการที่บันทึกไว้เรียบร้อยแล้ว",
+          severity: "success",
+        });
+      }
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการบันทึก",
+        severity: "error",
+      });
+    }
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -368,10 +462,27 @@ export default function ProcurementPage() {
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-2 shrink-0">
-                    <PillBadge
-                      label={displayPhaseLabel(tor)}
-                      value={displayPhase(tor)}
-                    />
+                    <div className="flex items-center gap-1.5">
+                      <IconButton
+                        size="small"
+                        title={bookmarksMap[tor._id] ? "นำออกจากรายการที่บันทึก" : "บันทึกโครงการ"}
+                        onClick={(e) => toggleCardBookmark(tor._id, e)}
+                        sx={{
+                          color: bookmarksMap[tor._id] ? "#0047ab" : "var(--color-text-secondary)",
+                          "&:hover": { backgroundColor: "rgba(0, 71, 171, 0.08)" },
+                        }}
+                      >
+                        {bookmarksMap[tor._id] ? (
+                          <BookmarkIcon fontSize="small" sx={{ color: "#0047ab" }} />
+                        ) : (
+                          <BookmarkBorderIcon fontSize="small" />
+                        )}
+                      </IconButton>
+                      <PillBadge
+                        label={displayPhaseLabel(tor)}
+                        value={displayPhase(tor)}
+                      />
+                    </div>
                     <span className={`text-xs font-bold ${tor.match?.matchScore != null ? "text-green-600" : "text-[var(--color-text-secondary)]"}`}>
                       {tor.match?.matchScore != null
                         ? `เหมาะสม ${Math.round(tor.match.matchScore * 100)}%`
@@ -412,6 +523,22 @@ export default function ProcurementPage() {
           />
         </div>
       )}
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: "100%", borderRadius: "8px", fontWeight: 500 }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </div>
   );
 }

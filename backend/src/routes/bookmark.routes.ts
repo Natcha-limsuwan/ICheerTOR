@@ -69,6 +69,15 @@ router.post("/", async (req: Request, res: Response) => {
   await connectDB();
 
   try {
+    const existing = await Bookmark.findOne({
+      userId: req.user!.id,
+      torRecordId: req.body.torRecordId,
+    });
+    if (existing) {
+      apiSuccess(res, existing, undefined, 200);
+      return;
+    }
+
     const bookmark = await Bookmark.create({
       userId: req.user!.id,
       torRecordId: req.body.torRecordId,
@@ -77,7 +86,11 @@ router.post("/", async (req: Request, res: Response) => {
     apiSuccess(res, bookmark, undefined, 201);
   } catch (error: unknown) {
     if ((error as { code?: number }).code === 11000) {
-      Errors.conflict(res, "Already bookmarked");
+      const existing = await Bookmark.findOne({
+        userId: req.user!.id,
+        torRecordId: req.body.torRecordId,
+      });
+      apiSuccess(res, existing, undefined, 200);
       return;
     }
     console.error("Bookmark creation error:", error);

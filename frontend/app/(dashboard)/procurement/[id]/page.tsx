@@ -107,10 +107,20 @@ export default function TORDetailPage() {
   }, [id]);
 
   const toggleBookmark = async () => {
+    const token = getToken();
+    if (!token) {
+      setSnackbar({
+        open: true,
+        message: "กรุณาเข้าสู่ระบบก่อนบันทึกโครงการ",
+        severity: "warning",
+      });
+      return;
+    }
+
     setBookmarkLoading(true);
     setActionError(null);
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
-    const headers = { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` };
+    const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
     try {
       if (bookmarkId) {
         const response = await fetch(`${apiUrl}/bookmarks/${bookmarkId}`, { method: "DELETE", headers });
@@ -227,7 +237,7 @@ export default function TORDetailPage() {
       open={snackbar.open}
       autoHideDuration={4000}
       onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-      anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
     >
       <Alert
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
