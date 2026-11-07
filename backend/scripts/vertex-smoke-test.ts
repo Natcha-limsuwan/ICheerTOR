@@ -30,6 +30,7 @@ import {
 import { fetchProjectArchive } from "../src/services/ingestion/egp-client";
 import { listEntries, readEntry } from "../src/services/ingestion/zip-reader";
 import { pickDocument } from "../src/services/ingestion/document-picker";
+import { reviewedPayload, redactPersonalValues } from "../src/services/ai/payload-privacy";
 
 const pdfArg = process.argv.find((a) => a.startsWith("--pdf="))?.split("=")[1];
 
@@ -161,15 +162,16 @@ async function main() {
 
   try {
     const t0 = Date.now();
+    const parts = reviewedPayload([
+      { inlineData: { mimeType: "application/pdf", data: pdf.toString("base64") } },
+      { text: "เอกสารนี้คือ TOR การจัดซื้อจัดจ้างของ กทม. ตอบเป็น JSON ตาม schema" },
+    ]);
     const res = await ai.models.generateContent({
       model,
       contents: [
         {
           role: "user",
-          parts: [
-            { inlineData: { mimeType: "application/pdf", data: pdf.toString("base64") } },
-            { text: "เอกสารนี้คือ TOR การจัดซื้อจัดจ้างของ กทม. ตอบเป็น JSON ตาม schema" },
-          ],
+          parts,
         },
       ],
       config: {
@@ -191,7 +193,7 @@ async function main() {
     });
     const u = res.usageMetadata;
     console.log(`  ✓ ${Date.now() - t0} ms | tokens in ${u?.promptTokenCount} / out ${u?.candidatesTokenCount}`);
-    console.log(JSON.stringify(JSON.parse(res.text ?? "{}"), null, 2).replace(/^/gm, "    "));
+    console.log(JSON.stringify(redactPersonalValues(JSON.parse(res.text ?? "{}")), null, 2).replace(/^/gm, "    "));
   } catch (e) {
     fail("ส่ง PDF ให้ Gemini ไม่สำเร็จ", e);
   }

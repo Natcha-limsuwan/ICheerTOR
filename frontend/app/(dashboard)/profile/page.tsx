@@ -1,6 +1,7 @@
 "use client";
 
 import { getToken } from "@/lib/api/client";
+import PrivacyControls from "@/components/shared/PrivacyControls";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Card from "@mui/material/Card";
@@ -133,6 +134,7 @@ export default function ProfilePage() {
   const [initialProfile, setInitialProfile] = useState<ProfileData | null>(null);
   const [isNew, setIsNew] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [hasConsent, setHasConsent] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [newTech, setNewTech] = useState("");
   const [newCategory, setNewCategory] = useState("");
@@ -255,6 +257,10 @@ export default function ProfilePage() {
   const topRef = useRef<HTMLDivElement>(null);
 
   const handleSave = async () => {
+    if (!hasConsent) {
+      setMessage({ type: "error", text: "กรุณาให้ความยินยอมสำหรับโปรไฟล์ก่อนบันทึก" });
+      return;
+    }
     setMessage(null);
     if (!profile.companyName.trim()) {
       setMessage({ type: "error", text: "กรุณากรอกชื่อบริษัท" });
@@ -389,6 +395,8 @@ export default function ProfilePage() {
           {message.text}
         </Alert>
       )}
+
+      <PrivacyControls onConsentChange={setHasConsent} />
 
       {/* Company Info */}
       <Card sx={{ borderRadius: "var(--radius-card)" }}>
@@ -951,7 +959,7 @@ export default function ProfilePage() {
       <Button
         variant="contained"
         onClick={handleSave}
-        disabled={saving}
+        disabled={saving || !hasConsent}
         startIcon={<SaveIcon />}
         fullWidth
         size="large"

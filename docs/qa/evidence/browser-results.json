@@ -1,0 +1,996 @@
+{
+  "browser": "Chrome/156.0.8078.80",
+  "protocol": "1.3",
+  "site": "http://127.0.0.1:3100",
+  "data": "synthetic fixtures; all non-local requests intercepted",
+  "results": [
+    {
+      "name": "UI-desktop: procurement has no horizontal overflow",
+      "status": "PASS",
+      "evidence": "{\"width\":1440,\"content\":1440}"
+    },
+    {
+      "name": "UI-desktop: main navigation is reachable",
+      "status": "PASS",
+      "evidence": "[\"/procurement\",\"/alerts\",\"/profile\",\"/bookmarks\"]"
+    },
+    {
+      "name": "TOUR-desktop: profile is first",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "TOUR-desktop: six panels stay in viewport",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "UI-desktop: profile has no horizontal overflow",
+      "status": "PASS",
+      "evidence": "{\"width\":1440,\"content\":1434}"
+    },
+    {
+      "name": "UI-desktop: bookmarks has no horizontal overflow",
+      "status": "PASS",
+      "evidence": "{\"width\":1440,\"content\":1440}"
+    },
+    {
+      "name": "UI-desktop: alerts has no horizontal overflow",
+      "status": "PASS",
+      "evidence": "{\"width\":1440,\"content\":1440}"
+    },
+    {
+      "name": "UI-tablet: procurement has no horizontal overflow",
+      "status": "PASS",
+      "evidence": "{\"width\":768,\"content\":768}"
+    },
+    {
+      "name": "UI-tablet: main navigation is reachable",
+      "status": "PASS",
+      "evidence": "[\"/procurement\",\"/alerts\",\"/profile\",\"/bookmarks\"]"
+    },
+    {
+      "name": "TOUR-tablet: profile is first",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "TOUR-tablet: six panels stay in viewport",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "UI-tablet: profile has no horizontal overflow",
+      "status": "PASS",
+      "evidence": "{\"width\":768,\"content\":762}"
+    },
+    {
+      "name": "UI-tablet: bookmarks has no horizontal overflow",
+      "status": "PASS",
+      "evidence": "{\"width\":768,\"content\":768}"
+    },
+    {
+      "name": "UI-tablet: alerts has no horizontal overflow",
+      "status": "PASS",
+      "evidence": "{\"width\":768,\"content\":768}"
+    },
+    {
+      "name": "UI-mobile: procurement has no horizontal overflow",
+      "status": "PASS",
+      "evidence": "{\"width\":390,\"content\":390}"
+    },
+    {
+      "name": "UI-mobile: main navigation is reachable",
+      "status": "PASS",
+      "evidence": "[\"/procurement\",\"/alerts\",\"/profile\",\"/bookmarks\"]"
+    },
+    {
+      "name": "TOUR-mobile: profile is first",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "TOUR-mobile: six panels stay in viewport",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "UI-mobile: profile has no horizontal overflow",
+      "status": "PASS",
+      "evidence": "{\"width\":390,\"content\":390}"
+    },
+    {
+      "name": "UI-mobile: bookmarks has no horizontal overflow",
+      "status": "PASS",
+      "evidence": "{\"width\":390,\"content\":390}"
+    },
+    {
+      "name": "UI-mobile: alerts has no horizontal overflow",
+      "status": "PASS",
+      "evidence": "{\"width\":390,\"content\":390}"
+    },
+    {
+      "name": "FR-A-UI-01: price minimum is sent to API",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "FR-A-UI-02: inverted range gives inline validation",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "FR-A-UI-03: no-result state renders",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "FR-B-UI-01: extracted content renders",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "FR-B-UI-02 / BUG-11: all extracted fields show confidence and low-confidence warning",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "UI-desktop: TOR detail has no horizontal overflow",
+      "status": "PASS",
+      "evidence": "{\"width\":1440,\"content\":1434}"
+    },
+    {
+      "name": "UI-tablet: TOR detail has no horizontal overflow",
+      "status": "PASS",
+      "evidence": "{\"width\":768,\"content\":762}"
+    },
+    {
+      "name": "UI-mobile: TOR detail has no horizontal overflow",
+      "status": "PASS",
+      "evidence": "{\"width\":390,\"content\":390}"
+    },
+    {
+      "name": "PD-UI-01 / BUG-12: privacy notice link is usable",
+      "status": "PASS",
+      "evidence": "/privacy"
+    },
+    {
+      "name": "PD-UI-02: notice describes demo context and data handling",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "PD-UI-03: saving profile requires an explicit unchecked opt-in",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "PD-UI-04: explicit grant enables profile save",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "PD-UI-05: revoke immediately disables save",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "name": "UI-runtime: no uncaught browser exceptions",
+      "status": "PASS",
+      "evidence": "[]"
+    }
+  ],
+  "requests": [
+    {
+      "method": "OPTIONS",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/tor",
+      "query": "?sortBy=announcedDate&sortOrder=desc&includeMatch=true&page=1&limit=20"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tor",
+      "query": "?sortBy=announcedDate&sortOrder=desc&includeMatch=true&page=1&limit=20"
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/pdpa/consent",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/pdpa/consent",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/profile",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/profile",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/pdpa/consent",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/profile",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/bookmarks",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/bookmarks",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/notifications",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/notifications/prefs",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/notifications",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/notifications/prefs",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/prefs",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/prefs",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tor",
+      "query": "?sortBy=announcedDate&sortOrder=desc&includeMatch=true&page=1&limit=20"
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tor",
+      "query": "?sortBy=announcedDate&sortOrder=desc&includeMatch=true&page=1&limit=20"
+    },
+    {
+      "method": "GET",
+      "path": "/api/pdpa/consent",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/profile",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/pdpa/consent",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/profile",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/prefs",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/prefs",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/tor",
+      "query": "?sortBy=announcedDate&sortOrder=desc&includeMatch=true&page=1&limit=20"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tor",
+      "query": "?sortBy=announcedDate&sortOrder=desc&includeMatch=true&page=1&limit=20"
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tor",
+      "query": "?sortBy=announcedDate&sortOrder=desc&includeMatch=true&page=1&limit=20"
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/pdpa/consent",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/pdpa/consent",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/profile",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/profile",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/pdpa/consent",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/profile",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/bookmarks",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/bookmarks",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/notifications",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/notifications/prefs",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/notifications",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/notifications/prefs",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/prefs",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/prefs",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "query": "?limit=100"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tor",
+      "query": "?sortBy=announcedDate&sortOrder=desc&includeMatch=true&page=1&limit=20"
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/tor",
+      "query": "?budgetMin=1000000&sortBy=announcedDate&sortOrder=desc&includeMatch=true&page=1&limit=20"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tor",
+      "query": "?budgetMin=1000000&sortBy=announcedDate&sortOrder=desc&includeMatch=true&page=1&limit=20"
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/tor",
+      "query": "?sortBy=announcedDate&sortOrder=desc&includeMatch=true&page=1&limit=20"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tor",
+      "query": "?sortBy=announcedDate&sortOrder=desc&includeMatch=true&page=1&limit=20"
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/tor",
+      "query": "?q=%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B9%82%E0%B8%84%E0%B8%A3%E0%B8%87%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%99%E0%B8%B5%E0%B9%89&sortBy=announcedDate&sortOrder=desc&includeMatch=true&page=1&limit=20"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tor",
+      "query": "?q=%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%A1%E0%B8%B5%E0%B9%82%E0%B8%84%E0%B8%A3%E0%B8%87%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%99%E0%B8%B5%E0%B9%89&sortBy=announcedDate&sortOrder=desc&includeMatch=true&page=1&limit=20"
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/tor/000000000000000000000001",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/tor/000000000000000000000001/match",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/bookmarks/tor/000000000000000000000001",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/tor/000000000000000000000001",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/tor/000000000000000000000001/match",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks/tor/000000000000000000000001",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/tor/000000000000000000000001",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/tor/000000000000000000000001/match",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks/tor/000000000000000000000001",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/pdpa/consent",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/profile",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/pdpa/consent",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/profile",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "query": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "query": ""
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/pdpa/consent",
+      "query": ""
+    },
+    {
+      "method": "POST",
+      "path": "/api/pdpa/consent",
+      "query": ""
+    },
+    {
+      "method": "POST",
+      "path": "/api/pdpa/consent",
+      "query": ""
+    }
+  ],
+  "browserErrors": []
+}

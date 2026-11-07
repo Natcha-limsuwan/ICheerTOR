@@ -1,0 +1,405 @@
+{
+  "frontend": "http://127.0.0.1:3100",
+  "backend": "http://127.0.0.1:3101/api",
+  "database": "isolated random scratch DB on local QA mongod",
+  "auth": "synthetic signed JWT; Google OAuth provider flow not exercised",
+  "results": [
+    {
+      "engine": "chrome",
+      "version": "156.0.8078.80",
+      "status": "PASS",
+      "checks": [
+        {
+          "label": "procurement layout 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "profile layout 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "bookmarks layout 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "alerts layout 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "TOR detail layout 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "tour all six sections 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "procurement layout 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "profile layout 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "bookmarks layout 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "alerts layout 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "TOR detail layout 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "tour all six sections 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "procurement layout 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "profile layout 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "bookmarks layout 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "alerts layout 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "TOR detail layout 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "mobile navigation",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "tour all six sections 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "real database price boundaries through UI",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "consent grant and profile persistence",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "personal-data export through UI",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "consent revoke through UI",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "account deletion through UI revokes old JWT",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "no uncaught browser exceptions",
+          "status": "PASS",
+          "details": ""
+        }
+      ]
+    },
+    {
+      "engine": "firefox",
+      "version": "134.0",
+      "status": "PASS",
+      "checks": [
+        {
+          "label": "procurement layout 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "profile layout 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "bookmarks layout 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "alerts layout 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "TOR detail layout 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "tour all six sections 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "procurement layout 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "profile layout 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "bookmarks layout 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "alerts layout 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "TOR detail layout 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "tour all six sections 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "procurement layout 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "profile layout 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "bookmarks layout 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "alerts layout 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "TOR detail layout 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "mobile navigation",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "tour all six sections 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "real database price boundaries through UI",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "consent grant and profile persistence",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "personal-data export through UI",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "consent revoke through UI",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "account deletion through UI revokes old JWT",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "no uncaught browser exceptions",
+          "status": "PASS",
+          "details": ""
+        }
+      ]
+    },
+    {
+      "engine": "webkit",
+      "version": "18.2",
+      "status": "PASS",
+      "checks": [
+        {
+          "label": "procurement layout 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "profile layout 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "bookmarks layout 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "alerts layout 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "TOR detail layout 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "tour all six sections 1440px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "procurement layout 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "profile layout 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "bookmarks layout 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "alerts layout 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "TOR detail layout 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "tour all six sections 768px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "procurement layout 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "profile layout 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "bookmarks layout 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "alerts layout 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "TOR detail layout 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "mobile navigation",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "tour all six sections 390px",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "real database price boundaries through UI",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "consent grant and profile persistence",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "personal-data export through UI",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "consent revoke through UI",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "account deletion through UI revokes old JWT",
+          "status": "PASS",
+          "details": ""
+        },
+        {
+          "label": "no uncaught browser exceptions",
+          "status": "PASS",
+          "details": ""
+        }
+      ]
+    }
+  ],
+  "limitations": "Playwright Firefox/WebKit are bundled test engines. WebKit is not installed Safari; this does not prove latest two releases or physical devices."
+}

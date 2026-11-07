@@ -1,0 +1,56 @@
+{
+  "baselineCommit": "79e9c3bdbe446bad3be73e00dcb89c6b3259b700",
+  "node": "v22.18.0",
+  "timezone": "Asia/Bangkok",
+  "results": [
+    {
+      "name": "backend-types",
+      "directory": "backend",
+      "command": "node node_modules/typescript/bin/tsc --noEmit",
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "name": "frontend-types",
+      "directory": "frontend",
+      "command": "node node_modules/typescript/bin/tsc --noEmit --incremental false",
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "name": "frontend-lint",
+      "directory": "frontend",
+      "command": "node node_modules/eslint/bin/eslint.js .",
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "name": "search-baseline",
+      "directory": "backend",
+      "command": "node --import tsx scripts/test-tor-search.ts",
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "name": "pipeline-offline",
+      "directory": "backend",
+      "command": "node --import tsx scripts/test-pipeline.ts --offline",
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "name": "extraction-offline",
+      "directory": "backend",
+      "command": "node --import tsx scripts/test-extraction.ts",
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "name": "qa-regressions",
+      "directory": "backend",
+      "command": "node --import tsx --test --test-reporter=spec scripts/qa/check.test.ts",
+      "exitCode": 1,
+      "signal": null
+    }
+  ]
+}

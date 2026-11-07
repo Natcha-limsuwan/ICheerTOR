@@ -14,6 +14,9 @@
  *   docker compose --profile tools run --rm tools npx tsx scripts/eval-prompt.ts
  *   ... npx tsx scripts/eval-prompt.ts --prompt=v2 --only=69049097411
  *   ... npx tsx scripts/eval-prompt.ts --cached          # no API calls
+ *   ... npx tsx scripts/eval-prompt.ts --archive-dir=/path/to/cleared-zips
+ *       Reads <projectNumber>.zip locally; still calls Vertex AI.
+ *   ... --with-db-context  # explicitly opt in to reading MONGODB_URI
  *   ... npx tsx scripts/eval-prompt.ts --verbose         # every mismatch
  *   ... npx tsx scripts/eval-prompt.ts --no-bidding-doc  # TOR only to the model
  *       (doc_ is still read in code); runs go to eval/runs/<version>-nodoc/
@@ -26,12 +29,14 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import path from "path";
 import mongoose from "mongoose";
 
-import { prompts, type ExtractionContext } from "../src/services/ai/prompts";
+import { activePrompt, prompts, type ExtractionContext } from "../src/services/ai/prompts";
 import type { TorExtractionV2, QualificationV2 } from "../src/services/ai/prompts/v2";
 import type { TorExtractionV3 } from "../src/services/ai/prompts/v3";
 import type { TorExtractionV4 } from "../src/services/ai/prompts/v4";
 import { validateExtraction, type ValidationIssue } from "../src/services/ai/validate-extraction";
-import { callModel, prepareDocuments } from "../src/services/ai/tor-parser";
+import { buildModelParts, callModel, prepareDocuments } from "../src/services/ai/tor-parser";
+import { writePayloadReview } from "../src/services/ai/payload-privacy";
+import { confidenceMetrics, type ConfidenceObservation } from "../src/services/ai/confidence-metrics";
 import { resolvePrices } from "../src/services/ai/resolve-prices";
 import { fetchProjectArchive } from "../src/services/ingestion/egp-client";
 import type { ArchiveFacts } from "../src/services/ingestion/archive-facts";
@@ -41,10 +46,14 @@ import TORRecord from "../src/db/models/tor-record";
 
 const argv = process.argv.slice(2);
 const arg = (name: string) => argv.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
-const PROMPT_VERSION = arg("prompt") ?? "v3";
+const PROMPT_VERSION = arg("prompt") ?? activePrompt.version;
 const VERSION_NUM = Number(PROMPT_VERSION.replace(/\D/g, ""));
 const ONLY = arg("only");
 const CACHED = argv.includes("--cached");
+/** Local, permission-cleared archives avoid requests to source websites. */
+const ARCHIVE_DIR = arg("archive-dir");
+const WITH_DB_CONTEXT = argv.includes("--with-db-context");
+const REVIEW_DIR = arg("review-dir");
 const VERBOSE = argv.includes("--verbose");
 /** Withhold the bidding document's text from the model, to measure what it adds. */
 const NO_BIDDING_DOC = argv.includes("--no-bidding-doc");
@@ -187,6 +196,7 @@ const dateEq = (a: string | null, b: string | null) =>
 class Tally {
   private counts = new Map<string, { ok: number; n: number }>();
   readonly mismatches: string[] = [];
+  readonly confidenceObservations: ConfidenceObservation[] = [];
 
   add(field: string, ok: boolean, detail?: () => string) {
     const c = this.counts.get(field) ?? { ok: 0, n: 0 };
@@ -289,6 +299,17 @@ function scoreOne(gold: Gold, pred: TorExtractionV2, tally: Tally, facts?: Archi
     tally.add(field, ok, () => `${id} เฉลย ${show(g)} | ได้ ${show(p)}`);
     if (g == null && p != null) invented.push(field);
   }
+  // Only score confidence against gold fields with directly comparable values.
+  // Scope-summary quality needs human labels; code-derived dates are excluded.
+  const priceField = "budget" in pred && gold.priceKind === "budget"
+    ? (pred as unknown as TorExtractionV4).budget : pred.medianPrice;
+  for (const [confidence, correct] of [
+    [priceField.confidence, numEq(gold.medianPrice, predPrice)],
+    [pred.keyDates.warrantyMonths.confidence, numEq(gold.warrantyMonths, pred.keyDates.warrantyMonths.value)],
+    [pred.evaluationCriteria.confidence, scalars.filter(([field]) => field.startsWith("evaluation")).every(([, , , ok]) => ok)],
+  ] as Array<[number, boolean]>) {
+    if (Number.isFinite(confidence) && confidence >= 0 && confidence <= 1) tally.confidenceObservations.push({ confidence, correct });
+  }
 
   /* qualifications */
   const q = pair(gold.qualifications, pred.qualifications, (g) => g.criterion, (p) => p.criterion);
@@ -303,6 +324,15 @@ function scoreOne(gold: Gold, pred: TorExtractionV2, tally: Tally, facts?: Archi
     }
   }
   const core = (g: GoldQualification) => !g.isBoilerplate;
+  for (const p of pred.qualifications) {
+    const matched = q.pairs.find(entry => entry.p === p);
+    const correct = Boolean(matched && QUAL_FIELDS.every(field =>
+      field.name === "normalizedNames" && matched.g.normalizedNames.length === 0
+        ? true : field.eq(matched.g[field.name], p[field.name])));
+    if (Number.isFinite(p.confidence) && p.confidence >= 0 && p.confidence <= 1) {
+      tally.confidenceObservations.push({ confidence: p.confidence, correct });
+    }
+  }
 
   /* risk clauses */
   const r = pair(gold.riskClauses, pred.riskClauses, (g) => g.rawText, (p) => p.rawText);
@@ -359,6 +389,7 @@ interface RunRecord {
   facts?: ArchiveFacts | null;
   /** The model's reply, before validation. */
   output: TorExtractionV2 | TorExtractionV3 | TorExtractionV4;
+  inputPdf?: { sha256: string; sizeBytes: number };
 }
 
 /** v3+ replies carry documentConflicts and are run through the validator. */
@@ -369,7 +400,10 @@ async function runModel(gold: Gold): Promise<RunRecord> {
   const prompt = prompts[PROMPT_VERSION];
   if (!prompt) throw new Error(`ไม่มี prompt ${PROMPT_VERSION}`);
 
-  const archive = await fetchProjectArchive(gold.projectNumber);
+  if (!/^\d+$/.test(gold.projectNumber)) throw new Error("projectNumber ต้องเป็นตัวเลข");
+  const archive = ARCHIVE_DIR
+    ? { zip: readFileSync(path.resolve(ARCHIVE_DIR, `${gold.projectNumber}.zip`)) }
+    : await fetchProjectArchive(gold.projectNumber);
   if (!archive) throw new Error("e-GP ไม่มีชุดเอกสารของโครงการนี้");
   // Same preparation as the pipeline; score the file the labeller read.
   const prepared = await prepareDocuments(archive.zip, {
@@ -379,11 +413,16 @@ async function runModel(gold: Gold): Promise<RunRecord> {
   if (prepared.skipReason) throw new Error(prepared.skipReason);
 
   const ctx = await contextFor(gold, prepared.pdf?.entry.name ?? "", prepared.pdf ? "tor" : "none");
+  if (REVIEW_DIR) {
+    writePayloadReview(buildModelParts(prompt, prepared, ctx), path.resolve(REVIEW_DIR, gold.projectNumber));
+    throw new Error("เตรียม payload สำหรับตรวจในเครื่องแล้ว ยังไม่เรียก AI และยังไม่มีผล accuracy");
+  }
   const call = await callModel<TorExtractionV2>(prompt, prepared, ctx, (attempt, waitMs, e) =>
     process.stdout.write(`(${String(e).match(/d{3}|fetch failed/)?.[0] ?? "error"} รอ ${waitMs / 1000} วินาที) `),
   );
   return {
     promptVersion: PROMPT_VERSION,
+    inputPdf: call.inputPdf,
     model: call.model,
     durationMs: call.durationMs,
     usage: call.usage,
@@ -435,7 +474,7 @@ async function main() {
     process.exit(1);
   }
 
-  if (process.env.MONGODB_URI) {
+  if (!CACHED && WITH_DB_CONTEXT && process.env.MONGODB_URI) {
     await mongoose.connect(process.env.MONGODB_URI).catch(() => {
       console.log("! ต่อ MongoDB ไม่ได้ — ส่ง context แบบไม่มีชื่อโครงการ/ราคากลาง");
     });
@@ -446,6 +485,7 @@ async function main() {
 
   const tally = new Tally();
   const scores: TorScore[] = [];
+  let failed = 0;
   const notes: string[] = [];
 
   for (const file of goldFiles) {
@@ -456,6 +496,7 @@ async function main() {
       if (CACHED) {
         if (!existsSync(runPath)) throw new Error("ยังไม่มีผลที่บันทึกไว้ — รันแบบไม่ใส่ --cached ก่อน");
         run = JSON.parse(readFileSync(runPath, "utf-8")) as RunRecord;
+        if (run.promptVersion !== PROMPT_VERSION) throw new Error("promptVersion ใน cache ไม่ตรงกับที่เลือก");
       } else {
         process.stdout.write(`  ${gold.projectNumber} ... `);
         run = await runModel(gold);
@@ -469,6 +510,7 @@ async function main() {
         );
       }
     } catch (e) {
+      failed++;
       console.log(`  ✗ ${gold.projectNumber}: ${e instanceof Error ? e.message : e}`);
       continue;
     }
@@ -484,6 +526,12 @@ async function main() {
   }
 
   if (scores.length === 0) {
+    writeFileSync(path.join(RUN_DIR, "_report.json"), JSON.stringify({
+      promptVersion: PROMPT_VERSION, at: new Date().toISOString(), expected: goldFiles.length,
+      evaluated: 0, failed, scores: [], fields: [],
+      confidence: confidenceMetrics([]),
+    }, null, 2));
+    console.error(`ประเมินไม่ได้ทั้ง ${goldFiles.length} ฉบับ — ยังไม่มีผล accuracy`);
     await mongoose.disconnect();
     process.exit(1);
   }
@@ -537,13 +585,18 @@ async function main() {
   if (!VERBOSE && (missed.length > 10 || extra.length > 10 || tally.mismatches.length > 15)) {
     console.log("\n(ใส่ --verbose เพื่อดูทั้งหมด)");
   }
-  console.log(`\nผลของ model อยู่ที่ ${path.relative(process.cwd(), RUN_DIR)}/ — สรุปขอบเขตงานให้อ่านเทียบด้วยตา`);
+  console.log(`\nประเมิน ${scores.length}/${goldFiles.length} ฉบับ; ทำไม่ได้ ${failed} ฉบับ`);
+  console.log(`ผลของ model อยู่ที่ ${path.relative(process.cwd(), RUN_DIR)}/ — สรุปขอบเขตงานให้อ่านเทียบด้วยตา`);
 
   writeFileSync(
     path.join(RUN_DIR, "_report.json"),
-    JSON.stringify({ promptVersion: PROMPT_VERSION, at: new Date().toISOString(), scores, fields: tally.rows() }, null, 2),
+    JSON.stringify({ promptVersion: PROMPT_VERSION, at: new Date().toISOString(), expected: goldFiles.length, evaluated: scores.length, failed, scores, fields: tally.rows(),
+      confidence: confidenceMetrics(tally.confidenceObservations),
+      confidenceLabelMethod: "Gold scalar comparisons and heuristic qualification pairing with exact attribute checks; excludes summary quality. Human review required; no automatic pass threshold.",
+    }, null, 2),
   );
   await mongoose.disconnect();
+  if (failed > 0) process.exitCode = 1;
 }
 
 main().catch((e) => {

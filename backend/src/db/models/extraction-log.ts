@@ -7,9 +7,9 @@ import mongoose, { Schema, Document, Model, Types } from "mongoose";
  * what is needed to compare prompt versions, track token spend and debug a
  * bad extraction after the fact.
  *
- * PDPA: rawResponse is the model's verbatim output and can quote names of
- * officials or committee members from the PDF. It is kept for debugging
- * only and expires with the whole log entry after LOG_TTL_DAYS.
+ * PDPA: rawResponse stores the schema output after personal-text scrubbing,
+ * before semantic validation. It expires with the entry after LOG_TTL_DAYS.
+ * Scrubbing is defense in depth; payloads require exact-byte privacy review.
  */
 export interface IExtractionLog extends Document {
   torRecordId: Types.ObjectId;

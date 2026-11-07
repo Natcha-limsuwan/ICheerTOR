@@ -23,6 +23,9 @@ Thumbs.db
 # TypeScript
 tsconfig.tsbuildinfo
 
+# QA screenshots stay local; attach relevant images to issues/PRs instead
+/docs/qa/evidence/**/*.png
+
 # GCP service-account keys (Vertex AI) — never commit
 secrets/
 gcp-key*.json

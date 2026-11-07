@@ -22,8 +22,10 @@
  * silently returns zero rows instead of an error.
  */
 
+import { sourceFetch } from "./source-fetch.js";
+
 const BASE = "https://egp2.bangkok.go.th/appapi/api";
-const DEFAULT_DELAY_MS = 300;
+const DEFAULT_DELAY_MS = 1000;
 
 /** Announce-type ids from /MasterAnnounceTypes. */
 export const ANNOUNCE_TYPE = {
@@ -108,13 +110,13 @@ async function getJson<T>(path: string, params: Record<string, string | number |
     if (v !== undefined && v !== "") qs.set(k, String(v));
   }
   const url = `${BASE}${path}?${qs.toString()}`;
-  const res = await fetch(url, {
+  const res = await sourceFetch(url, {
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(90_000),
   });
   const body = await res.text();
   if (!res.ok) {
-    throw new Error(`HTTP ${res.status} จาก egp2 ${path} — ${body.slice(0, 200)}`);
+    throw new Error(`HTTP ${res.status} จาก egp2 ${path}`);
   }
   return JSON.parse(body) as T;
 }

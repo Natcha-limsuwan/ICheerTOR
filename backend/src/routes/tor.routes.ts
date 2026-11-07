@@ -8,7 +8,8 @@ import { matchQualifications } from "../services/matching/qualification-matcher.
 import { resolveDownloadUrl } from "../services/ingestion/egp-document-url.js";
 import { bidWindow, displayPhase } from "../services/ingestion/data-checks.js";
 import { apiSuccess, Errors } from "../utils/api-response.js";
-import { authenticate } from "../middleware/auth.js";
+import { authenticate, requireConsent } from "../middleware/auth.js";
+import { hasProcessingConsent } from "../services/pdpa/consent.js";
 import { buildTorSearchFilter } from "../services/search/tor-search.js";
 
 const router = Router();
@@ -120,6 +121,12 @@ function openOpportunityFilter(now = new Date()): Record<string, unknown> {
 router.get("/", async (req: Request, res: Response) => {
   await connectDB();
 
+  for (const name of ["agency", "phase", "status", "sortBy", "sortOrder", "scope", "techStack"]) {
+    if (req.query[name] !== undefined && typeof req.query[name] !== "string") {
+      Errors.badRequest(res, `${name} must be a string`);
+      return;
+    }
+  }
   if (req.query.q !== undefined && typeof req.query.q !== "string") {
     Errors.badRequest(res, "q must be a string");
     return;
@@ -164,13 +171,19 @@ router.get("/", async (req: Request, res: Response) => {
   }
   const sortBy = (req.query.sortBy as string) ?? "postingDate";
   const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
-  const page = Math.max(1, parseInt((req.query.page as string) ?? "1", 10));
-  const limit = Math.min(100, Math.max(1, parseInt((req.query.limit as string) ?? "20", 10)));
+  const page = req.query.page === undefined ? 1 : Number(req.query.page);
+  const requestedLimit = req.query.limit === undefined ? 20 : Number(req.query.limit);
+  if ([req.query.page, req.query.limit].some(value => value !== undefined && (typeof value !== "string" || !/^[1-9]\d*$/.test(value)))
+    || !Number.isSafeInteger(page) || !Number.isSafeInteger(requestedLimit) || !Number.isSafeInteger((page - 1) * Math.min(100, requestedLimit))) {
+    Errors.badRequest(res, "page and limit must be positive integers");
+    return;
+  }
+  const limit = Math.min(100, requestedLimit);
 
   try {
     const filter: Record<string, unknown> = {};
 
-    if (agency) filter.agencyName = { $regex: agency, $options: "i" };
+    if (agency) filter.agencyName = { $regex: agency.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
     if (budgetMin || budgetMax) {
       filter.medianPrice = {};
       if (budgetMin) (filter.medianPrice as Record<string, number>).$gte = Number(budgetMin);
@@ -222,7 +235,7 @@ router.get("/", async (req: Request, res: Response) => {
         .select(includeMatch ? `${LIST_FIELDS} parsedData.qualifications` : LIST_FIELDS)
         .lean(),
       TORRecord.countDocuments(filter),
-      includeMatch ? VendorProfile.findOne({ userId: req.user!.id }).lean() : null,
+      includeMatch ? hasProcessingConsent(req.user!.id).then(allowed => allowed ? VendorProfile.findOne({ userId: req.user!.id }).lean() : null) : null,
     ]);
 
     const now = new Date();
@@ -381,7 +394,7 @@ router.get("/:id/document", async (req: Request, res: Response) => {
 /**
  * GET /api/tor/:id/match — Qualification match analysis for current user.
  */
-router.get("/:id/match", async (req: Request, res: Response) => {
+router.get("/:id/match", requireConsent(), async (req: Request, res: Response) => {
   await connectDB();
 
   const profile = await VendorProfile.findOne({ userId: req.user!.id });

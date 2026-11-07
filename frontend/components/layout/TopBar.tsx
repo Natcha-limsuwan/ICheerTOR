@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import MobileNav from "./MobileNav";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import RadarIcon from "@mui/icons-material/Radar";
@@ -45,6 +46,7 @@ export default function TopBar() {
       <div className="flex justify-between items-center w-full">
         {/* Left: Logo & Back to Main if in Admin */}
         <div className="flex items-center gap-4">
+          {user && !isAdminSection && <MobileNav />}
           <Link href="/" className="flex items-center gap-2 no-underline">
             <RadarIcon sx={{ color: "var(--color-primary)" }} />
             <span

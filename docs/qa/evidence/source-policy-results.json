@@ -1,0 +1,27 @@
+{
+  "method": "One read-only robots.txt request per origin; no scraping, retries, or WAF bypass",
+  "results": [
+    {
+      "origin": "https://egp2.bangkok.go.th",
+      "status": 200,
+      "contentType": "text/plain; charset=UTF-8",
+      "robotsText": "# Robots.txt for Bangkok e-GP Public Site\n# Allow all crawlers including Meta/Facebook bot\n\nUser-agent: *\nAllow: /\nCrawl-delay: 1\n\n# Specifically allow Facebook crawler\nUser-agent: facebookexternalhit\nAllow: /\nAllow: /privacy-policy\nAllow: /terms-of-service\nAllow: /delete-policy\nAllow: /about-us\nAllow: /faq\nAllow: /law\nAllow: /plan\nAllow: /project-search\nAllow: /project-detail/\nAllow: /auction\nAllow: /quarter-announce\n\n# Allow Facebook catalog crawler\nUser-agent: facebookcatalog\nAllow: /\n\n# Disallow sensitive areas\nUser-agent: *\nDisallow: /api/\nDisallow: /_next/\nDisallow: /admin/\n\n# Sitemap location\nSitemap: https://egp2.bangkok.go.th/sitemap.xml",
+      "conclusion": "Rules retrieved; source terms/permission still require review"
+    },
+    {
+      "origin": "https://process.gprocurement.go.th",
+      "status": 200,
+      "contentType": "text/plain",
+      "robotsText": "User-agent: *\nDisallow: /\n",
+      "conclusion": "Rules retrieved; source terms/permission still require review"
+    },
+    {
+      "origin": "https://process5.gprocurement.go.th",
+      "status": 404,
+      "contentType": null,
+      "robotsText": null,
+      "conclusion": "No usable robots policy obtained; not an authorization to scrape"
+    }
+  ],
+  "limitations": "This checks retrieval only. It neither implements robots enforcement nor approves source terms."
+}

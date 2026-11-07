@@ -20,6 +20,8 @@
  *     for a day at a time — so: one request at a time, back off, retry later
  */
 
+import { sourceFetch, SOURCE_USER_AGENT } from "./source-fetch.js";
+
 export const RSS_URL = "https://process.gprocurement.go.th/EPROCRssFeedWeb/egpannouncerss.xml";
 
 /** Announcement types the feed accepts. Only B0 and D0 are polled today. */
@@ -57,7 +59,7 @@ export interface RssFeed {
   items: RssItem[];
 }
 
-const USER_AGENT = "ICheerTOR/1.0 (student research project; procurement alerts)";
+const USER_AGENT = SOURCE_USER_AGENT;
 const TIMEOUT_MS = 40_000;
 const MAX_ATTEMPTS = 3;
 /** Network and quota errors are worth waiting out. */
@@ -113,7 +115,7 @@ export async function fetchRssFeed(
 
   for (let attempt = 1; ; attempt++) {
     try {
-      const res = await fetch(`${RSS_URL}?${qs}`, {
+      const res = await sourceFetch(`${RSS_URL}?${qs}`, {
         headers: { "User-Agent": USER_AGENT, Accept: "application/rss+xml, application/xml, text/xml" },
         redirect: "follow",
         signal: AbortSignal.timeout(TIMEOUT_MS),

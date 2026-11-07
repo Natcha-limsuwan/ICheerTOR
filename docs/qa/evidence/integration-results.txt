@@ -1,0 +1,17 @@
+✔ DB-01: current DB role overrides stale developer claim (283.05325ms)
+✔ DB-02: consent absence blocks profile writes, explicit grant enables them (26.322916ms)
+✔ DB-03: user B cannot read A profile or delete A bookmark (6.599708ms)
+✔ DB-04: actual Mongo keyword expansion and inclusive price boundaries (7.026333ms)
+✔ DB-05: equal-day pagination neither repeats nor loses rows (4.975583ms)
+✔ DB-06: revoked consent immediately stops profile writes and matching (44.905ms)
+✔ DB-07: export includes >100 notifications and excludes B data (17.924ms)
+✔ DB-08: deletion erases linked data and old JWT becomes unusable (73.2025ms)
+✔ DB-09: ban/reinstate and role updates take effect for existing token (3.368792ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1141.23475

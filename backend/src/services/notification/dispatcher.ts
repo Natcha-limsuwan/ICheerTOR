@@ -3,6 +3,7 @@ import { connectDB } from "../../db/connection.js";
 import Notification, { INotification } from "../../db/models/notification.js";
 import User from "../../db/models/user.js";
 import { sendNotificationEmail } from "./email-sender.js";
+import { hasProcessingConsent } from "../pdpa/consent.js";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 
@@ -39,9 +40,10 @@ export async function dispatchNotification(
 
   // 1. Fetch user + prefs
   const user = await User.findById(input.userId).lean();
-  if (!user) {
-    throw new Error(`User not found: ${input.userId}`);
+  if (!user || user.deletedAt || user.status !== "active") {
+    throw new Error("Notification recipient is unavailable");
   }
+  if (input.type === "new_match" && !await hasProcessingConsent(String(input.userId))) throw new Error("Matching consent is required");
 
   const prefs = user.notificationPrefs ?? { inApp: true, email: false };
 

@@ -3,6 +3,7 @@ import passport from "passport";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 import type { AuthUser } from "../middleware/auth.js";
+import { authenticate } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -54,20 +55,6 @@ router.get(
 /**
  * GET /api/auth/me — Get current user info from JWT.
  */
-router.get("/me", (req: Request, res: Response) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith("Bearer ")) {
-    res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Not authenticated" } });
-    return;
-  }
-
-  try {
-    const token = authHeader.slice(7);
-    const payload = jwt.verify(token, env.JWT_SECRET) as AuthUser;
-    res.json({ data: payload });
-  } catch {
-    res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Invalid token" } });
-  }
-});
+router.get("/me", authenticate, (req: Request, res: Response) => res.json({ data: req.user }));
 
 export default router;

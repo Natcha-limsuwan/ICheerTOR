@@ -1,0 +1,11 @@
+✔ CAL-01: empty observations return unknown metrics, not a perfect score (0.350833ms)
+✔ CAL-02: overconfidence and bin boundaries are counted accurately (0.352041ms)
+✔ CAL-03: invalid confidence or nonboolean correctness is rejected (0.101292ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 86.1485

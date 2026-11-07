@@ -5,6 +5,9 @@ import User from "../db/models/user.js";
 import { exportUserData } from "../services/pdpa/data-exporter.js";
 import { apiSuccess, Errors } from "../utils/api-response.js";
 import { authenticate } from "../middleware/auth.js";
+import { Types } from "mongoose";
+import { PRIVACY_NOTICE_VERSION, DATA_PROCESSING_PURPOSE } from "../services/pdpa/consent.js";
+import { purgeUserData } from "../services/pdpa/data-deleter.js";
 
 const router = Router();
 router.use(authenticate);
@@ -14,14 +17,15 @@ router.get("/consent", async (req: Request, res: Response) => {
   await connectDB();
 
   const records = await ConsentRecord.aggregate([
-    { $match: { userId: req.user!.id } },
-    { $sort: { createdAt: -1 } },
+    { $match: { userId: new Types.ObjectId(req.user!.id) } },
+    { $sort: { createdAt: -1, _id: -1 } },
     {
       $group: {
         _id: "$purpose",
         granted: { $first: "$granted" },
         scope: { $first: "$scope" },
         createdAt: { $first: "$createdAt" },
+        noticeVersion: { $first: "$noticeVersion" },
       },
     },
   ]);
@@ -33,21 +37,18 @@ router.get("/consent", async (req: Request, res: Response) => {
 router.post("/consent", async (req: Request, res: Response) => {
   await connectDB();
 
-  if (!req.body.purpose || typeof req.body.granted !== "boolean") {
-    Errors.badRequest(res, "purpose and granted are required");
+  if (req.body?.purpose !== DATA_PROCESSING_PURPOSE || typeof req.body.granted !== "boolean"
+    || (req.body.granted && req.body.noticeVersion !== PRIVACY_NOTICE_VERSION)) {
+    Errors.badRequest(res, "กรุณาระบุความยินยอมและเวอร์ชันนโยบายปัจจุบันให้ถูกต้อง");
     return;
   }
-
-  const ip = req.headers["x-forwarded-for"] as string ?? req.headers["x-real-ip"] as string ?? "unknown";
-  const ua = req.headers["user-agent"] ?? "unknown";
 
   const record = await ConsentRecord.create({
     userId: req.user!.id,
     purpose: req.body.purpose,
     granted: req.body.granted,
-    scope: req.body.scope ?? "all",
-    ipAddress: typeof ip === "string" ? ip : ip[0],
-    userAgent: ua,
+    scope: "profile_matching",
+    noticeVersion: PRIVACY_NOTICE_VERSION,
   });
 
   apiSuccess(res, record, undefined, 201);
@@ -57,7 +58,7 @@ router.post("/consent", async (req: Request, res: Response) => {
 router.post("/delete", async (req: Request, res: Response) => {
   await connectDB();
 
-  if (req.body.confirmEmail !== req.user!.email) {
+  if (req.body?.confirmEmail !== req.user!.email) {
     Errors.badRequest(res, "Email confirmation does not match");
     return;
   }
@@ -65,17 +66,19 @@ router.post("/delete", async (req: Request, res: Response) => {
   await User.findByIdAndUpdate(req.user!.id, {
     $set: {
       deletedAt: new Date(),
-      name: "Deleted User",
-      email: `deleted-${req.user!.id}@icheertor.local`,
-      avatarUrl: null,
       status: "banned",
+      "notificationPrefs.email": false,
     },
   });
 
-  apiSuccess(res, {
-    scheduledAt: new Date().toISOString(),
-    completionBy: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-  });
+  try {
+    await purgeUserData(req.user!.id);
+    apiSuccess(res, { deleted: true, completedAt: new Date().toISOString() });
+  } catch {
+    // deletedAt remains durable; server worker resumes cleanup after restart.
+    console.error("[PDPA] Deletion queued for retry");
+    apiSuccess(res, { deleted: false, status: "pending", message: "ปิดการใช้งานบัญชีแล้ว ระบบจะลบข้อมูลที่เหลือต่อโดยอัตโนมัติ" }, undefined, 202);
+  }
 });
 
 /** GET /api/pdpa/export — Export all personal data. */

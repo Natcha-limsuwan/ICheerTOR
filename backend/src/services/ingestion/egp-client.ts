@@ -24,6 +24,8 @@
  * signatories). Extract only what is needed and filter before persisting.
  */
 
+import { sourceFetch, SOURCE_USER_AGENT } from "./source-fetch.js";
+
 const PROCESS5 = "https://process5.gprocurement.go.th";
 const APPROVAL_SERVICE = `${PROCESS5}/egp-approval-service/apv-common`;
 const UPLOAD_SERVICE = `${PROCESS5}/egp-upload-service/v1`;
@@ -31,9 +33,7 @@ const UPLOAD_SERVICE = `${PROCESS5}/egp-upload-service/v1`;
 /** Any page under the e-GP web app satisfies the WAF's Referer check. */
 const REFERER = `${PROCESS5}/egp-agpc01-web/`;
 
-const UA =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-  "(KHTML, like Gecko) Chrome/120.0 Safari/537.36";
+const UA = SOURCE_USER_AGENT;
 
 const INFO_TIMEOUT_MS = 30_000;
 const DOWNLOAD_TIMEOUT_MS = 120_000;
@@ -94,7 +94,7 @@ export async function getZipInfo(projectId: string, stage: ArchiveStage = "final
   const timer = setTimeout(() => controller.abort(), INFO_TIMEOUT_MS);
 
   try {
-    const res = await fetch(url, {
+    const res = await sourceFetch(url, {
       headers: { ...baseHeaders(), Accept: "application/json, text/plain, */*" },
       signal: controller.signal,
     });
@@ -132,7 +132,7 @@ export async function downloadZip(zipId: string): Promise<Buffer> {
   const timer = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
 
   try {
-    const res = await fetch(url, { headers: baseHeaders(), signal: controller.signal });
+    const res = await sourceFetch(url, { headers: baseHeaders(), signal: controller.signal });
 
     if (!res.ok) {
       throw new EgpError(`HTTP ${res.status} ขณะดาวน์โหลด ZIP`, res.status);

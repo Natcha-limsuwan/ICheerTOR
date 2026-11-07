@@ -42,6 +42,8 @@ import type { TorExtractionV4, QualificationV4 } from "./prompts/v4";
 import { validateExtraction, type ValidationIssue } from "./validate-extraction";
 import { resolvePrices } from "./resolve-prices";
 import { analyzeRedFlags } from "./red-flag-analyzer";
+import { reviewedPayload, payloadFingerprint, PrivacyReviewRequiredError, redactPersonalText, redactPersonalValues } from "./payload-privacy.js";
+import { SourcePolicyError } from "../ingestion/source-fetch.js";
 
 /* ─── Preparing the documents ───────────────────────────────────────── */
 
@@ -146,6 +148,7 @@ export interface ModelCall<T> {
   model: string;
   durationMs: number;
   usage: { input?: number; output?: number; thoughts?: number; total?: number };
+  inputPdf?: { sha256: string; sizeBytes: number };
 }
 
 const MAX_ATTEMPTS = 3;
@@ -166,6 +169,8 @@ export class CircuitOpenError extends Error {
 export function errorCode(e: unknown): string {
   const text = String(e);
   if (e instanceof CircuitOpenError) return "circuit_open";
+  if (e instanceof PrivacyReviewRequiredError) return "privacy_review_required";
+  if (e instanceof SourcePolicyError) return "source_policy_blocked";
   if (/429|RESOURCE_EXHAUSTED/.test(text)) return "rate_limited";
   if (/aborted|timeout/i.test(text)) return "timeout";
   if (e instanceof SyntaxError) return "invalid_json";
@@ -173,12 +178,11 @@ export function errorCode(e: unknown): string {
   return "error";
 }
 
-export async function callModel<T = TorExtractionV4>(
+export function buildModelParts(
   prompt: ExtractionPrompt,
   prepared: PreparedDocuments,
   ctx: ExtractionContext,
-  onRetry?: (attempt: number, waitMs: number, error: unknown) => void,
-): Promise<ModelCall<T>> {
+): Part[] {
   if (!prompt.responseSchema || !prompt.buildUserPrompt) {
     throw new Error(`prompt ${prompt.version} ไม่มี responseSchema/buildUserPrompt`);
   }
@@ -187,18 +191,30 @@ export async function callModel<T = TorExtractionV4>(
     parts.push({ inlineData: { mimeType: "application/pdf", data: prepared.pdf.bytes.toString("base64") } });
   }
   parts.push({
-    text: prompt.buildUserPrompt({
+    text: redactPersonalText(prompt.buildUserPrompt({
       ...ctx,
       fileName: prepared.pdf?.entry.name ?? "",
       hasPdf: Boolean(prepared.pdf),
       biddingDocText: prepared.biddingDoc?.text ?? null,
       biddingDocFileName: prepared.biddingDoc?.fileName ?? null,
-    }),
+    })),
   });
+  return parts;
+}
+
+export async function callModel<T = TorExtractionV4>(
+  prompt: ExtractionPrompt,
+  prepared: PreparedDocuments,
+  ctx: ExtractionContext,
+  onRetry?: (attempt: number, waitMs: number, error: unknown) => void,
+): Promise<ModelCall<T>> {
+  const originalParts = buildModelParts(prompt, prepared, ctx);
+  let parts = reviewedPayload(originalParts);
 
   const ai = getVertexClient();
   const model = getModelId();
   for (let attempt = 1; ; attempt++) {
+    parts = reviewedPayload(originalParts);
     if (aiCircuitBreaker.isOpen()) throw new CircuitOpenError();
     const t0 = Date.now();
     try {
@@ -214,11 +230,14 @@ export async function callModel<T = TorExtractionV4>(
         },
       });
       if (!res.text) throw new Error(`Vertex AI ตอบว่างเปล่า (finishReason: ${res.candidates?.[0]?.finishReason})`);
-      const output = JSON.parse(res.text) as T;
+      const output = redactPersonalValues(JSON.parse(res.text)) as T;
       aiCircuitBreaker.onSuccess();
       const u = res.usageMetadata;
       return {
         output,
+        inputPdf: parts[0]?.inlineData ? (() => {
+          const pdf = payloadFingerprint(parts[0]); return { sha256: pdf.sha256, sizeBytes: pdf.bytes.length };
+        })() : undefined,
         model,
         durationMs: Date.now() - t0,
         usage: {
@@ -451,7 +470,9 @@ export async function extractTor(
         issues,
       },
       rawResponse: JSON.stringify(call.output),
-      pdf: prepared.sourceDocuments.find((d) => d.fileName === prepared.pdf?.entry.name) ?? null,
+      pdf: call.inputPdf && prepared.pdf
+        ? { fileName: "reviewed-tor.pdf", kind: "tor", ...call.inputPdf }
+        : null,
     };
   } catch (e) {
     return {

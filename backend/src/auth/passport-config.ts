@@ -3,6 +3,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { env } from "../config/env.js";
 import { connectDB } from "../db/connection.js";
 import User from "../db/models/user.js";
+import { OAuthStateStore } from "./oauth-state-store.js";
 
 /**
  * Passport.js Google OAuth 2.0 strategy.
@@ -16,6 +17,7 @@ passport.use(
       clientID: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
       callbackURL: env.GOOGLE_CALLBACK_URL,
+      store: new OAuthStateStore(new URL(env.GOOGLE_CALLBACK_URL).protocol === "https:"),
     },
     async (_accessToken, _refreshToken, profile, done) => {
       try {

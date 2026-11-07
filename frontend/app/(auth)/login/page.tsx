@@ -2,6 +2,7 @@
 
 import { loginWithGoogle } from "@/lib/api/client";
 import RadarIcon from "@mui/icons-material/Radar";
+import Link from "next/link";
 
 export default function LoginPage() {
   return (
@@ -43,14 +44,11 @@ export default function LoginPage() {
 
         <div className="mt-8 pt-6 border-t border-[var(--color-border)]">
           <p className="text-xs text-[var(--color-text-secondary)]">
-            การเข้าสู่ระบบแสดงว่าคุณยอมรับ{" "}
-            <a href="#" className="text-[var(--color-primary)] hover:underline">
-              เงื่อนไขการใช้งาน
-            </a>{" "}
-            และ{" "}
-            <a href="#" className="text-[var(--color-primary)] hover:underline">
+            ระบบสาธิตเพื่อการศึกษา ก่อนเข้าสู่ระบบโปรดอ่าน{" "}
+            <Link href="/privacy" className="text-[var(--color-primary)] hover:underline">
               นโยบายความเป็นส่วนตัว
-            </a>
+            </Link>{" "}
+            คุณเลือกความยินยอมสำหรับการใช้โปรไฟล์ได้ภายหลัง
           </p>
         </div>
       </div>

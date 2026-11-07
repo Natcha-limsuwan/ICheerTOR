@@ -1,0 +1,221 @@
+(node:57563) [MONGOOSE] Warning: Mongoose: `Document.prototype.validateSync()` is deprecated and will be removed in Mongoose 10. Use `Document.prototype.validate()` instead.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:57563) [MONGOOSE] Warning: Mongoose: `Document.prototype.validateSync()` is deprecated and will be removed in Mongoose 10. Use `Document.prototype.validate()` instead.
+(node:57563) [MONGOOSE] Warning: Mongoose: `Document.prototype.validateSync()` is deprecated and will be removed in Mongoose 10. Use `Document.prototype.validate()` instead.
+✔ SEC-01: all private route families reject a missing token (2.373458ms)
+✔ SEC-02: invalid signature and expired token are rejected (1.549417ms)
+✔ SEC-03: banned and suspended token claims are rejected (1.694584ms)
+✔ SEC-04: ordinary user cannot access admin routes (0.710833ms)
+✖ SEC-05 / BUG-01: token issued before an account ban must stop working (2.101708ms)
+✔ SEC-06: profile reads are scoped to authenticated user (0.960208ms)
+✔ SEC-07: bookmark deletion includes owner filter (0.692125ms)
+✔ SEC-08: marking notification read includes owner filter (0.613375ms)
+✔ PD-01: deleting an account requires matching confirmation email (0.788708ms)
+✖ PD-02 / BUG-02: data collection requires consent under NFR-PD1 (0.98725ms)
+✖ PD-03 / BUG-03: consent status aggregates using ObjectId, matching stored userId (0.668584ms)
+✖ PD-04 / BUG-04: deletion must remove or schedule linked profile data (0.777375ms)
+✖ PD-05 / BUG-13: personal-data export must not silently truncate notifications (0.850083ms)
+✔ FR-B-01: persistence schema rejects out-of-range extraction confidence (5.949292ms)
+✔ FR-A-01: keyword, scope, phase, status and inclusive price range coexist (1.19975ms)
+✔ FR-A-02: lower-only, upper-only, zero and equal price bounds (1.730833ms)
+✔ FR-A-03: invalid price ranges rejected before querying records (2.991ms)
+✔ FR-A-04: date, price and deadline sort directions plus pagination (2.552625ms)
+✔ FR-A-05: invalid query types, oversized search, scope and status are rejected (2.246083ms)
+✖ FR-A-06 / BUG-05: invalid pagination must not reach database as NaN (0.714167ms)
+✖ FR-A-07 / BUG-06: regex characters in agency names must be literal (0.697084ms)
+✖ FR-A-08 / BUG-07: malformed techStack arrays must return 400 instead of 500 (0.655458ms)
+✔ TH-01: Thai month names, abbreviations and BE numeric dates parse (0.186667ms)
+✔ TH-02: Thai Baht formatting and parsing of regular amounts (8.722ms)
+✖ TH-03 / BUG-08: nonexistent Thai dates must not silently roll over (0.282417ms)
+✖ TH-04 / BUG-09: explicitly requesting Gregorian dates must use Gregorian year (2.039708ms)
+✖ TH-05 / BUG-10: Thai digits must be accepted by Thai date helper (0.160875ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 16
+ℹ fail 11
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 341.6975
+
+✖ failing tests:
+
+test at scripts/qa/check.test.ts:2:6205
+✖ SEC-05 / BUG-01: token issued before an account ban must stop working (2.101708ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  200 !== 403
+  
+      at TestContext.<anonymous> (/Users/natcha/Desktop/ICheerTOR/backend/scripts/qa/check.test.ts:114:10)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 200,
+    expected: 403,
+    operator: 'strictEqual'
+  }
+
+test at scripts/qa/check.test.ts:2:8009
+✖ PD-02 / BUG-02: data collection requires consent under NFR-PD1 (0.98725ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  201 !== 403
+  
+      at TestContext.<anonymous> (/Users/natcha/Desktop/ICheerTOR/backend/scripts/qa/check.test.ts:144:10)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 201,
+    expected: 403,
+    operator: 'strictEqual'
+  }
+
+test at scripts/qa/check.test.ts:2:8527
+✖ PD-03 / BUG-03: consent status aggregates using ObjectId, matching stored userId (0.668584ms)
+  AssertionError [ERR_ASSERTION]: Mongoose does not cast aggregation pipeline strings to ObjectId
+      at TestContext.<anonymous> (/Users/natcha/Desktop/ICheerTOR/backend/scripts/qa/check.test.ts:150:3)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '=='
+  }
+
+test at scripts/qa/check.test.ts:2:9014
+✖ PD-04 / BUG-04: deletion must remove or schedule linked profile data (0.777375ms)
+  AssertionError [ERR_ASSERTION]: No profile erasure or queue exists in the current deletion path
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (/Users/natcha/Desktop/ICheerTOR/backend/scripts/qa/check.test.ts:158:10)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual'
+  }
+
+test at scripts/qa/check.test.ts:2:9591
+✖ PD-05 / BUG-13: personal-data export must not silently truncate notifications (0.850083ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  100 !== 105
+  
+      at TestContext.<anonymous> (/Users/natcha/Desktop/ICheerTOR/backend/scripts/qa/check.test.ts:172:10)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 100,
+    expected: 105,
+    operator: 'strictEqual'
+  }
+
+test at scripts/qa/check.test.ts:2:13581
+✖ FR-A-06 / BUG-05: invalid pagination must not reach database as NaN (0.714167ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  200 !== 400
+  
+      at TestContext.<anonymous> (/Users/natcha/Desktop/ICheerTOR/backend/scripts/qa/check.test.ts:229:10)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 200,
+    expected: 400,
+    operator: 'strictEqual'
+  }
+
+test at scripts/qa/check.test.ts:2:13783
+✖ FR-A-07 / BUG-06: regex characters in agency names must be literal (0.697084ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (/Users/natcha/Desktop/ICheerTOR/backend/scripts/qa/check.test.ts:235:10)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual'
+  }
+
+test at scripts/qa/check.test.ts:2:14080
+✖ FR-A-08 / BUG-07: malformed techStack arrays must return 400 instead of 500 (0.655458ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  500 !== 400
+  
+      at TestContext.<anonymous> (/Users/natcha/Desktop/ICheerTOR/backend/scripts/qa/check.test.ts:240:10)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 500,
+    expected: 400,
+    operator: 'strictEqual'
+  }
+
+test at scripts/qa/check.test.ts:2:15078
+✖ TH-03 / BUG-08: nonexistent Thai dates must not silently roll over (0.282417ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 2026-03-02T17:00:00.000Z
+  - null
+  
+      at TestContext.<anonymous> (/Users/natcha/Desktop/ICheerTOR/backend/scripts/qa/check.test.ts:256:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2026-03-02T17:00:00.000Z,
+    expected: null,
+    operator: 'strictEqual'
+  }
+
+test at scripts/qa/check.test.ts:2:15268
+✖ TH-04 / BUG-09: explicitly requesting Gregorian dates must use Gregorian year (2.039708ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /2026/. Input:
+  
+  '15 สิงหาคม 2569'
+  
+      at TestContext.<anonymous> (/Users/natcha/Desktop/ICheerTOR/backend/scripts/qa/check.test.ts:259:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '15 สิงหาคม 2569',
+    expected: /2026/,
+    operator: 'match'
+  }
+
+test at scripts/qa/check.test.ts:2:15485
+✖ TH-05 / BUG-10: Thai digits must be accepted by Thai date helper (0.160875ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + undefined
+  - 2026
+  
+      at TestContext.<anonymous> (/Users/natcha/Desktop/ICheerTOR/backend/scripts/qa/check.test.ts:262:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 2026,
+    operator: 'strictEqual'
+  }

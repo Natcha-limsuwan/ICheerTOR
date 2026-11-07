@@ -1,0 +1,25 @@
+
+> icheertor-frontend@0.1.0 build
+> next build
+
+▲ Next.js 16.3.2 (Turbopack)
+- Environments: .env.local
+✓ Running next.config.ts took 12ms
+
+  Creating an optimized production build ...
+Turbopack build encountered 1 warning:
+[next]/internal/font/google/inter_2fe1ab3d.module.css
+Warning: Error while requesting resource
+There was an issue establishing a connection while requesting https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap
+
+
+
+> Build error occurred
+Error: Turbopack build failed with 1 error:
+[next]/internal/font/google/inter_2fe1ab3d.module.css
+Error: next/font: error:
+Failed to fetch Inter from Google Fonts.
+If you are offline or behind a proxy, self-host the font with next/font/local, or set HTTP_PROXY/HTTPS_PROXY so Next.js can reach fonts.googleapis.com.
+
+
+    at ignore-listed frames

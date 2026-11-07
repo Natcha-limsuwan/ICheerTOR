@@ -1,0 +1,6 @@
+{
+  "at": "2026-11-07T11:02:10.931Z",
+  "remainingQaDatabases": [],
+  "sessionFileExists": false,
+  "scope": "Current backend integration rerun; its scratch DB is removed. Prior frontend/API/browser checks stopped their processes."
+}

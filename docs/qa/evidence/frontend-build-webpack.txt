@@ -1,0 +1,37 @@
+▲ Next.js 16.3.2 (webpack)
+- Environments: .env.local
+✓ Running next.config.ts took 10ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 4.7s
+  Running TypeScript ...
+  Finished TypeScript in 2.0s ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/14) ...
+  Generating static pages using 9 workers (3/14) 
+  Generating static pages using 9 workers (6/14) 
+  Generating static pages using 9 workers (10/14) 
+✓ Generating static pages using 9 workers (14/14) in 210ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /admin
+├ ○ /admin/logs
+├ ○ /admin/users
+├ ○ /alerts
+├ ○ /bookmarks
+├ ○ /callback
+├ ○ /compare
+├ ○ /login
+├ ○ /privacy
+├ ○ /procurement
+├ ƒ /procurement/[id]
+└ ○ /profile
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

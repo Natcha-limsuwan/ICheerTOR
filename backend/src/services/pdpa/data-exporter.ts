@@ -18,7 +18,7 @@ export async function exportUserData(userId: string) {
     Bookmark.find({ userId }).populate("torRecordId", "title agencyName").lean(),
     UserCorrection.find({ userId }).lean(),
     ConsentRecord.find({ userId }).sort({ createdAt: -1 }).lean(),
-    Notification.find({ userId }).sort({ createdAt: -1 }).limit(100).lean(),
+    Notification.find({ userId }).sort({ createdAt: -1 }).lean(),
   ]);
 
   return {

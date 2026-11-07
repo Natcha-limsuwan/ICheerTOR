@@ -1,0 +1,28 @@
+{
+  "at": "2026-11-07T10:32:27.555Z",
+  "activePrompt": "v4",
+  "authMode": "express",
+  "configured": true,
+  "oauthConfigured": true,
+  "gold": [
+    {
+      "projectNumber": "69049037572",
+      "qualifications": 18,
+      "hasCache": false
+    },
+    {
+      "projectNumber": "69049037828",
+      "qualifications": 18,
+      "hasCache": false
+    },
+    {
+      "projectNumber": "69049037973",
+      "qualifications": 17,
+      "hasCache": false
+    }
+  ],
+  "liveRequested": true,
+  "liveStatus": "UNEXPECTED_RESPONSE",
+  "statusCode": null,
+  "note": "Configuration and a text response do not establish PDF extraction accuracy or confidence calibration."
+}

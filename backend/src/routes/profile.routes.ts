@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { connectDB } from "../db/connection.js";
 import VendorProfile from "../db/models/vendor-profile.js";
 import { apiSuccess, Errors } from "../utils/api-response.js";
-import { authenticate } from "../middleware/auth.js";
+import { authenticate, requireConsent } from "../middleware/auth.js";
 
 const router = Router();
 router.use(authenticate);
@@ -19,7 +19,7 @@ router.get("/", async (req: Request, res: Response) => {
 });
 
 /** POST /api/profile — Create vendor profile. */
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requireConsent(), async (req: Request, res: Response) => {
   await connectDB();
 
   const existing = await VendorProfile.findOne({ userId: req.user!.id });
@@ -38,7 +38,7 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 /** PUT /api/profile — Update vendor profile. */
-router.put("/", async (req: Request, res: Response) => {
+router.put("/", requireConsent(), async (req: Request, res: Response) => {
   await connectDB();
 
   try {

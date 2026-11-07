@@ -1,0 +1,11 @@
+✔ STATE-01: transaction is bound to browser and consumed once (0.609333ms)
+✔ STATE-02: missing, altered or non-string state/cookie is refused (0.146458ms)
+✔ STATE-03: expired transactions are refused; a new attempt still works (0.146125ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 87.2465

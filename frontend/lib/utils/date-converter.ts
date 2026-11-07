@@ -58,6 +58,7 @@ const THAI_MONTH_ABBR: Record<string, number> = {
  */
 export function parseThaiDate(dateStr: string): Date | null {
   if (!dateStr) return null;
+  dateStr = dateStr.trim().replace(/[๐-๙]/g, digit => String("๐๑๒๓๔๕๖๗๘๙".indexOf(digit)));
 
   // Try "DD/MM/YYYY" numeric format first (B.E.)
   const numMatch = dateStr.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
@@ -67,7 +68,7 @@ export function parseThaiDate(dateStr: string): Date | null {
     let year = parseInt(numMatch[3], 10);
     // If year > 2400, treat as Buddhist Era
     if (year > 2400) year = toGregorianYear(year);
-    return new Date(year, month, day);
+    return validDate(year, month, day);
   }
 
   // Try "DD <ThaiMonth> YYYY" format
@@ -81,11 +82,16 @@ export function parseThaiDate(dateStr: string): Date | null {
     const month =
       THAI_MONTHS[monthName] ?? THAI_MONTH_ABBR[monthName] ?? null;
     if (month !== null && !isNaN(day) && !isNaN(year)) {
-      return new Date(year, month, day);
+      return validDate(year, month, day);
     }
   }
 
   return null;
+}
+
+function validDate(year: number, month: number, day: number): Date | null {
+  const value = new Date(year, month, day);
+  return value.getFullYear() === year && value.getMonth() === month && value.getDate() === day ? value : null;
 }
 
 /**
@@ -104,11 +110,13 @@ export function formatThaiDate(
       year: "numeric",
       month: style,
       day: "numeric",
+      timeZone: "Asia/Bangkok",
     });
   }
-  return date.toLocaleDateString(locale, {
+  return date.toLocaleDateString(`${locale}-u-ca-gregory`, {
     year: "numeric",
     month: style,
     day: "numeric",
+    timeZone: "Asia/Bangkok",
   });
 }

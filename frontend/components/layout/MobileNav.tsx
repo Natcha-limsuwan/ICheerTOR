@@ -26,7 +26,7 @@ export default function MobileNav() {
 
   return (
     <div className="md:hidden">
-      <IconButton onClick={() => setOpen(true)} sx={{ color: "var(--color-text-primary)" }}>
+      <IconButton aria-label="เปิดเมนูหลัก" onClick={() => setOpen(true)} sx={{ color: "var(--color-text-primary)" }}>
         <MenuIcon />
       </IconButton>
 
@@ -40,7 +40,7 @@ export default function MobileNav() {
                 iCheerTOR
               </span>
             </div>
-            <IconButton onClick={() => setOpen(false)} size="small">
+            <IconButton aria-label="ปิดเมนูหลัก" onClick={() => setOpen(false)} size="small">
               <CloseIcon />
             </IconButton>
           </div>

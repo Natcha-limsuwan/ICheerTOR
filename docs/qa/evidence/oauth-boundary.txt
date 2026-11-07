@@ -1,0 +1,13 @@
+✔ OAUTH-01: authorization redirect has Google host, configured callback and minimal scopes (169.527ms)
+✔ OAUTH-02: user denying provider access returns to login without JWT (2.265792ms)
+✔ OAUTH-03: anonymous session cannot read /me (1.388083ms)
+✔ OAUTH-04: malformed JWT is rejected before database access (1.095209ms)
+✔ OAUTH-05: missing/wrong/cross-browser/replayed state never exchanges a code (8.184584ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 338.355417

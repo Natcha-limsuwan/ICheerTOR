@@ -1,0 +1,15 @@
+✔ PII-05: scrub obvious identifiers including Thai digits, preserve amounts and month/legal words (1.734125ms)
+✔ PII-06: PDF including an uninspected scan and prompt are refused before any API client call (1.903166ms)
+✔ PII-07: every exact PDF and rendered-text part requires approval; altered bytes refused (2.428541ms)
+✔ PII-08: stale, future, false and malformed approvals cannot authorize a payload (1.400542ms)
+✔ PII-09: approved synthetic payload reaches mocked SDK with scrubbed text/output (2.62025ms)
+✔ PII-10: local review exports are unapproved, preserve bytes and never overwrite (2.950083ms)
+✔ PII-11: a locally redacted replacement is sent instead of the original scan (2.02725ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 160.330375

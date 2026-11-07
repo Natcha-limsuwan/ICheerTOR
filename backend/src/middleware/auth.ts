@@ -3,6 +3,9 @@ import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 import { connectDB } from "../db/connection.js";
 import ConsentRecord from "../db/models/consent-record.js";
+import User from "../db/models/user.js";
+import { Types } from "mongoose";
+import { PRIVACY_NOTICE_VERSION } from "../services/pdpa/consent.js";
 import type { AuthUser, UserRole } from "../types.js";
 
 // Re-export for convenience
@@ -12,9 +15,9 @@ export type { AuthUser, UserRole };
 
 /**
  * Verify JWT token from Authorization header.
- * Populates req.user with the decoded payload.
+ * Uses the signed subject to load current account status and permissions.
  */
-export function authenticate(req: Request, res: Response, next: NextFunction): void {
+export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
     res.status(401).json({
@@ -24,22 +27,33 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
   }
 
   const token = authHeader.slice(7);
+  let payload: AuthUser;
   try {
-    const payload = jwt.verify(token, env.JWT_SECRET) as AuthUser;
-    req.user = payload;
-
-    if (payload.status === "suspended" || payload.status === "banned") {
+    payload = jwt.verify(token, env.JWT_SECRET) as AuthUser;
+    if (!payload || !Types.ObjectId.isValid(payload.id)) throw new Error("Invalid subject");
+  } catch {
+    res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Invalid or expired token" } });
+    return;
+  }
+  try {
+    await connectDB();
+    const user = await User.findById(payload.id).select("email name role status deletedAt").lean();
+    if (!user) {
+      res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Account no longer exists" } });
+      return;
+    }
+    if (user.deletedAt || user.status === "suspended" || user.status === "banned") {
       res.status(403).json({
         error: { code: "FORBIDDEN", message: "Account is suspended or banned" },
       });
       return;
     }
 
+    // Claims identify the session; permissions and account status come from DB.
+    req.user = { id: payload.id, email: user.email, name: user.name, role: user.role, status: user.status };
     next();
-  } catch {
-    res.status(401).json({
-      error: { code: "UNAUTHORIZED", message: "Invalid or expired token" },
-    });
+  } catch (error) {
+    next(error);
   }
 }
 
@@ -95,10 +109,10 @@ export function requireConsent(purpose: string = "data_processing") {
       userId: req.user.id,
       purpose,
     })
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 })
       .lean();
 
-    if (!latestConsent || !latestConsent.granted) {
+    if (!latestConsent?.granted || latestConsent.noticeVersion !== PRIVACY_NOTICE_VERSION) {
       res.status(403).json({
         error: {
           code: "FORBIDDEN",

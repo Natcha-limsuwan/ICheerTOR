@@ -10,6 +10,7 @@ export interface IConsentRecord extends Document {
   purpose: string;
   granted: boolean;
   scope: string;
+  noticeVersion?: string;
   ipAddress?: string;
   userAgent?: string;
   createdAt: Date;
@@ -26,6 +27,7 @@ const ConsentRecordSchema = new Schema<IConsentRecord>(
     purpose: { type: String, required: true },
     granted: { type: Boolean, required: true },
     scope: { type: String, required: true },
+    noticeVersion: { type: String },
     ipAddress: { type: String },
     userAgent: { type: String },
   },

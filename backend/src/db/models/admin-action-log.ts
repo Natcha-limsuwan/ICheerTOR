@@ -4,8 +4,8 @@ import mongoose, { Schema, Document, Model, Types } from "mongoose";
  * Immutable audit log of administrative actions.
  */
 export interface IAdminActionLog extends Document {
-  adminUserId: Types.ObjectId;
-  targetUserId: Types.ObjectId;
+  adminUserId: Types.ObjectId | null;
+  targetUserId: Types.ObjectId | null;
   action: "approve" | "verify" | "suspend" | "ban" | "reinstate" | "delete_profile" | "change_role";
   reason?: string;
   previousStatus: string;
@@ -20,13 +20,13 @@ const AdminActionLogSchema = new Schema<IAdminActionLog>(
     adminUserId: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      default: null,
       index: true,
     },
     targetUserId: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      default: null,
       index: true,
     },
     action: {

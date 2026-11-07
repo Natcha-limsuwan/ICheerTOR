@@ -24,6 +24,7 @@ interface EnvConfig {
   AI_CIRCUIT_BREAKER_THRESHOLD: number;
   AI_CIRCUIT_BREAKER_COOLDOWN_MS: number;
   AI_REQUEST_TIMEOUT_MS: number;
+  AI_PRIVACY_REVIEW_MANIFEST: string;
 
   // Notifications
   SMTP_HOST: string;
@@ -34,6 +35,7 @@ interface EnvConfig {
   // Scraper
   CRON_SECRET: string;
   SCRAPER_RATE_LIMIT_MS: number;
+  SCRAPER_APPROVED_ORIGINS: string[];
 }
 
 export const env: EnvConfig = {
@@ -65,6 +67,7 @@ export const env: EnvConfig = {
   AI_CIRCUIT_BREAKER_COOLDOWN_MS: parseInt(process.env.AI_CIRCUIT_BREAKER_COOLDOWN_MS ?? "60000", 10),
   // A scanned TOR plus the bidding document takes 25–95 s on Gemini 3 Flash.
   AI_REQUEST_TIMEOUT_MS: parseInt(process.env.AI_REQUEST_TIMEOUT_MS ?? "180000", 10),
+  AI_PRIVACY_REVIEW_MANIFEST: process.env.AI_PRIVACY_REVIEW_MANIFEST ?? "",
 
   // Notifications (email via Gmail SMTP)
   SMTP_HOST: process.env.SMTP_HOST ?? "smtp.gmail.com",
@@ -75,4 +78,5 @@ export const env: EnvConfig = {
   // Scraper
   CRON_SECRET: process.env.CRON_SECRET ?? "",
   SCRAPER_RATE_LIMIT_MS: parseInt(process.env.SCRAPER_RATE_LIMIT_MS ?? "2000", 10),
+  SCRAPER_APPROVED_ORIGINS: (process.env.SCRAPER_APPROVED_ORIGINS ?? "").split(",").map(value => value.trim()).filter(Boolean),
 };

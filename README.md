@@ -243,6 +243,18 @@ See [CI/CD Pipeline](./ENV_SETUP_GUIDE.md#-cicd-pipeline-github-actions) and [Re
 
 See [ENV_SETUP_GUIDE.md](./ENV_SETUP_GUIDE.md) for a complete reference of all environment variables, where to get them, and minimum configuration for local development.
 
+## QA Check
+
+QA Check #127: [current retest report](docs/qa/QA-RETEST-127.md), [baseline findings](docs/qa/QA-CHECK-127.md), [baseline checklist](docs/qa/CHECKLIST-127.md), and [runner instructions](docs/qa/README.md).
+
+```bash
+node scripts/qa/run-checks.mjs
+```
+
+The current offline QA suite passes; see the retest report for remaining scope and source-policy limitations.
+
+New ingestion uses reviewed source origins (`SCRAPER_APPROVED_ORIGINS`) plus robots checks. New AI extraction requires an exact-payload privacy review (`AI_PRIVACY_REVIEW_MANIFEST`), including PDFs; requests stop when approval is missing. Existing stored results remain readable. See [configuration and review workflow](docs/qa/README.md#การตั้งค่าหลังเพิ่ม-source-controls-และ-ai-privacy-gate).
+
 ## License
 
 See [LICENSE](./LICENSE).
