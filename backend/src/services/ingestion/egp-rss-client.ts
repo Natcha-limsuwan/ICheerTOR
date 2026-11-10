@@ -20,6 +20,8 @@
  *     for a day at a time — so: one request at a time, back off, retry later
  */
 
+import { assertNotMaintenance, EgpMaintenanceError } from "./egp-maintenance";
+
 export const RSS_URL = "https://process.gprocurement.go.th/EPROCRssFeedWeb/egpannouncerss.xml";
 
 /** Announcement types the feed accepts. Only B0 and D0 are polled today. */
@@ -120,11 +122,13 @@ export async function fetchRssFeed(
       });
       if (!res.ok) throw new Error(`HTTP ${res.status} จาก e-GP RSS`);
       const xml = new TextDecoder("windows-874").decode(Buffer.from(await res.arrayBuffer()));
+      // Planned downtime answers 200 with an HTML notice: not retryable, not ours.
+      assertNotMaintenance(xml);
       if (!xml.includes("<rss")) throw new Error(`e-GP RSS ตอบไม่ใช่ RSS: ${xml.slice(0, 120)}`);
       return parseRss(xml, announceType);
     } catch (e) {
       const cause = e instanceof Error && e.cause ? ` ${String(e.cause)}` : "";
-      if (attempt >= MAX_ATTEMPTS || !RETRYABLE.test(String(e) + cause)) throw e;
+      if (e instanceof EgpMaintenanceError || attempt >= MAX_ATTEMPTS || !RETRYABLE.test(String(e) + cause)) throw e;
       const waitMs = attempt * 30_000;
       options.onRetry?.(attempt, waitMs, e);
       await sleep(waitMs);

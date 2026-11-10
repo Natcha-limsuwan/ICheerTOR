@@ -44,6 +44,7 @@ import { extractTor, prepareDocuments } from "../src/services/ai/tor-parser";
 import { activePrompt } from "../src/services/ai/prompts";
 import { getModelId } from "../src/services/ai/vertex-client";
 import { fetchProjectArchive } from "../src/services/ingestion/egp-client";
+import { EgpMaintenanceError } from "../src/services/ingestion/egp-maintenance";
 import { bidWindow, computeDataChecks } from "../src/services/ingestion/data-checks";
 
 /* ─── Args ──────────────────────────────────────────────────────────── */
@@ -204,6 +205,17 @@ async function extractOne(r: QueueRecord): Promise<RunResult> {
         },
       },
     );
+    // An admin's corrections were just overwritten by a fresh reading (the
+    // TOR changed); they stay in usercorrections, and the review says so.
+    await TORRecord.updateOne(
+      { _id: r._id, "review.status": "verified" },
+      {
+        $set: {
+          "review.status": "outdated",
+          "review.note": "AI อ่าน TOR ใหม่หลังการตรวจ — ค่าที่แก้ไว้ถูกเขียนทับ ดูประวัติใน usercorrections",
+        },
+      },
+    );
     await ExtractionLog.create({
       torRecordId: r._id,
       promptVersion: meta.promptVersion,
@@ -239,6 +251,17 @@ async function extractOne(r: QueueRecord): Promise<RunResult> {
     );
     console.log(`– ข้าม: ${outcome.skipReason}`);
     return "skipped";
+  }
+
+  // e-GP's planned downtime is nobody's failure: back to the queue as it
+  // was, no attempt counted, and stop the run until e-GP is back.
+  if (outcome.errorCode === "maintenance") {
+    await TORRecord.updateOne(
+      { _id: r._id },
+      { $set: { extractionStatus: r.extractionStatus }, $unset: { "extraction.lockedUntil": 1 } },
+    );
+    console.log(`– ${outcome.error.slice(0, 160)}`);
+    return "stop";
   }
 
   // Failed. Quota and outages send the record back to the queue; other
@@ -350,6 +373,7 @@ async function refreshDates(): Promise<void> {
       );
     } catch (e) {
       console.log(`✗ ${e instanceof Error ? e.message : e}`);
+      if (e instanceof EgpMaintenanceError) break; // every project would fail the same way
     }
     await sleep(2000); // e-GP's WAF blocks rapid requests
   }
@@ -418,7 +442,7 @@ async function main() {
     const result = await extractOne(r);
     counts[result]++;
     if (result === "stop") {
-      console.log("\n  หยุด: โควตา Vertex หมดหรือ Vertex ไม่พร้อม — รันใหม่ภายหลัง");
+      console.log("\n  หยุด: โควตา Vertex หมด, Vertex ไม่พร้อม หรือ e-GP ปิดปรับปรุง — รันใหม่ภายหลัง");
       break;
     }
     if (result !== "skipped" && i < queue.length - 1) await sleep(DELAY_S * 1000);

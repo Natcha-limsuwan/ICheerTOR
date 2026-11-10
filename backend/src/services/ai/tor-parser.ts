@@ -30,6 +30,7 @@ import type {
   ISummary,
 } from "../../db/models/tor-record";
 import { fetchProjectArchive } from "../ingestion/egp-client";
+import { EgpMaintenanceError } from "../ingestion/egp-maintenance";
 import { listEntries, readEntry, type ZipEntry } from "../ingestion/zip-reader";
 import { pickDocument, type PickedDocument } from "../ingestion/document-picker";
 import { extractPdfText } from "../ingestion/pdf-text";
@@ -165,6 +166,7 @@ export class CircuitOpenError extends Error {
 /** Short code for ExtractionLog, so failures can be counted by cause. */
 export function errorCode(e: unknown): string {
   const text = String(e);
+  if (e instanceof EgpMaintenanceError) return "maintenance";
   if (e instanceof CircuitOpenError) return "circuit_open";
   if (/429|RESOURCE_EXHAUSTED/.test(text)) return "rate_limited";
   if (/aborted|timeout/i.test(text)) return "timeout";
@@ -458,7 +460,7 @@ export async function extractTor(
       status: "failed",
       error: e instanceof Error ? e.message : String(e),
       errorCode: errorCode(e),
-      retryable: e instanceof CircuitOpenError || RETRYABLE.test(String(e)),
+      retryable: e instanceof CircuitOpenError || e instanceof EgpMaintenanceError || RETRYABLE.test(String(e)),
     };
   }
 }

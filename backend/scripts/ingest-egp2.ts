@@ -40,6 +40,7 @@ import { resolvePhase } from "../src/services/ingestion/phase-mapper";
 import { buildAnnouncementSearchUrl } from "../src/services/ingestion/egp-document-url";
 import { torDedupeHash } from "../src/services/ingestion/dedupe";
 import TORRecord from "../src/db/models/tor-record";
+import IngestJob, { type IIngestJob } from "../src/db/models/ingest-job";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -78,7 +79,9 @@ interface Candidate {
   stage: (typeof STAGES)[number];
 }
 
-async function main() {
+type JobCounts = IIngestJob["counts"];
+
+async function main(): Promise<JobCounts | void> {
   if (!MONGODB_URI && !dryRun) {
     console.error("ต้องมี MONGODB_URI ใน .env (หรือใช้ --dry-run)");
     process.exit(1);
@@ -89,6 +92,7 @@ async function main() {
   /* ─── 1. Fetch the open stages ──────────────────────────────────── */
 
   const byProject = new Map<string, Candidate>();
+  let scanned = 0;
 
   const stages = includeAwarded
     ? [...STAGES, { id: ANNOUNCE_TYPE.WINNER, name: "ประกาศผู้ชนะ" }]
@@ -103,6 +107,7 @@ async function main() {
     // A project can appear under several stages. Invitation is listed first,
     // so a project already open for bids is not demoted back to its own draft.
     let added = 0;
+    scanned += rows.length;
     for (const row of rows) {
       if (byProject.has(row.projectNumber)) continue;
       // Title only. Agency names carry keywords of their own — "สำนักงาน
@@ -122,7 +127,7 @@ async function main() {
 
   if (candidates.length === 0) {
     console.log("ไม่มีข้อมูลให้บันทึก");
-    return;
+    return { fetched: scanned, created: 0, updated: 0, completed: 0, skipped: 0, failed: 0 };
   }
 
   /* ─── 2. Enrich: reference price + hearing deadline ─────────────── */
@@ -270,9 +275,6 @@ async function main() {
     return;
   }
 
-  await mongoose.connect(MONGODB_URI!);
-  console.log(`\n[db] เชื่อมต่อแล้ว`);
-
   const result = await TORRecord.bulkWrite(docs);
   console.log(
     `[db] เพิ่มใหม่ ${result.upsertedCount} | อัปเดต ${result.modifiedCount} | ` +
@@ -283,10 +285,59 @@ async function main() {
   const open = await TORRecord.countDocuments({ phase: { $in: ["bidding", "public_hearing"] } });
   console.log(`[db] TORRecord ทั้งหมด ${total} | ที่ยังเปิดรับ ${open}`);
 
-  await mongoose.disconnect();
+  return {
+    fetched: scanned,
+    created: result.upsertedCount,
+    updated: result.modifiedCount,
+    completed: 0,
+    skipped: 0,
+    failed,
+  };
 }
 
-main().catch((e) => {
+/**
+ * Every real run is recorded as an IngestJob, so the admin pipeline health
+ * shows when egp2 was last ingested and whether it worked. JOB_TRIGGER=cron
+ * marks scheduled runs.
+ */
+async function runWithJob(): Promise<void> {
+  if (dryRun) {
+    await main();
+    return;
+  }
+  await mongoose.connect(MONGODB_URI!);
+  console.log("[db] เชื่อมต่อแล้ว");
+  const job = await IngestJob.create({
+    type: "ingest",
+    trigger: process.env.JOB_TRIGGER === "cron" ? "cron" : "manual",
+    status: "running",
+    params: { source: "egp2", year: YEAR, includeAwarded },
+    startedAt: new Date(),
+  });
+  try {
+    const counts = await main();
+    await IngestJob.updateOne(
+      { _id: job._id },
+      { $set: { status: "completed", finishedAt: new Date(), ...(counts ? { counts } : {}) } },
+    );
+  } catch (e) {
+    await IngestJob.updateOne(
+      { _id: job._id },
+      {
+        $set: {
+          status: "failed",
+          finishedAt: new Date(),
+          failures: [{ message: (e instanceof Error ? e.message : String(e)).slice(0, 500) }],
+        },
+      },
+    );
+    throw e;
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+runWithJob().catch((e) => {
   console.error("\n[fatal]", e);
   process.exit(1);
 });

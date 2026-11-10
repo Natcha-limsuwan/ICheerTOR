@@ -24,6 +24,8 @@
  * signatories). Extract only what is needed and filter before persisting.
  */
 
+import { assertNotMaintenance } from "./egp-maintenance";
+
 const PROCESS5 = "https://process5.gprocurement.go.th";
 const APPROVAL_SERVICE = `${PROCESS5}/egp-approval-service/apv-common`;
 const UPLOAD_SERVICE = `${PROCESS5}/egp-upload-service/v1`;
@@ -60,6 +62,7 @@ function baseHeaders(): Record<string, string> {
 
 /** The WAF answers with HTTP 200 and an HTML rejection page. */
 function assertNotBlocked(body: string): void {
+  assertNotMaintenance(body);
   if (/Request Rejected|support ID is/i.test(body)) {
     throw new EgpError(
       "ถูก WAF ปฏิเสธ — ตรวจสอบว่าได้ส่ง Referer header หรือยิงถี่เกินไป",
@@ -141,7 +144,8 @@ export async function downloadZip(zipId: string): Promise<Buffer> {
     const buf = Buffer.from(await res.arrayBuffer());
 
     // A rejection page is small and HTML; check bytes rather than trusting status.
-    if (buf.length < 1024) {
+    // Not a ZIP: a WAF rejection or e-GP's maintenance page (~3 KB of HTML).
+    if (!(buf[0] === 0x50 && buf[1] === 0x4b) && buf.length < 64 * 1024) {
       assertNotBlocked(buf.toString("utf-8"));
     }
     if (buf.length > MAX_ZIP_BYTES) {
