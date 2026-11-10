@@ -9,6 +9,7 @@
 import RssCandidate from "../../db/models/rss-candidate";
 import RssPollState from "../../db/models/rss-poll-state";
 import { fetchRssFeed, type RssAnnounceType, type RssItem } from "./egp-rss-client";
+import { EgpMaintenanceError } from "./egp-maintenance";
 import { scoreSoftware } from "./software-filter";
 import { promoteToBidding } from "./rss-ingest";
 
@@ -47,6 +48,8 @@ export interface TypePollResult {
   announceType: RssAnnounceType;
   ok: boolean;
   error?: string;
+  /** e-GP is down for planned maintenance; the notice says until when. */
+  maintenance?: string;
   countByDay: number | null;
   items: number;
   fresh: number;
@@ -145,6 +148,20 @@ export async function pollOnce(
         promoted,
       });
     } catch (e) {
+      if (e instanceof EgpMaintenanceError) {
+        if (!options.dryRun) {
+          await RssPollState.updateOne(
+            { announceType: type },
+            { $set: { lastPolledAt: now, lastMaintenanceAt: now, lastMaintenanceNotice: e.notice } },
+            { upsert: true },
+          );
+        }
+        results.push({
+          announceType: type, ok: false, maintenance: e.notice, countByDay: null,
+          items: 0, fresh: 0, kept: 0, uncertain: 0, gap: false, keptItems: [], promoted: [],
+        });
+        break; // the other feeds are down too
+      }
       const error = e instanceof Error ? e.message : String(e);
       if (!options.dryRun) {
         await RssPollState.updateOne(

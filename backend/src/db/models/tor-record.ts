@@ -250,6 +250,20 @@ export interface IRedFlag {
   ruleId: string;
 }
 
+/**
+ * verified = an admin checked (and possibly corrected) the extraction.
+ * outdated = the TOR was read again by the model after that, overwriting the
+ * corrections — each correction is still in usercorrections.
+ */
+export interface ITorReview {
+  status: "verified" | "outdated";
+  reviewedBy?: string | null;
+  reviewedAt?: Date | null;
+  note?: string | null;
+  /** Fields the admin changed, e.g. "parsedData.qualifications". */
+  editedFields: string[];
+}
+
 /* ─── Main interface ────────────────────────────────────────────────── */
 
 /**
@@ -288,6 +302,8 @@ export interface ITORRecord extends Document {
   /** Where egp2, the announcement and the TOR disagree (data-checks.ts) —
    *  stored by the daily jobs; needsCheck is the admin review queue. */
   dataChecks?: DataChecks;
+  /** An admin checked the AI's reading against the TOR (admin tor-review). */
+  review?: ITorReview;
   deduplicationHash: string;
   tags: string[];
   /** Source-system fields kept for traceability and for resolving documents
@@ -655,6 +671,19 @@ const TORRecordSchema = new Schema<ITORRecord>(
     extraction: { type: ExtractionMetaSchema, default: () => ({}) },
     sourceDocuments: { type: [SourceDocumentSchema], default: [] },
     dataChecks: { type: DataChecksSchema, default: undefined },
+    review: {
+      type: new Schema(
+        {
+          status: { type: String, enum: ["verified", "outdated"], required: true },
+          reviewedBy: { type: String, default: null },
+          reviewedAt: { type: Date, default: null },
+          note: { type: String, default: null },
+          editedFields: { type: [String], default: [] },
+        },
+        { _id: false },
+      ),
+      default: undefined,
+    },
     deduplicationHash: { type: String, required: true, unique: true, index: true },
     tags: { type: [String], default: [], index: true },
     metadata: { type: SourceMetadataSchema, default: undefined },

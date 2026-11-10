@@ -16,6 +16,9 @@ export interface IRssPollState extends Document {
   lastSuccessAt?: Date;
   lastCountByDay?: number | null;
   lastError?: string | null;
+  /** e-GP's planned downtime seen on the last poll — not a failure. */
+  lastMaintenanceAt?: Date | null;
+  lastMaintenanceNotice?: string | null;
   /** Running counters since the state was created. */
   stats: {
     polls: number;
@@ -35,6 +38,8 @@ const RssPollStateSchema = new Schema<IRssPollState>(
     lastSuccessAt: { type: Date },
     lastCountByDay: { type: Number, default: null },
     lastError: { type: String, default: null },
+    lastMaintenanceAt: { type: Date, default: null },
+    lastMaintenanceNotice: { type: String, default: null },
     stats: {
       polls: { type: Number, default: 0 },
       failures: { type: Number, default: 0 },

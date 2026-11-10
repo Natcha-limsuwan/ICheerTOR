@@ -31,6 +31,7 @@ import RssPollState from "../src/db/models/rss-poll-state";
 import { RSS_TYPES, type RssAnnounceType } from "../src/services/ingestion/egp-rss-client";
 import { pollOnce } from "../src/services/ingestion/rss-poll";
 import { ingestCandidate } from "../src/services/ingestion/rss-ingest";
+import { EgpMaintenanceError } from "../src/services/ingestion/egp-maintenance";
 
 const argv = process.argv.slice(2);
 const arg = (name: string) => argv.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
@@ -73,6 +74,10 @@ async function poll(): Promise<void> {
     onRetry: (type, attempt, waitMs) => console.log(`  ${type}: ลองใหม่ครั้งที่ ${attempt + 1} หลังรอ ${waitMs / 1000} วินาที`),
   });
   for (const r of results) {
+    if (r.maintenance) {
+      console.log(`  – e-GP ปิดปรับปรุงระบบ ข้ามรอบนี้ (${r.maintenance})`);
+      continue;
+    }
     if (!r.ok) {
       console.log(`  ✗ ${r.announceType}: ${r.error}`);
       continue;
@@ -95,6 +100,11 @@ async function ingest(): Promise<void> {
       const { result, note } = await ingestCandidate(c);
       console.log(`    ${result.padEnd(7)} ${c.projectNumber} ${note ?? ""}`);
     } catch (e) {
+      if (e instanceof EgpMaintenanceError) {
+        // Not the candidate's fault: leave it queued, untouched, until e-GP is back.
+        console.log(`    – ${e.message.slice(0, 160)}`);
+        break;
+      }
       const msg = e instanceof Error ? e.message : String(e);
       await RssCandidate.updateOne(
         { _id: c._id },

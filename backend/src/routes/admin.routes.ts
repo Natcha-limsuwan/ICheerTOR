@@ -4,6 +4,16 @@ import { connectDB } from "../db/connection.js";
 import User from "../db/models/user.js";
 import AdminActionLog from "../db/models/admin-action-log.js";
 import TORRecord from "../db/models/tor-record.js";
+import { collectPipelineHealth } from "../services/pipeline-health.js";
+import {
+  applyChanges,
+  EDITABLE_FIELDS,
+  needsReviewFilter,
+  parseChanges,
+  ReviewInputError,
+  uncertainItems,
+} from "../services/tor-review.js";
+import { env } from "../config/env.js";
 import { apiSuccess, Errors } from "../utils/api-response.js";
 import { authenticate, requireRole } from "../middleware/auth.js";
 
@@ -205,6 +215,115 @@ router.get("/logs", async (req: Request, res: Response) => {
   ]);
 
   apiSuccess(res, logs, { total, page, limit });
+});
+
+/**
+ * GET /api/admin/pipeline/health — Is ingestion and extraction running?
+ * status ok | warning | error, the problems in plain Thai, and the numbers
+ * behind them (RSS polls, last egp2 ingest, extraction queue, Vertex 7 days).
+ */
+router.get("/pipeline/health", async (_req: Request, res: Response) => {
+  await connectDB();
+  try {
+    apiSuccess(res, await collectPipelineHealth());
+  } catch (error) {
+    console.error("Pipeline health error:", error);
+    Errors.internal(res, "Failed to collect pipeline health");
+  }
+});
+
+/**
+ * GET /api/admin/tor-review — TORs where the model was unsure and no admin
+ * has verified them yet, each with the uncertain fields to check.
+ * ?status=pending (default) | verified | outdated | all
+ */
+router.get("/tor-review", async (req: Request, res: Response) => {
+  await connectDB();
+
+  const page = Math.max(1, parseInt((req.query.page as string) ?? "1", 10));
+  const limit = Math.min(100, parseInt((req.query.limit as string) ?? "20", 10));
+  const status = (req.query.status as string) ?? "pending";
+  const threshold = env.AI_CONFIDENCE_THRESHOLD;
+  const filter =
+    status === "pending"
+      ? needsReviewFilter(threshold)
+      : status === "all"
+        ? { extractionStatus: "completed" }
+        : status === "verified" || status === "outdated"
+          ? { "review.status": status }
+          : null;
+  if (!filter) {
+    Errors.badRequest(res, "status must be pending, verified, outdated or all");
+    return;
+  }
+
+  const [records, total] = await Promise.all([
+    TORRecord.find(filter)
+      .sort({ "extraction.extractedAt": -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .select("title agencyName phase submissionDeadline officialPortalUrl metadata.projectId parsedData extraction summary review")
+      .lean(),
+    TORRecord.countDocuments(filter),
+  ]);
+
+  apiSuccess(
+    res,
+    records.map(({ parsedData: _p, summary: _s, extraction, ...r }) => ({
+      ...r,
+      extractedAt: extraction?.extractedAt ?? null,
+      uncertain: uncertainItems({ parsedData: _p, extraction, summary: _s } as never, threshold),
+    })),
+    { total, page, limit },
+  );
+});
+
+/**
+ * GET /api/admin/tor-review/:id — The full record to edit, its uncertain
+ * fields, and the field names PUT accepts.
+ */
+router.get("/tor-review/:id", async (req: Request, res: Response) => {
+  await connectDB();
+  const record = await TORRecord.findById(req.params.id).lean();
+  if (!record) {
+    Errors.notFound(res, "TOR record not found");
+    return;
+  }
+  apiSuccess(res, {
+    record,
+    uncertain: uncertainItems(record as never, env.AI_CONFIDENCE_THRESHOLD),
+    editableFields: EDITABLE_FIELDS,
+  });
+});
+
+/**
+ * PUT /api/admin/tor-review/:id — Correct fields and mark the record verified.
+ * Body: { changes: { <editable field>: value, … }, note?, verify? (default true), dryRun? }
+ * Each change is logged to usercorrections; red flags and data checks are
+ * recomputed. dryRun validates and returns the result without saving.
+ */
+router.put("/tor-review/:id", async (req: Request, res: Response) => {
+  await connectDB();
+  try {
+    const changes = parseChanges(req.body?.changes ?? {});
+    const result = await applyChanges(req.params.id as string, changes, { id: req.user!.id as string }, {
+      note: typeof req.body?.note === "string" ? req.body.note.slice(0, 1000) : null,
+      verify: req.body?.verify !== false,
+      dryRun: req.body?.dryRun === true,
+    });
+    if (!result) {
+      Errors.notFound(res, "TOR record not found");
+      return;
+    }
+    apiSuccess(res, { ...result, dryRun: req.body?.dryRun === true });
+  } catch (error) {
+    if (error instanceof ReviewInputError || (error as Error)?.name === "ValidationError") {
+      Errors.badRequest(res, (error as Error).message);
+      return;
+    }
+    console.error("TOR review error:", error);
+    Errors.internal(res, "Failed to save the review");
+  }
 });
 
 /**

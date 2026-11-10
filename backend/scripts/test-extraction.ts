@@ -15,6 +15,9 @@ import { isDraftAnnouncement, readAgencyName, readArchiveFacts, readDeptCode, re
 import { parseRss } from "../src/services/ingestion/egp-rss-client";
 import { classifyTitle, diffWindow } from "../src/services/ingestion/rss-poll";
 import { thaiFiscalYear } from "../src/services/ingestion/rss-ingest";
+import { maintenanceNotice } from "../src/services/ingestion/egp-maintenance";
+import { parseChanges, ReviewInputError, uncertainItems } from "../src/services/tor-review";
+import { assessHealth, isOfficeHours, overallLevel, type PipelineSnapshot } from "../src/services/pipeline-health";
 import { validateExtraction } from "../src/services/ai/validate-extraction";
 import { hasDroppedDigits, isPlausibleMedianPrice, resolvePrices } from "../src/services/ai/resolve-prices";
 import { analyzeRedFlags, dailyPenaltyPercent } from "../src/services/ai/red-flag-analyzer";
@@ -444,6 +447,97 @@ function testRss() {
   check("ประกาศจริง → final", readArchiveFacts(docs, "final").documentStage === "final");
 }
 
+/* 7 ─────────────────────────────────────────────────────────────────── */
+
+function testPipelineHealth() {
+  console.log("\n[7] maintenance + pipeline health");
+  // e-GP's real downtime page (22–24 Oct 2026), entities as served.
+  const page =
+    '<!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><title>&#3649;&#3592;&#3657;&#3591;&#3611;&#3636;&#3604;&#3619;&#3632;&#3610;&#3610; e-GP</title></head>' +
+    "<body><p>ระบบจัดซื้อจัดจ้างภาครัฐด้วยอิเล็กทรอนิกส์ (e-GP) จะทำการปิดระบบชั่วคราว ในวันพฤหัสบดีที่ 22 ตุลาคม 2569 ตั้งแต่ เวลา&nbsp;18.00&nbsp;น. " +
+    "- วันเสาร์ที่ 24 ตุลาคม 2569 เวลา 18.00 น. และจะเปิดใช้งานอีกครั้งในวันเสาร์ที่ 24 ตุลาคม 2569 เวลา 18.01 น. เป็นต้นไป</p></body></html>";
+  const notice = maintenanceNotice(page);
+  check("จับหน้าแจ้งปิดระบบ e-GP ได้", notice != null && notice.includes("18.01"), String(notice));
+  check("RSS ปกติไม่ใช่หน้าปิดระบบ", maintenanceNotice('<?xml version="1.0"?><rss><channel></channel></rss>') === null);
+
+  const mon10 = new Date("2026-10-26T03:00:00Z"); // Mon 10:00 Bangkok
+  const sun10 = new Date("2026-10-25T03:00:00Z"); // Sun 10:00 Bangkok
+  check("จันทร์ 10:00 = เวลาทำการ", isOfficeHours(mon10) && !isOfficeHours(sun10));
+
+  const base: PipelineSnapshot = {
+    rss: [],
+    rssCandidates: {},
+    egp2LastJob: { status: "completed", startedAt: new Date(mon10.getTime() - 3600_000), finishedAt: new Date(mon10.getTime() - 3500_000), counts: null, error: null },
+    extraction: { byStatus: { completed: 10 }, waitingOpen: 0, stuck: 0, needsReview: 0, needsCheck: 0, lastExtractedAt: mon10 },
+    vertex7d: { calls: 0, failures: 0, failuresByCode: {}, inputTokens: 0, outputTokens: 0 },
+  };
+  const feed = (over: Partial<PipelineSnapshot["rss"][number]>) => ({
+    announceType: "B0", lastPolledAt: null, lastSuccessAt: null, lastError: null,
+    lastMaintenanceAt: null, lastMaintenanceNotice: null, gaps: 0, failures: 0, ...over,
+  });
+
+  const fresh = assessHealth({ ...base, rss: [feed({ lastSuccessAt: new Date(mon10.getTime() - 10 * 60_000) })] }, mon10);
+  check("RSS เพิ่งดึง 10 นาทีก่อน → ok", overallLevel(fresh) === "ok", JSON.stringify(fresh));
+
+  const nineDays = assessHealth({ ...base, rss: [feed({ lastSuccessAt: new Date("2026-10-12T16:34:00Z") })] }, mon10);
+  check("RSS ไม่ได้ดึงมา 9 วัน → error", overallLevel(nineDays) === "error");
+
+  const down = assessHealth(
+    {
+      ...base,
+      rss: [feed({
+        lastSuccessAt: new Date("2026-10-22T09:00:00Z"),
+        lastMaintenanceAt: new Date(mon10.getTime() - 30 * 60_000),
+        lastMaintenanceNotice: "จะเปิดใช้งานอีกครั้ง… 18.01 น.",
+      })],
+    },
+    mon10,
+  );
+  check("e-GP ปิดปรับปรุง → warning ไม่ใช่ error", overallLevel(down) === "warning", JSON.stringify(down));
+
+  const egp2Failed = assessHealth({ ...base, egp2LastJob: { ...base.egp2LastJob!, status: "failed", error: "HTTP 500" } }, mon10);
+  check("ingest egp2 ล้มเหลว → error", egp2Failed.some((p) => p.stage === "egp2" && p.level === "error"));
+
+  const vertex = assessHealth({ ...base, vertex7d: { calls: 10, failures: 9, failuresByCode: { error: 9 }, inputTokens: 0, outputTokens: 0 } }, mon10);
+  check("Vertex ล้มเหลว 9/10 → error", vertex.some((p) => p.stage === "extraction" && p.level === "error"));
+}
+
+/* 8 ─────────────────────────────────────────────────────────────────── */
+
+function testReview() {
+  console.log("\n[8] admin review");
+  const record = {
+    parsedData: {
+      scopeOfWork: { content: "x", confidence: 0.9 },
+      qualifications: [
+        { criterion: "ผลงาน 10 ล้าน", type: "contract_value", minimumValue: 10_000_000, confidence: 0.95, sourcePage: 3 },
+        { criterion: "ทุน 8 ล้าน", type: "registered_capital", minimumValue: 5_000_000, confidence: 0.4, sourcePage: 2, clauseNumber: "2.12.2" },
+      ],
+      medianPrice: { value: null, confidence: 0 },
+      evaluationCriteria: { confidence: 0.9 },
+    },
+    extraction: { issues: [{ severity: "review", field: "qualifications[1].minimumNumber", message: "ทุนไม่ตรงเกณฑ์ ว 124" }] },
+  } as never;
+  const items = uncertainItems(record, 0.6);
+  check("พบข้อที่ AI ไม่มั่นใจ + ข้อที่ validator ให้ตรวจ", items.length === 2 && items.some((i) => i.field === "parsedData.qualifications.1" && i.sourcePage === 2), show(items));
+
+  const ok = parseChanges({ warrantyMonths: 12, submissionDate: { date: "2026-11-02", startTime: "09:00", endTime: "12:00" } });
+  check("รับ field ที่แก้ได้", ok.warrantyMonths === 12 && ok.submissionDate?.endTime === "12:00");
+  const rejects = (body: unknown) => {
+    try {
+      parseChanges(body);
+      return false;
+    } catch (e) {
+      return e instanceof ReviewInputError;
+    }
+  };
+  check("ห้ามแก้ field ที่ระบบคำนวณเอง (redFlags)", rejects({ redFlags: [] }));
+  check("ตัวเลขติดลบไม่ได้", rejects({ budget: -1 }));
+  check("น้ำหนักเกณฑ์ต้องรวม 100", rejects({ evaluationCriteria: { weights: [{ criterion: "ราคา", weight: 30 }, { criterion: "คุณภาพ", weight: 60 }] } }));
+  check("วันที่ต้องเป็น YYYY-MM-DD", rejects({ submissionDate: { date: "2/11/2569", startTime: "09:00", endTime: "12:00" } }));
+  check("คุณสมบัติต้องมีข้อความ", rejects({ qualifications: [{ type: "other" }] }));
+}
+
 testArchiveFacts();
 testValidator();
 testResolvePrices();
@@ -451,5 +545,7 @@ testRedFlags();
 testMatcher();
 testDataChecks();
 testRss();
+testPipelineHealth();
+testReview();
 console.log(`\n${passed} ผ่าน, ${failed} ไม่ผ่าน`);
 process.exit(failed ? 1 : 0);
