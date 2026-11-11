@@ -13,6 +13,8 @@ export interface CreateNotificationInput {
   title: string;
   body: string;
   linkUrl?: string;
+  /** If true, creates the in-app notification without sending the generic email (e.g. when caller sends a custom rich email). */
+  skipEmail?: boolean;
 }
 
 export interface DispatchResult {
@@ -68,7 +70,7 @@ export async function dispatchNotification(
   };
 
   // 3. Email channel
-  if (prefs.email) {
+  if (prefs.email && !input.skipEmail) {
     const emailResult = await sendNotificationEmail(user.email, {
       type: input.type,
       title: input.title,

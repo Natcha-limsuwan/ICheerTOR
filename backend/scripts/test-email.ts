@@ -5,6 +5,7 @@
  *   npx tsx scripts/test-email.ts                        # verify SMTP connection only
  *   npx tsx scripts/test-email.ts send <email>           # send a test email
  *   npx tsx scripts/test-email.ts dispatch <userId>      # dispatch a notification (needs MongoDB)
+ *   npx tsx scripts/test-email.ts ingest-notify          # test sending new TOR ingestion email to all users
  */
 
 import { config } from "dotenv";
@@ -114,9 +115,49 @@ async function main() {
     // Cleanup mongoose connection
     const mongoose = (await import("mongoose")).default;
     await mongoose.disconnect();
+  }
+
+  // ── Step 5: Test new TOR ingestion broadcast notification (needs MongoDB) ──
+  else if (command === "ingest-notify") {
+    const TORRecord = (await import("../src/db/models/tor-record.js")).default;
+    const { notifyUsersOfNewTors } = await import(
+      "../src/services/notification/ingest-notifier.js"
+    );
+    const { connectDB } = await import("../src/db/connection.js");
+
+    await connectDB();
+
+    const sampleTors = await TORRecord.find({})
+      .sort({ createdAt: -1 })
+      .limit(3)
+      .select("_id title")
+      .lean();
+
+    if (!sampleTors.length) {
+      console.error("❌ No TOR records found in MongoDB to test with.");
+      process.exit(1);
+    }
+
+    console.log(
+      `📢 Broadcasting ${sampleTors.length} latest TOR(s) to all active users...`,
+    );
+    const summary = await notifyUsersOfNewTors(
+      sampleTors.map((t) => t._id),
+      { sourceLabel: "BMA e-GP2 (Test)" },
+    );
+
+    console.log("\n📋 Ingest Notification Summary:");
+    console.log(`   TORs included         : ${summary.newTorsCount}`);
+    console.log(`   Active users targeted : ${summary.usersTargeted}`);
+    console.log(`   In-App created        : ${summary.notificationsCreated}`);
+    console.log(`   Emails sent           : ${summary.emailsSent}`);
+    console.log(`   Emails failed         : ${summary.emailsFailed}`);
+
+    const mongoose = (await import("mongoose")).default;
+    await mongoose.disconnect();
   } else {
     console.error(`❌ Unknown command: ${command}`);
-    console.error("   Available: send, dispatch");
+    console.error("   Available: send, dispatch, ingest-notify");
     process.exit(1);
   }
 }

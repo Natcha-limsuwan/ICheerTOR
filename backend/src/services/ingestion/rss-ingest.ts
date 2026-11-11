@@ -37,7 +37,9 @@ export function thaiFiscalYear(isoDate: string): number {
 
 const PHASE: Record<string, ITORRecord["phase"]> = { B0: "public_hearing", D0: "bidding" };
 
-export async function ingestCandidate(c: IRssCandidate): Promise<{ result: IngestResult; note?: string }> {
+export async function ingestCandidate(
+  c: IRssCandidate,
+): Promise<{ result: IngestResult; note?: string; torRecordId?: string }> {
   const hash = torDedupeHash(c.projectNumber);
   const existing = await TORRecord.findOne({ deduplicationHash: hash }).select("_id").lean();
   if (existing) {
@@ -45,7 +47,7 @@ export async function ingestCandidate(c: IRssCandidate): Promise<{ result: Inges
       { _id: c._id },
       { $set: { status: "ingested", torRecordId: existing._id, note: "มีอยู่แล้ว (เช่น จาก egp2)" } },
     );
-    return { result: "exists" };
+    return { result: "exists", torRecordId: existing._id.toString() };
   }
 
   const archive = await fetchProjectArchive(c.projectNumber);
@@ -134,7 +136,11 @@ export async function ingestCandidate(c: IRssCandidate): Promise<{ result: Inges
       },
     },
   );
-  return { result: res.upsertedCount ? "created" : "exists", note: facts.agencyName ?? undefined };
+  return {
+    result: res.upsertedCount ? "created" : "exists",
+    note: facts.agencyName ?? undefined,
+    torRecordId: record?._id?.toString(),
+  };
 }
 
 /**

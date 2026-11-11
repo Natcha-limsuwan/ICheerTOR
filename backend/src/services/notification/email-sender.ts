@@ -293,3 +293,164 @@ export async function sendMatchAlertEmail(data: MatchAlertEmailData): Promise<Em
   });
 }
 
+/* ─── New TOR Ingested Broadcast Email Template ─────────────────────── */
+
+export interface NewTorItem {
+  id: string;
+  title: string;
+  agencyName: string;
+  phase?: "public_hearing" | "bidding" | "awarded" | string;
+  budget?: number | null;
+  medianPrice?: number | null;
+}
+
+export interface NewTorIngestedEmailData {
+  to: string;
+  recipientName?: string;
+  sourceLabel?: string;
+  totalNewCount: number;
+  items: NewTorItem[];
+}
+
+const phaseLabels: Record<string, string> = {
+  public_hearing: "📢 รับฟังความคิดเห็น",
+  bidding: "📄 ประกาศเชิญชวน",
+  awarded: "🏆 ประกาศผู้ชนะ",
+};
+
+/**
+ * Send an email notifying a user that new TOR projects have been ingested into iCheerTOR.
+ */
+export async function sendNewTorIngestedEmail(
+  data: NewTorIngestedEmailData,
+): Promise<EmailResult> {
+  const displayItems = data.items.slice(0, 10);
+  const remainingCount = Math.max(0, data.totalNewCount - displayItems.length);
+  const listUrl = `${env.FRONTEND_URL}/procurement`;
+
+  const itemsHtml = displayItems
+    .map((item) => {
+      const priceVal = item.budget ?? item.medianPrice;
+      const priceStr =
+        priceVal != null ? `฿${priceVal.toLocaleString("th-TH")}` : "ไม่ระบุงบประมาณ";
+      const phaseStr = item.phase ? (phaseLabels[item.phase] ?? item.phase) : "โครงการใหม่";
+      const itemUrl = `${env.FRONTEND_URL}/procurement/${item.id}`;
+
+      return `
+        <div style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:12px;">
+          <div style="margin-bottom:6px;">
+            <span style="display:inline-block;background-color:#dbeafe;color:#1e40af;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;">
+              ${phaseStr}
+            </span>
+          </div>
+          <h3 style="margin:0 0 8px;font-size:15px;color:#0f172a;line-height:1.4;">
+            <a href="${itemUrl}" style="color:#0f172a;text-decoration:none;">${item.title}</a>
+          </h3>
+          <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#475569;">
+            <tr>
+              <td style="padding:2px 0;width:100px;">🏢 <strong>หน่วยงาน:</strong></td>
+              <td style="padding:2px 0;color:#1e293b;">${item.agencyName}</td>
+            </tr>
+            <tr>
+              <td style="padding:2px 0;">💰 <strong>งบ/ราคากลาง:</strong></td>
+              <td style="padding:2px 0;color:#0047ab;font-weight:600;">${priceStr}</td>
+            </tr>
+          </table>
+          <div style="margin-top:10px;">
+            <a href="${itemUrl}" style="font-size:12px;font-weight:600;color:#0047AB;text-decoration:none;">
+              ดูรายละเอียดโครงการ →
+            </a>
+          </div>
+        </div>`;
+    })
+    .join("");
+
+  const moreHtml =
+    remainingCount > 0
+      ? `<p style="margin:8px 0 20px;font-size:13px;color:#475569;text-align:center;">
+           ...และอีก <strong>${remainingCount}</strong> โครงการใหม่ในระบบ
+         </p>`
+      : "";
+
+  const html = `
+<!DOCTYPE html>
+<html lang="th">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background-color:#f4f6f9;font-family:'Segoe UI',Tahoma,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f9;padding:32px 0;">
+    <tr><td align="center">
+      <table width="580" cellpadding="0" cellspacing="0"
+             style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.07);">
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#00327D,#0047AB);padding:28px 32px;color:#ffffff;">
+            <p style="margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#badbfe;">
+              iCheerTOR • อัปเดตข้อมูลโครงการใหม่${data.sourceLabel ? ` (${data.sourceLabel})` : ""}
+            </p>
+            <h1 style="margin:0;font-size:20px;font-weight:700;line-height:1.4;">
+              🆕 มีโครงการ TOR ใหม่เพิ่มเข้าสู่ระบบ ${data.totalNewCount} โครงการ
+            </h1>
+          </td>
+        </tr>
+        <!-- Body -->
+        <tr>
+          <td style="padding:28px 32px;">
+            <p style="margin:0 0 16px;font-size:14px;color:#333;line-height:1.6;">
+              สวัสดี${data.recipientName ? `คุณ ${data.recipientName}` : ""}, ระบบ iCheerTOR ได้ดึงข้อมูลโครงการจัดซื้อจัดจ้างด้านซอฟต์แวร์และเทคโนโลยีสารสนเทศใหม่เข้าสู่เว็บไซต์แล้ว จำนวน <strong>${data.totalNewCount} โครงการ</strong>:
+            </p>
+
+            ${itemsHtml}
+            ${moreHtml}
+
+            <!-- Action Button -->
+            <div style="text-align:center;margin:28px 0 12px;">
+              <a href="${listUrl}"
+                 style="display:inline-block;padding:12px 32px;
+                        background-color:#0047AB;color:#ffffff;text-decoration:none;
+                        border-radius:8px;font-size:14px;font-weight:600;letter-spacing:0.02em;">
+                ดูโครงการทั้งหมดบนเว็บไซต์ →
+              </a>
+            </div>
+          </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+          <td style="padding:18px 32px;background-color:#f8fafc;border-top:1px solid #e2e8f0;font-size:11px;color:#64748b;line-height:1.5;">
+            คุณได้รับอีเมลนี้เนื่องจากเป็นสมาชิกในระบบ <strong>iCheerTOR</strong><br/>
+            หากต้องการเปลี่ยนช่องทางหรือปิดรับแจ้งเตือน สามารถตั้งค่าได้ที่เมนู <a href="${env.FRONTEND_URL}/alerts" style="color:#0047ab;">การแจ้งเตือน</a> บนหน้าเว็บ
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  const textItems = displayItems
+    .map((item, idx) => {
+      const priceVal = item.budget ?? item.medianPrice;
+      const priceStr =
+        priceVal != null ? `฿${priceVal.toLocaleString("th-TH")}` : "ไม่ระบุงบประมาณ";
+      return `${idx + 1}. ${item.title} (${item.agencyName}) - ${priceStr}\n   ${env.FRONTEND_URL}/procurement/${item.id}`;
+    })
+    .join("\n\n");
+
+  const text =
+    `🆕 มีโครงการ TOR ใหม่เพิ่มเข้าสู่ระบบ iCheerTOR จำนวน ${data.totalNewCount} โครงการ\n\n` +
+    `${textItems}\n` +
+    (remainingCount > 0 ? `\n...และอีก ${remainingCount} โครงการ\n` : "") +
+    `\nดูโครงการทั้งหมด: ${listUrl}`;
+
+  const subject =
+    data.totalNewCount === 1 && displayItems[0]
+      ? `🆕 [iCheerTOR] โครงการ TOR ใหม่: ${displayItems[0].title.slice(0, 50)}`
+      : `🆕 [iCheerTOR] อัปเดตโครงการ TOR ใหม่ ${data.totalNewCount} โครงการบนเว็บไซต์`;
+
+  return sendEmail({
+    to: data.to,
+    subject,
+    html,
+    text,
+  });
+}
+
