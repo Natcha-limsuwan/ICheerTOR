@@ -186,7 +186,7 @@ export async function evaluateAndAlertForTor(
     const body = `หน่วยงาน: ${tor.agencyName}\nงบประมาณ: ${budgetText}\nคะแนนความเหมาะสม: ${scoreText}`;
     const linkUrl = `/procurement/${tor._id.toString()}`;
 
-    // 1. Dispatch in-app notification
+    // 1. Dispatch in-app notification (skip generic email so we can send the rich match alert email below)
     const dispatchResult = await dispatchNotification({
       userId: user._id,
       torRecordId: tor._id,
@@ -194,13 +194,14 @@ export async function evaluateAndAlertForTor(
       title,
       body,
       linkUrl,
+      skipEmail: true,
     });
 
     notificationsCreated++;
 
     // 2. If user has email enabled, send dedicated rich match email
-    let emailSentSuccess = dispatchResult.channels.email.sent;
-    if (prefs.email && !emailSentSuccess) {
+    let emailSentSuccess = false;
+    if (prefs.email) {
       const emailRes = await sendMatchAlertEmail({
         to: user.email,
         recipientName: user.name,
@@ -214,6 +215,13 @@ export async function evaluateAndAlertForTor(
         torRecordId: tor._id.toString(),
       });
       emailSentSuccess = emailRes.success;
+      await Notification.findByIdAndUpdate(dispatchResult.notificationId, {
+        $set: {
+          "channels.email.sent": emailRes.success,
+          "channels.email.sentAt": emailRes.success ? new Date() : undefined,
+          "channels.email.error": emailRes.error,
+        },
+      });
     }
 
     if (emailSentSuccess) {

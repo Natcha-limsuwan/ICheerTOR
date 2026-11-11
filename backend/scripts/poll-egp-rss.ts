@@ -32,6 +32,7 @@ import { RSS_TYPES, type RssAnnounceType } from "../src/services/ingestion/egp-r
 import { pollOnce } from "../src/services/ingestion/rss-poll";
 import { ingestCandidate } from "../src/services/ingestion/rss-ingest";
 import { EgpMaintenanceError } from "../src/services/ingestion/egp-maintenance";
+import { notifyUsersOfNewTors } from "../src/services/notification/ingest-notifier";
 
 const argv = process.argv.slice(2);
 const arg = (name: string) => argv.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
@@ -41,6 +42,7 @@ const INGEST_ONLY = argv.includes("--ingest-only");
 const WATCH = argv.includes("--watch");
 const REPORT = argv.includes("--report");
 const ALL_DAYS = argv.includes("--all-days");
+const NO_NOTIFY = argv.includes("--no-notify");
 const INTERVAL_MIN = Number(arg("interval") ?? 15);
 const [HOURS_FROM, HOURS_TO] = (arg("hours") ?? "08:30-17:00").split("-");
 const TYPES = (arg("types") ?? "B0,D0").split(",").map((t) => t.trim()) as RssAnnounceType[];
@@ -95,10 +97,14 @@ async function ingest(): Promise<void> {
   const queue = await RssCandidate.find({ status: "new" }).sort({ firstSeenAt: 1 }).limit(50);
   if (!queue.length) return;
   console.log(`  [ingest] ${queue.length} รายการ`);
+  const createdTorIds: string[] = [];
   for (const c of queue) {
     try {
-      const { result, note } = await ingestCandidate(c);
+      const { result, note, torRecordId } = await ingestCandidate(c);
       console.log(`    ${result.padEnd(7)} ${c.projectNumber} ${note ?? ""}`);
+      if (result === "created" && torRecordId) {
+        createdTorIds.push(torRecordId);
+      }
     } catch (e) {
       if (e instanceof EgpMaintenanceError) {
         // Not the candidate's fault: leave it queued, untouched, until e-GP is back.
@@ -113,6 +119,14 @@ async function ingest(): Promise<void> {
       console.log(`    failed  ${c.projectNumber} ${msg.slice(0, 120)}`);
     }
     await sleep(2_000); // e-GP's document service is shared too
+  }
+
+  if (createdTorIds.length > 0 && !NO_NOTIFY && !DRY_RUN) {
+    try {
+      await notifyUsersOfNewTors(createdTorIds, { sourceLabel: "CGD e-GP RSS" });
+    } catch (err) {
+      console.error("  [notify] ส่งอีเมลแจ้งเตือนล้มเหลว:", err instanceof Error ? err.message : err);
+    }
   }
 }
 

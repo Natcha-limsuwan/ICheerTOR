@@ -56,7 +56,7 @@ const UserSchema = new Schema<IUser>(
     isVerified: { type: Boolean, default: false },
     notificationPrefs: {
       inApp: { type: Boolean, default: true },
-      email: { type: Boolean, default: false },
+      email: { type: Boolean, default: true },
     },
     locale: { type: String, enum: ["th", "en"], default: "th" },
     roleAssignedBy: { type: Schema.Types.ObjectId, ref: "User" },

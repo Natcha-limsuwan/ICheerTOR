@@ -41,6 +41,7 @@ import { buildAnnouncementSearchUrl } from "../src/services/ingestion/egp-docume
 import { torDedupeHash } from "../src/services/ingestion/dedupe";
 import TORRecord from "../src/db/models/tor-record";
 import IngestJob, { type IIngestJob } from "../src/db/models/ingest-job";
+import { notifyUsersOfNewTors } from "../src/services/notification/ingest-notifier";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -49,6 +50,8 @@ const dryRun = argv.includes("--dry-run");
 /** With --dry-run, print the full document instead of a summary line. */
 const showJson = argv.includes("--json");
 const includeAwarded = argv.includes("--include-awarded");
+const noNotify = argv.includes("--no-notify");
+const forceNotify = argv.includes("--force-notify");
 const yearArg = argv.find((a) => a.startsWith("--year="));
 /** Current budget year by default — earlier years are long since awarded. */
 const YEAR = Number(yearArg?.split("=")[1] ?? 2569);
@@ -284,6 +287,25 @@ async function main(): Promise<JobCounts | void> {
   const total = await TORRecord.countDocuments();
   const open = await TORRecord.countDocuments({ phase: { $in: ["bidding", "public_hearing"] } });
   console.log(`[db] TORRecord ทั้งหมด ${total} | ที่ยังเปิดรับ ${open}`);
+
+  if (!noNotify) {
+    let notifyIds = Object.values(result.upsertedIds ?? {});
+    if (notifyIds.length === 0 && forceNotify) {
+      const recent = await TORRecord.find({ phase: { $in: ["bidding", "public_hearing"] } })
+        .sort({ createdAt: -1 })
+        .limit(3)
+        .select("_id")
+        .lean();
+      notifyIds = recent.map((r) => r._id);
+    }
+    if (notifyIds.length > 0) {
+      try {
+        await notifyUsersOfNewTors(notifyIds, { sourceLabel: "BMA e-GP2" });
+      } catch (err) {
+        console.error("[notify] ส่งอีเมลแจ้งเตือนล้มเหลว:", err instanceof Error ? err.message : err);
+      }
+    }
+  }
 
   return {
     fetched: scanned,
