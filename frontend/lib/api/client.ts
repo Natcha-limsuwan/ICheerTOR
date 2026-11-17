@@ -108,13 +108,69 @@ export function loginWithGoogle(): void {
   window.location.href = `${API_BASE_URL}/auth/google`;
 }
 
-/** Sign out by clearing the token. */
-export function logout(): void {
-  clearToken();
-  window.location.href = "/";
+/**
+ * Exchange the one-time login code from the OAuth callback for a session
+ * token. The code arrives in the URL fragment and is single use.
+ */
+export async function exchangeLoginCode(code: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/auth/exchange`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code }),
+  });
+  if (!res.ok) throw new Error("login_code_rejected");
+  const body = (await res.json()) as { data?: { token?: string } };
+  if (!body.data?.token) throw new Error("login_code_rejected");
+  setToken(body.data.token);
 }
 
-/** Get current user info from the JWT. */
+/** End the session on the server, then clear local state. */
+export async function logout(redirectTo = "/"): Promise<void> {
+  const token = getToken();
+  if (token) {
+    // Best effort: even if the server is unreachable, the local token is removed.
+    await fetch(`${API_BASE_URL}/auth/logout`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => undefined);
+  }
+  clearToken();
+  window.location.href = redirectTo;
+}
+
+/**
+ * Watch every fetch to the backend: when a request that carried a session
+ * token gets 401, the session has ended on the server (logout elsewhere,
+ * idle timeout, absolute lifetime, suspension). Clear the stale token and
+ * send the user to sign in again.
+ *
+ * Pages call fetch() directly in many places, so this wraps window.fetch
+ * once instead of relying on every call site to handle 401.
+ */
+let authGuardInstalled = false;
+export function installSessionExpiryGuard(): void {
+  if (typeof window === "undefined" || authGuardInstalled) return;
+  authGuardInstalled = true;
+
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = async (input, init) => {
+    const response = await originalFetch(input, init);
+    if (response.status === 401) {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+      const sentToken = headers.get("Authorization")?.startsWith("Bearer ");
+      if (url.startsWith(API_BASE_URL) && sentToken && getToken()) {
+        clearToken();
+        if (!window.location.pathname.startsWith("/login")) {
+          window.location.href = "/login?reason=session_expired";
+        }
+      }
+    }
+    return response;
+  };
+}
+
+/** Get current user info (role and status come from the server's database). */
 export async function getCurrentUser() {
   try {
     const result = await api.get<{

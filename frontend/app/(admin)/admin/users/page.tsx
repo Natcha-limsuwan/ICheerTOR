@@ -358,11 +358,13 @@ export default function AdminUsersPage() {
                       !!currentUser &&
                       (u.email === currentUser.email ||
                         (Boolean(currentUser.id) && u._id === currentUser.id));
-                    const canManageRole =
+                    // Mirrors the backend policy (auth/permissions.ts); the server enforces it.
+                    // Only developers change roles; admins manage regular users only.
+                    const canManageRole = !isSelf && currentRole === "developer";
+                    const canManageStatus =
                       !isSelf &&
-                      (currentRole === "developer" ||
-                        (currentRole === "admin" && u.role !== "developer"));
-                    const canManageStatus = !isSelf && u.role !== "developer";
+                      u.role !== "developer" &&
+                      (currentRole === "developer" || u.role === "user");
 
                     return (
                       <TableRow key={u._id}>

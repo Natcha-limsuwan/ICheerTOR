@@ -1,9 +1,26 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { loginWithGoogle } from "@/lib/api/client";
 import RadarIcon from "@mui/icons-material/Radar";
 
+/** Fixed messages only: query values are never rendered directly. */
+const NOTICES: Record<string, string> = {
+  session_expired: "เซสชันหมดอายุหรือถูกยกเลิก กรุณาเข้าสู่ระบบอีกครั้ง",
+  auth_failed: "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+  account_disabled: "บัญชีนี้ถูกระงับหรือถูกแบน กรุณาติดต่อผู้ดูแลระบบ",
+};
+
 export default function LoginPage() {
+  const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const key = params.get("reason") ?? params.get("error");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reading the URL once on mount
+    if (key && NOTICES[key]) setNotice(NOTICES[key]);
+  }, []);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-background)]">
       <div className="card p-10 max-w-md w-full mx-4 text-center animate-fade-in">
@@ -24,6 +41,12 @@ export default function LoginPage() {
         <p className="text-sm text-[var(--color-text-secondary)] mb-8">
           ลงชื่อเข้าใช้เพื่อค้นพบโอกาสจัดซื้อจัดจ้างซอฟต์แวร์
         </p>
+
+        {notice && (
+          <p role="alert" className="text-sm mb-6 rounded-lg px-4 py-3 bg-amber-50 text-amber-800 border border-amber-200">
+            {notice}
+          </p>
+        )}
 
         <button
           onClick={() => loginWithGoogle()}

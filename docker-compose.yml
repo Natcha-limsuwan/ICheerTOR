@@ -36,8 +36,10 @@ services:
 
   mongo:
     image: mongo:7
+    # Bound to loopback only: this MongoDB has no authentication, so it must not
+    # be reachable from other machines on the network (threat T26).
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
     volumes:
       - mongo-data:/data/db
     restart: unless-stopped

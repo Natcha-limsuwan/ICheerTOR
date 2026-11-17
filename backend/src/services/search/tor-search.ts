@@ -28,7 +28,8 @@ export function searchTerms(query: string): string[] {
     .filter(Boolean))];
 }
 
-function escapeRegex(value: string): string {
+/** Escape regex metacharacters so user input is matched literally (ASVS V1.2.9). */
+export function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 

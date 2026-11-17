@@ -1,6 +1,32 @@
 import nodemailer, { Transporter } from "nodemailer";
 import { env } from "../../config/env.js";
 
+/* ─── Output encoding (threat T11; ASVS V1.2.1) ─────────────────────── */
+
+/**
+ * Escape a value for an HTML text or double-quoted attribute context.
+ * TOR titles, agency names and user names come from e-GP or users and must
+ * never be interpreted as markup in an email.
+ */
+export function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Build an absolute link into this app from an internal path. Anything that is
+ * not a plain same-app path ("//evil.com", "javascript:", full URLs) falls back
+ * to the home page, so a notification cannot carry a phishing link.
+ */
+export function safeAppUrl(path: string | undefined): string {
+  const ok = typeof path === "string" && /^\/(?!\/)[A-Za-z0-9\-._~/?=&%]*$/.test(path);
+  return `${env.FRONTEND_URL}${ok ? path : "/"}`;
+}
+
 /* ─── Types ─────────────────────────────────────────────────────────── */
 
 export interface EmailPayload {
@@ -109,7 +135,7 @@ export async function sendNotificationEmail(
 ): Promise<EmailResult> {
   const typeLabel = typeLabels[notification.type] ?? "แจ้งเตือน";
   const linkButton = notification.linkUrl
-    ? `<a href="${env.FRONTEND_URL}${notification.linkUrl}"
+    ? `<a href="${escapeHtml(safeAppUrl(notification.linkUrl))}"
          style="display:inline-block;margin-top:16px;padding:10px 24px;
                 background-color:#0047AB;color:#ffffff;text-decoration:none;
                 border-radius:8px;font-size:14px;font-weight:500;">
@@ -136,8 +162,8 @@ export async function sendNotificationEmail(
         <!-- Body -->
         <tr>
           <td style="padding:28px 32px;">
-            <h2 style="margin:0 0 8px;font-size:16px;color:#1a1a1a;">${notification.title}</h2>
-            <p style="margin:0;font-size:14px;color:#555;line-height:1.6;">${notification.body}</p>
+            <h2 style="margin:0 0 8px;font-size:16px;color:#1a1a1a;">${escapeHtml(notification.title)}</h2>
+            <p style="margin:0;font-size:14px;color:#555;line-height:1.6;">${escapeHtml(notification.body)}</p>
             ${linkButton}
           </td>
         </tr>
@@ -156,7 +182,7 @@ export async function sendNotificationEmail(
 
   const text = `${typeLabel}\n\n${notification.title}\n${notification.body}${
     notification.linkUrl
-      ? `\n\nดูรายละเอียด: ${env.FRONTEND_URL}${notification.linkUrl}`
+      ? `\n\nดูรายละเอียด: ${safeAppUrl(notification.linkUrl)}`
       : ""
   }`;
 
@@ -196,7 +222,7 @@ export async function sendMatchAlertEmail(data: MatchAlertEmailData): Promise<Em
         ? "ต้องตรวจสอบเอกสารเพิ่มเติม"
         : "เข้าข่ายความสนใจของบริษัท";
 
-  const linkUrl = `${env.FRONTEND_URL}/procurement/${data.torRecordId}`;
+  const linkUrl = `${env.FRONTEND_URL}/procurement/${encodeURIComponent(data.torRecordId)}`;
 
   const html = `
 <!DOCTYPE html>
@@ -218,18 +244,18 @@ export async function sendMatchAlertEmail(data: MatchAlertEmailData): Promise<Em
         <tr>
           <td style="padding:28px 32px;">
             <p style="margin:0 0 16px;font-size:14px;color:#333;">
-              สวัสดี${data.recipientName ? `คุณ ${data.recipientName}` : ""}, ระบบ iCheerTOR ตรวจพบโครงการจัดซื้อจัดจ้างของ กทม. ที่มีคุณสมบัติสอดคล้องกับโปรไฟล์บริษัทของคุณ:
+              สวัสดี${data.recipientName ? `คุณ ${escapeHtml(data.recipientName)}` : ""}, ระบบ iCheerTOR ตรวจพบโครงการจัดซื้อจัดจ้างของ กทม. ที่มีคุณสมบัติสอดคล้องกับโปรไฟล์บริษัทของคุณ:
             </p>
 
             <!-- Project Card -->
             <div style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:20px;">
               <h2 style="margin:0 0 10px;font-size:16px;color:#0f172a;line-height:1.4;">
-                ${data.projectTitle}
+                ${escapeHtml(data.projectTitle)}
               </h2>
               <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#475569;">
                 <tr>
                   <td style="padding:4px 0;width:110px;">🏢 <strong>หน่วยงาน:</strong></td>
-                  <td style="padding:4px 0;color:#1e293b;">${data.agencyName}</td>
+                  <td style="padding:4px 0;color:#1e293b;">${escapeHtml(data.agencyName)}</td>
                 </tr>
                 <tr>
                   <td style="padding:4px 0;">💰 <strong>งบประมาณ:</strong></td>
@@ -256,7 +282,7 @@ export async function sendMatchAlertEmail(data: MatchAlertEmailData): Promise<Em
 
             <!-- Action Button -->
             <div style="text-align:center;margin:28px 0 12px;">
-              <a href="${linkUrl}"
+              <a href="${escapeHtml(linkUrl)}"
                  style="display:inline-block;padding:12px 32px;
                         background-color:#0047AB;color:#ffffff;text-decoration:none;
                         border-radius:8px;font-size:14px;font-weight:600;letter-spacing:0.02em;">
@@ -334,22 +360,22 @@ export async function sendNewTorIngestedEmail(
       const priceStr =
         priceVal != null ? `฿${priceVal.toLocaleString("th-TH")}` : "ไม่ระบุงบประมาณ";
       const phaseStr = item.phase ? (phaseLabels[item.phase] ?? item.phase) : "โครงการใหม่";
-      const itemUrl = `${env.FRONTEND_URL}/procurement/${item.id}`;
+      const itemUrl = `${env.FRONTEND_URL}/procurement/${encodeURIComponent(item.id)}`;
 
       return `
         <div style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:12px;">
           <div style="margin-bottom:6px;">
             <span style="display:inline-block;background-color:#dbeafe;color:#1e40af;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;">
-              ${phaseStr}
+              ${escapeHtml(phaseStr)}
             </span>
           </div>
           <h3 style="margin:0 0 8px;font-size:15px;color:#0f172a;line-height:1.4;">
-            <a href="${itemUrl}" style="color:#0f172a;text-decoration:none;">${item.title}</a>
+            <a href="${escapeHtml(itemUrl)}" style="color:#0f172a;text-decoration:none;">${escapeHtml(item.title)}</a>
           </h3>
           <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#475569;">
             <tr>
               <td style="padding:2px 0;width:100px;">🏢 <strong>หน่วยงาน:</strong></td>
-              <td style="padding:2px 0;color:#1e293b;">${item.agencyName}</td>
+              <td style="padding:2px 0;color:#1e293b;">${escapeHtml(item.agencyName)}</td>
             </tr>
             <tr>
               <td style="padding:2px 0;">💰 <strong>งบ/ราคากลาง:</strong></td>
@@ -357,7 +383,7 @@ export async function sendNewTorIngestedEmail(
             </tr>
           </table>
           <div style="margin-top:10px;">
-            <a href="${itemUrl}" style="font-size:12px;font-weight:600;color:#0047AB;text-decoration:none;">
+            <a href="${escapeHtml(itemUrl)}" style="font-size:12px;font-weight:600;color:#0047AB;text-decoration:none;">
               ดูรายละเอียดโครงการ →
             </a>
           </div>
@@ -385,7 +411,7 @@ export async function sendNewTorIngestedEmail(
         <tr>
           <td style="background:linear-gradient(135deg,#00327D,#0047AB);padding:28px 32px;color:#ffffff;">
             <p style="margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#badbfe;">
-              iCheerTOR • อัปเดตข้อมูลโครงการใหม่${data.sourceLabel ? ` (${data.sourceLabel})` : ""}
+              iCheerTOR • อัปเดตข้อมูลโครงการใหม่${data.sourceLabel ? ` (${escapeHtml(data.sourceLabel)})` : ""}
             </p>
             <h1 style="margin:0;font-size:20px;font-weight:700;line-height:1.4;">
               🆕 มีโครงการ TOR ใหม่เพิ่มเข้าสู่ระบบ ${data.totalNewCount} โครงการ
@@ -396,7 +422,7 @@ export async function sendNewTorIngestedEmail(
         <tr>
           <td style="padding:28px 32px;">
             <p style="margin:0 0 16px;font-size:14px;color:#333;line-height:1.6;">
-              สวัสดี${data.recipientName ? `คุณ ${data.recipientName}` : ""}, ระบบ iCheerTOR ได้ดึงข้อมูลโครงการจัดซื้อจัดจ้างด้านซอฟต์แวร์และเทคโนโลยีสารสนเทศใหม่เข้าสู่เว็บไซต์แล้ว จำนวน <strong>${data.totalNewCount} โครงการ</strong>:
+              สวัสดี${data.recipientName ? `คุณ ${escapeHtml(data.recipientName)}` : ""}, ระบบ iCheerTOR ได้ดึงข้อมูลโครงการจัดซื้อจัดจ้างด้านซอฟต์แวร์และเทคโนโลยีสารสนเทศใหม่เข้าสู่เว็บไซต์แล้ว จำนวน <strong>${data.totalNewCount} โครงการ</strong>:
             </p>
 
             ${itemsHtml}

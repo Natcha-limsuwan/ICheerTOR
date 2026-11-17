@@ -1,7 +1,13 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { getCurrentUser, getToken, setToken, clearToken } from "@/lib/api/client";
+import {
+  getCurrentUser,
+  getToken,
+  clearToken,
+  installSessionExpiryGuard,
+  logout,
+} from "@/lib/api/client";
 
 interface AuthUser {
   id: string;
@@ -53,26 +59,16 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }, []);
 
   useEffect(() => {
+    // Detect sessions ended by the server (idle timeout, logout elsewhere, suspension).
+    installSessionExpiryGuard();
     refreshUser();
   }, [refreshUser]);
 
-  // Check for token in URL (from OAuth callback)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
-    if (token) {
-      setToken(token);
-      // Clean URL
-      window.history.replaceState({}, "", window.location.pathname);
-      refreshUser();
-    }
-  }, [refreshUser]);
+  // Session tokens are never accepted from the URL; see app/(auth)/callback.
 
   const signOut = useCallback(() => {
-    clearToken();
     setUser(null);
-    window.location.href = "/";
+    void logout("/");
   }, []);
 
   return (

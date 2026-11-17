@@ -1,9 +1,10 @@
 import app from "./app.js";
-import { env } from "./config/env.js";
+import { assertSecureConfig, env } from "./config/env.js";
 import { connectDB } from "./db/connection.js";
 
 async function start() {
   try {
+    assertSecureConfig();
     await connectDB();
     console.log("✅ Connected to MongoDB");
 

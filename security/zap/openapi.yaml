@@ -1,0 +1,159 @@
+openapi: 3.0.3
+info:
+  title: ICheerTOR API (DAST scope)
+  version: "1.0"
+  description: >
+    Endpoints for the OWASP ZAP API scan (security/zap/run-zap.sh).
+    Deliberately NOT listed, so an active scan cannot end its own session or
+    destroy data: POST /auth/logout, POST /auth/logout-all, POST /pdpa/delete,
+    and all /admin/* write endpoints. Scan with a dedicated *user*-role account.
+servers:
+  - url: http://host.docker.internal:3001/api
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, example: 000000000000000000000000 }
+    page:
+      name: page
+      in: query
+      schema: { type: string, example: "1" }
+    limit:
+      name: limit
+      in: query
+      schema: { type: string, example: "20" }
+security:
+  - bearer: []
+paths:
+  /health:
+    get:
+      security: []
+      responses: { "200": { description: ok } }
+  /auth/exchange:
+    post:
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { code: { type: string, example: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa } }
+      responses: { "400": { description: invalid code } }
+  /auth/me:
+    get:
+      responses: { "200": { description: current user } }
+  /tor:
+    get:
+      parameters:
+        - { name: q, in: query, schema: { type: string, example: "ระบบ" } }
+        - { name: agency, in: query, schema: { type: string, example: "สำนัก" } }
+        - { name: budgetMin, in: query, schema: { type: string, example: "0" } }
+        - { name: budgetMax, in: query, schema: { type: string, example: "1000000" } }
+        - { name: phase, in: query, schema: { type: string, example: bidding } }
+        - { name: status, in: query, schema: { type: string, example: open } }
+        - { name: sortBy, in: query, schema: { type: string, example: postingDate } }
+        - { name: sortOrder, in: query, schema: { type: string, example: desc } }
+        - { name: includeMatch, in: query, schema: { type: string, example: "true" } }
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+      responses: { "200": { description: list } }
+  /tor/{id}:
+    get:
+      parameters: [{ $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: detail } }
+  /tor/{id}/match:
+    get:
+      parameters: [{ $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: match } }
+  /tor/{id}/corrections:
+    post:
+      parameters: [{ $ref: "#/components/parameters/id" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fieldPath: { type: string, example: title }
+                correctedValue: { type: string, example: test }
+      responses: { "201": { description: created } }
+  /bookmarks:
+    get:
+      parameters: [{ $ref: "#/components/parameters/page" }, { $ref: "#/components/parameters/limit" }]
+      responses: { "200": { description: list } }
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                torRecordId: { type: string, example: 000000000000000000000000 }
+                notes: { type: string, example: note }
+      responses: { "201": { description: created } }
+  /bookmarks/{id}:
+    delete:
+      parameters: [{ $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: deleted } }
+  /notifications:
+    get:
+      parameters:
+        - { name: unreadOnly, in: query, schema: { type: string, example: "false" } }
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+      responses: { "200": { description: list } }
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { inApp: { type: boolean }, email: { type: boolean } }
+      responses: { "200": { description: updated } }
+  /notifications/prefs:
+    get:
+      responses: { "200": { description: prefs } }
+  /notifications/{id}/read:
+    patch:
+      parameters: [{ $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: read } }
+  /profile:
+    get:
+      responses: { "200": { description: profile } }
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                companyName: { type: string, example: ZAP Test Co }
+                companyAge: { type: number, example: 5 }
+      responses: { "200": { description: updated } }
+  /pdpa/consent:
+    get:
+      responses: { "200": { description: consent } }
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                purpose: { type: string, example: data_processing }
+                granted: { type: boolean, example: true }
+      responses: { "201": { description: created } }
+  /pdpa/export:
+    get:
+      responses: { "200": { description: export } }
+  /admin/users:
+    get:
+      parameters:
+        - { name: q, in: query, schema: { type: string, example: test } }
+      responses: { "403": { description: user role must be denied } }

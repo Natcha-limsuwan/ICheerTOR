@@ -1,0 +1,574 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "body-parser": {
+      "name": "body-parser",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1243074,
+          "name": "body-parser",
+          "dependency": "body-parser",
+          "title": "body-parser vulnerable to Denial of Service via trailing bytes after a compressed request body",
+          "url": "https://github.com/advisories/GHSA-27r3-jxmh-p828",
+          "severity": "high",
+          "cwe": [
+            "CWE-248"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=2.0.0 <2.4.0"
+        }
+      ],
+      "effects": [],
+      "range": "2.0.0 - 2.3.0",
+      "nodes": [
+        "node_modules/body-parser"
+      ],
+      "fixAvailable": true
+    },
+    "mongoose": {
+      "name": "mongoose",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        {
+          "source": 1245993,
+          "name": "mongoose",
+          "dependency": "mongoose",
+          "title": "Mongoose: Connection-level sanitizeFilter not applied",
+          "url": "https://github.com/advisories/GHSA-gg4r-jv3p-qx3c",
+          "severity": "high",
+          "cwe": [
+            "CWE-943"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+          },
+          "range": ">=9.0.0 <9.11.4"
+        },
+        {
+          "source": 1246013,
+          "name": "mongoose",
+          "dependency": "mongoose",
+          "title": "Mongoose: Discriminator key values matching inherited properties (e.g. __t: 'constructor') bypass schema casting and can poison collections",
+          "url": "https://github.com/advisories/GHSA-wr5m-5jph-8m96",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-843"
+          ],
+          "cvss": {
+            "score": 4.8,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:L/A:L"
+          },
+          "range": ">=9.0.0 <9.11.4"
+        },
+        {
+          "source": 1246017,
+          "name": "mongoose",
+          "dependency": "mongoose",
+          "title": "Mongoose walks into inherited properties when hydrating, setting, and merging, allowing overwrites of built-in functions (denial of service) and shared schema state",
+          "url": "https://github.com/advisories/GHSA-8332-j7wj-wjw4",
+          "severity": "high",
+          "cwe": [
+            "CWE-1321"
+          ],
+          "cvss": {
+            "score": 8.2,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:H"
+          },
+          "range": ">=9.0.0 <9.11.4"
+        },
+        {
+          "source": 1246023,
+          "name": "mongoose",
+          "dependency": "mongoose",
+          "title": "Mongoose: Prototype pollution via Schema.prototype.virtual()",
+          "url": "https://github.com/advisories/GHSA-6972-9mcm-vhwj",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-1321"
+          ],
+          "cvss": {
+            "score": 6.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L"
+          },
+          "range": ">=9.0.0 <9.11.4"
+        }
+      ],
+      "effects": [],
+      "range": "9.0.0 - 9.11.3",
+      "nodes": [
+        "node_modules/mongoose"
+      ],
+      "fixAvailable": true
+    },
+    "nodemailer": {
+      "name": "nodemailer",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        {
+          "source": 1158513,
+          "name": "nodemailer",
+          "dependency": "nodemailer",
+          "title": "Nodemailer: Message-level raw option bypasses disableFileAccess/disableUrlAccess, enabling arbitrary file read and full-response SSRF in the delivered message",
+          "url": "https://github.com/advisories/GHSA-p6gq-j5cr-w38f",
+          "severity": "high",
+          "cwe": [
+            "CWE-73",
+            "CWE-918"
+          ],
+          "cvss": {
+            "score": 7.1,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:L/A:N"
+          },
+          "range": "<=9.0.0"
+        },
+        {
+          "source": 1193741,
+          "name": "nodemailer",
+          "dependency": "nodemailer",
+          "title": "Nodemailer: resolveContent() on a MailMessage bypasses disableFileAccess/disableUrlAccess when called with the legacy signature",
+          "url": "https://github.com/advisories/GHSA-8m3c-c648-2xjj",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-73",
+            "CWE-918"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:L/A:N"
+          },
+          "range": "<=9.1.0"
+        },
+        {
+          "source": 1193770,
+          "name": "nodemailer",
+          "dependency": "nodemailer",
+          "title": "Nodemailer: IDN/Punycode domain allow-list bypass leads to email delivery to an attacker-controlled domain",
+          "url": "https://github.com/advisories/GHSA-wmmp-3585-3rmp",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-20",
+            "CWE-436"
+          ],
+          "cvss": {
+            "score": 6.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:L/A:N"
+          },
+          "range": "<9.1.0"
+        },
+        {
+          "source": 1193778,
+          "name": "nodemailer",
+          "dependency": "nodemailer",
+          "title": "Nodemailer: Quadratic (O(n²)) time complexity in addressparser allows remote denial of service via a crafted address list",
+          "url": "https://github.com/advisories/GHSA-2x7j-588g-ccc2",
+          "severity": "high",
+          "cwe": [
+            "CWE-400",
+            "CWE-407"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": "<9.1.0"
+        },
+        {
+          "source": 1193779,
+          "name": "nodemailer",
+          "dependency": "nodemailer",
+          "title": "Nodemailer: Recipient-domain validation bypass via RFC 5322 comment mis-parsing leads to email delivery to an attacker-controlled domain",
+          "url": "https://github.com/advisories/GHSA-cc9r-2j5m-2m83",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-20",
+            "CWE-436"
+          ],
+          "cvss": {
+            "score": 6.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:L/A:N"
+          },
+          "range": ">=6.9.16 <9.1.0"
+        },
+        {
+          "source": 1239931,
+          "name": "nodemailer",
+          "dependency": "nodemailer",
+          "title": "Nodemailer: Process-global DNS cache reuses TLS `servername` across transports, enabling cross-tenant SMTP credential disclosure",
+          "url": "https://github.com/advisories/GHSA-6vj9-mwq6-2f5v",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-295"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:L/A:N"
+          },
+          "range": ">=5.0.0 <10.0.2"
+        },
+        {
+          "source": 1240033,
+          "name": "nodemailer",
+          "dependency": "nodemailer",
+          "title": "Nodemailer: Nested structured recipient arrays bypass the parser depth limit and cause stack exhaustion DoS",
+          "url": "https://github.com/advisories/GHSA-8vvx-rff5-p5rq",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-674"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": "<10.0.2"
+        },
+        {
+          "source": 1240114,
+          "name": "nodemailer",
+          "dependency": "nodemailer",
+          "title": "Nodemailer: Quadratic backtracking in the addressparser free-text fallback allows remote denial of service",
+          "url": "https://github.com/advisories/GHSA-v53p-9fqp-m79j",
+          "severity": "high",
+          "cwe": [
+            "CWE-407",
+            "CWE-1333"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": "<=10.0.5"
+        },
+        {
+          "source": 1242826,
+          "name": "nodemailer",
+          "dependency": "nodemailer",
+          "title": "Nodemailer: Quadratic (O(n^2)) DKIM header unfolding lets a large folded header cause remote denial of service during signing",
+          "url": "https://github.com/advisories/GHSA-39m8-27wv-hr27",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-400",
+            "CWE-407"
+          ],
+          "cvss": {
+            "score": 6.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=3.0.0 <=10.0.9"
+        },
+        {
+          "source": 1243091,
+          "name": "nodemailer",
+          "dependency": "nodemailer",
+          "title": "Nodemailer: A nested comment ends early in addressparser, releasing the rest of the comment as a recipient",
+          "url": "https://github.com/advisories/GHSA-8c8m-p3m8-cjg8",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-20",
+            "CWE-436"
+          ],
+          "cvss": {
+            "score": 6.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:L/A:N"
+          },
+          "range": ">=3.0.0 <10.1.4"
+        },
+        {
+          "source": 1243092,
+          "name": "nodemailer",
+          "dependency": "nodemailer",
+          "title": "Nodemailer: A \";\" inside a quoted string or comment ends an address group early in addressparser, turning display text into a recipient",
+          "url": "https://github.com/advisories/GHSA-m943-m63m-w62w",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-20",
+            "CWE-436"
+          ],
+          "cvss": {
+            "score": 6.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:L/A:N"
+          },
+          "range": ">=3.0.0 <10.1.4"
+        },
+        {
+          "source": 1243093,
+          "name": "nodemailer",
+          "dependency": "nodemailer",
+          "title": "Nodemailer: A \">\" inside a quoted local part ends an angle-addr early in addressparser, delivering to a domain the header does not name",
+          "url": "https://github.com/advisories/GHSA-85x2-q946-cp5h",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-20",
+            "CWE-436"
+          ],
+          "cvss": {
+            "score": 6.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:L/A:N"
+          },
+          "range": ">=3.0.0 <10.1.4"
+        },
+        {
+          "source": 1243442,
+          "name": "nodemailer",
+          "dependency": "nodemailer",
+          "title": "Nodemailer: Quadratic backtracking in SMTP AUTH mechanism detection regexes allows pre-auth remote denial of service",
+          "url": "https://github.com/advisories/GHSA-4ffr-jq9g-5ffx",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-1333"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=3.0.0 <=10.0.12"
+        },
+        {
+          "source": 1243443,
+          "name": "nodemailer",
+          "dependency": "nodemailer",
+          "title": "Nodemailer: RFC 5322 comment inside an angle-bracket address is never stripped",
+          "url": "https://github.com/advisories/GHSA-g73g-hqqh-jr95",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-20",
+            "CWE-436"
+          ],
+          "cvss": {
+            "score": 5.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N"
+          },
+          "range": ">=3.0.0 <=10.0.12"
+        },
+        {
+          "source": 1243444,
+          "name": "nodemailer",
+          "dependency": "nodemailer",
+          "title": "Nodemailer: Quadratic (O(n^2)) SMTP client reply parsing lets a malicious server or MITM cause a pre-auth remote denial of service",
+          "url": "https://github.com/advisories/GHSA-4g23-2xm8-66gc",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-400",
+            "CWE-407"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=3.0.0 <=10.0.9"
+        }
+      ],
+      "effects": [],
+      "range": "<=10.1.3",
+      "nodes": [
+        "node_modules/nodemailer"
+      ],
+      "fixAvailable": {
+        "name": "nodemailer",
+        "version": "10.6.0",
+        "isSemVerMajor": true
+      }
+    },
+    "qs": {
+      "name": "qs",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1243687,
+          "name": "qs",
+          "dependency": "qs",
+          "title": "qs : qs.stringify with arrayFormat 'comma' throws an uncaught TypeError on array elements carrying a non-callable own toString (DoS)",
+          "url": "https://github.com/advisories/GHSA-6pq8-jhm2-2vcw",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-248",
+            "CWE-704"
+          ],
+          "cvss": {
+            "score": 5.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
+          },
+          "range": ">=6.7.0 <=6.16.0"
+        }
+      ],
+      "effects": [],
+      "range": "6.7.0 - 6.16.0",
+      "nodes": [
+        "node_modules/qs"
+      ],
+      "fixAvailable": true
+    },
+    "undici": {
+      "name": "undici",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1243078,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "undici vulnerable to Denial of Service via unbounded memory in the EventSource parser",
+          "url": "https://github.com/advisories/GHSA-4qv8-2p9j-2685",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-770"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=7.0.0 <7.30.1"
+        },
+        {
+          "source": 1243081,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "undici vulnerable to Subresource Integrity bypass via non-lowercase algorithm tokens",
+          "url": "https://github.com/advisories/GHSA-f72v-6w45-q472",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-178"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"
+          },
+          "range": ">=7.15.0 <7.30.1"
+        },
+        {
+          "source": 1243113,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "undici vulnerable to Denial of Service via unhandled error on excessive content-encodings",
+          "url": "https://github.com/advisories/GHSA-xjj6-f33q-929c",
+          "severity": "high",
+          "cwe": [
+            "CWE-248",
+            "CWE-459"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=7.18.0 <7.30.1"
+        },
+        {
+          "source": 1243473,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "undici vulnerable to cache poisoning and cross-user disclosure via cross-origin redirects",
+          "url": "https://github.com/advisories/GHSA-4w7w-5xrc-9h26",
+          "severity": "high",
+          "cwe": [
+            "CWE-346",
+            "CWE-524"
+          ],
+          "cvss": {
+            "score": 7.4,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N"
+          },
+          "range": ">=7.0.0 <7.30.1"
+        },
+        {
+          "source": 1243475,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "undici vulnerable to TLS certificate validation bypass via dropped tls options in Agent",
+          "url": "https://github.com/advisories/GHSA-2m5v-pch6-74hx",
+          "severity": "high",
+          "cwe": [
+            "CWE-295"
+          ],
+          "cvss": {
+            "score": 7.4,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N"
+          },
+          "range": ">=7.0.0 <7.30.1"
+        },
+        {
+          "source": 1243478,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "undici vulnerable to Denial of Service via TLS 1.2 certificate-changing renegotiation",
+          "url": "https://github.com/advisories/GHSA-qrxm-fqhp-jwvm",
+          "severity": "high",
+          "cwe": [
+            "CWE-248",
+            "CWE-617"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=7.0.0 <7.30.1"
+        },
+        {
+          "source": 1243481,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "undici WebSocket client vulnerable to Denial of Service via unbounded automatic PONG buffering",
+          "url": "https://github.com/advisories/GHSA-9fm3-97px-rjf6",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-400",
+            "CWE-405",
+            "CWE-770"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=7.0.0 <7.30.1"
+        },
+        {
+          "source": 1243484,
+          "name": "undici",
+          "dependency": "undici",
+          "title": "undici vulnerable to Denial of Service via unhandled exception in the decompress interceptor",
+          "url": "https://github.com/advisories/GHSA-55wc-3pg8-jfw6",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-248"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=7.15.0 <7.30.1"
+        }
+      ],
+      "effects": [],
+      "range": "7.0.0 - 7.30.0",
+      "nodes": [
+        "node_modules/undici"
+      ],
+      "fixAvailable": true
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 1,
+      "high": 4,
+      "critical": 0,
+      "total": 5
+    },
+    "dependencies": {
+      "prod": 176,
+      "dev": 48,
+      "optional": 27,
+      "peer": 1,
+      "peerOptional": 0,
+      "total": 224
+    }
+  }
+}

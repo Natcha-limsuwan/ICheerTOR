@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+# Least privilege for the workflow token (threat T27).
+permissions:
+  contents: read
+
 jobs:
   lint:
     name: Lint

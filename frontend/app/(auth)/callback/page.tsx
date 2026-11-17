@@ -1,33 +1,44 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { setToken } from "@/lib/api/client";
+import { exchangeLoginCode } from "@/lib/api/client";
 import { useAuth } from "@/components/providers/AuthProvider";
 import CircularProgress from "@mui/material/CircularProgress";
+
+const ALLOWED_ERRORS = new Set(["auth_failed", "account_disabled"]);
 
 function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { refreshUser } = useAuth();
+  const started = useRef(false);
 
   useEffect(() => {
-    const token = searchParams.get("token");
-    const error = searchParams.get("error");
+    // The code is single use: guard against React running the effect twice.
+    if (started.current) return;
+    started.current = true;
 
+    const error = searchParams.get("error");
     if (error) {
-      router.replace(`/login?error=${error}`);
+      router.replace(`/login?error=${ALLOWED_ERRORS.has(error) ? error : "auth_failed"}`);
       return;
     }
 
-    if (token) {
-      setToken(token);
-      refreshUser().then(() => {
-        router.replace("/procurement");
-      });
-    } else {
+    // The one-time code arrives in the URL fragment, which browsers never send to servers.
+    const code = new URLSearchParams(window.location.hash.slice(1)).get("code");
+    // Remove it from the address bar and history straight away.
+    window.history.replaceState(null, "", window.location.pathname);
+
+    if (!code) {
       router.replace("/login");
+      return;
     }
+
+    exchangeLoginCode(code)
+      .then(() => refreshUser())
+      .then(() => router.replace("/procurement"))
+      .catch(() => router.replace("/login?error=auth_failed"));
   }, [searchParams, router, refreshUser]);
 
   return (

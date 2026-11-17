@@ -1,15 +1,26 @@
 import { Router, Request, Response } from "express";
 import { connectDB } from "../db/connection.js";
 import Bookmark from "../db/models/bookmark.js";
+import TORRecord from "../db/models/tor-record.js";
 import { displayPhase } from "../services/ingestion/data-checks.js";
 import { apiSuccess, Errors } from "../utils/api-response.js";
-import { authenticate } from "../middleware/auth.js";
+import { authenticate, requireScope } from "../middleware/auth.js";
+import { objectIdParam, validate } from "../middleware/validate.js";
+import { bookmarkCreateBody, paginationQuery } from "../validation/schemas.js";
 
 const router = Router();
-router.use(authenticate);
+router.use(authenticate, requireScope("bookmarks:own"));
+router.param("id", objectIdParam);
+router.param("torRecordId", objectIdParam);
+
+/*
+ * Object-level access control (threat T07; ASVS V8.2.2): every query below
+ * includes userId taken from the authenticated session, never from the
+ * request, so one user can never read or delete another user's bookmarks.
+ */
 
 /** GET /api/bookmarks — List current user's bookmarks. */
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", validate({ query: paginationQuery }), async (req: Request, res: Response) => {
   await connectDB();
 
   const page = Math.max(1, parseInt((req.query.page as string) ?? "1", 10));
@@ -64,41 +75,29 @@ router.get("/tor/:torRecordId", async (req: Request, res: Response) => {
   });
 });
 
-/** POST /api/bookmarks — Create a bookmark. */
-router.post("/", async (req: Request, res: Response) => {
+/** POST /api/bookmarks — Create a bookmark. Body: { torRecordId, notes? } */
+router.post("/", validate({ body: bookmarkCreateBody }), async (req: Request, res: Response) => {
   await connectDB();
+  const { torRecordId, notes } = req.body as { torRecordId: string; notes?: string };
 
-  try {
-    const existing = await Bookmark.findOne({
-      userId: req.user!.id,
-      torRecordId: req.body.torRecordId,
-    });
-    if (existing) {
-      apiSuccess(res, existing, undefined, 200);
-      return;
-    }
-
-    const bookmark = await Bookmark.create({
-      userId: req.user!.id,
-      torRecordId: req.body.torRecordId,
-      notes: req.body.notes,
-    });
-    apiSuccess(res, bookmark, undefined, 201);
-  } catch (error: unknown) {
-    if ((error as { code?: number }).code === 11000) {
-      const existing = await Bookmark.findOne({
-        userId: req.user!.id,
-        torRecordId: req.body.torRecordId,
-      });
-      apiSuccess(res, existing, undefined, 200);
-      return;
-    }
-    console.error("Bookmark creation error:", error);
-    Errors.badRequest(res, "Invalid bookmark data");
+  // Business-logic step check: the TOR must exist before it can be bookmarked (ASVS V2.3.1).
+  if (!(await TORRecord.exists({ _id: torRecordId }))) {
+    Errors.notFound(res, "TOR record not found");
+    return;
   }
+
+  // Atomic upsert: concurrent requests cannot create duplicates (threat T20).
+  const bookmark = await Bookmark.findOneAndUpdate(
+    { userId: req.user!.id, torRecordId },
+    { $setOnInsert: { userId: req.user!.id, torRecordId, notes } },
+    { upsert: true, returnDocument: "after", includeResultMetadata: true },
+  );
+
+  const created = !bookmark.lastErrorObject?.updatedExisting;
+  apiSuccess(res, bookmark.value, undefined, created ? 201 : 200);
 });
 
-/** DELETE /api/bookmarks/:id — Remove a bookmark. */
+/** DELETE /api/bookmarks/:id — Remove a bookmark (only the caller's own). */
 router.delete("/:id", async (req: Request, res: Response) => {
   await connectDB();
 

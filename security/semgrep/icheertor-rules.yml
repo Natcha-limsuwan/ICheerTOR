@@ -1,0 +1,108 @@
+# Project-specific Semgrep rules for ICheerTOR (SAST, grading item 14).
+#
+# The public rule packs (p/owasp-top-ten, p/nodejs, p/jwt, ...) report no
+# findings on this codebase, but manual review found real issues. These rules
+# encode those patterns so they are caught automatically and cannot come back.
+#
+#   semgrep scan --metrics=off --config security/semgrep/icheertor-rules.yml backend/src
+
+rules:
+  - id: icheertor-jwt-verify-without-algorithms
+    languages: [typescript]
+    severity: ERROR
+    message: >-
+      jwt.verify() without an `algorithms` allowlist accepts whatever algorithm
+      the token header names (ASVS V9.1.2, threat T03). Pass { algorithms: ["HS256"], issuer, audience }.
+    metadata: { owasp: "A07:2021 Identification and Authentication Failures", cwe: "CWE-347" }
+    patterns:
+      - pattern-either:
+          - pattern: jwt.verify($TOKEN, $KEY)
+          - pattern: jwt.verify($TOKEN, $KEY, $OPTS)
+      - pattern-not: 'jwt.verify($TOKEN, $KEY, {..., algorithms: $ALGS, ...})'
+
+  - id: icheertor-session-token-in-url
+    languages: [typescript]
+    severity: ERROR
+    message: >-
+      A session token is placed in a redirect URL, where it ends up in browser
+      history, logs and Referer headers (ASVS V14.2.1, threat T01).
+    metadata: { owasp: "A02:2021 Cryptographic Failures / A07:2021", cwe: "CWE-598" }
+    # Template literals are matched textually: any redirect URL with a token= query parameter.
+    pattern-regex: 'redirect\(\s*`[^`]*[?&](token|access_token|jwt)=\$\{'
+
+  - id: icheertor-request-body-spread-into-model
+    languages: [typescript]
+    severity: WARNING
+    message: >-
+      The whole request body is written to the database (mass assignment, ASVS
+      V15.3.3, threat T10). Validate it with an allowlist schema first
+      (middleware/validate.ts) or pick fields explicitly.
+    metadata: { owasp: "A01:2021 Broken Access Control", cwe: "CWE-915" }
+    patterns:
+      - pattern-either:
+          - pattern: '$MODEL.create({ ...$REQ.body, ... })'
+          - pattern: '{ $set: { $F: $REQ.body } }'
+          - pattern: '$MODEL.findByIdAndUpdate($ID, $REQ.body, ...)'
+          - pattern: '$MODEL.updateOne($Q, $REQ.body, ...)'
+      - pattern-not-inside: |
+          router.$METHOD($PATH, ..., validate(...), ...)
+
+  - id: icheertor-unescaped-regex-from-request
+    languages: [typescript]
+    severity: WARNING
+    message: >-
+      Request input reaches a MongoDB $regex without escapeRegex(), so users can
+      inject regex syntax or catastrophic-backtracking patterns (ASVS V1.2.9,
+      V1.3.12, threat T15).
+    metadata: { owasp: "A03:2021 Injection", cwe: "CWE-1333" }
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.params
+    pattern-sanitizers:
+      - pattern: escapeRegex(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-inside: "{ $regex: $X, ... }"
+          - pattern: $X
+
+  - id: icheertor-error-message-to-client
+    languages: [typescript]
+    severity: WARNING
+    message: >-
+      An exception message is returned to the client. Library and upstream
+      errors can reveal internal URLs, queries or file paths (ASVS V16.5.1,
+      threat T22). Log it and return a generic message.
+    metadata: { owasp: "A05:2021 Security Misconfiguration", cwe: "CWE-209" }
+    pattern-either:
+      - pattern: 'Errors.internal($RES, `...${$E.message}...`)'
+      - pattern: |
+          $M = $E instanceof Error ? $E.message : $D;
+          ...
+          Errors.internal($RES, `...${$M}...`);
+      - pattern: '$RES.status(...).json({ error: { ..., message: $ERR.message, ... } })'
+
+  - id: icheertor-trusting-forwarded-for-header
+    languages: [typescript]
+    severity: WARNING
+    message: >-
+      X-Forwarded-For / X-Real-IP are client-controlled unless set by a trusted
+      proxy. Use req.ip with Express "trust proxy" configured (ASVS V4.1.3, V15.3.4).
+    metadata: { owasp: "A04:2021 Insecure Design", cwe: "CWE-348" }
+    pattern-either:
+      - pattern: '$REQ.headers["x-forwarded-for"]'
+      - pattern: '$REQ.headers["x-real-ip"]'
+
+  - id: icheertor-role-from-token-claims
+    languages: [typescript]
+    severity: WARNING
+    message: >-
+      Authorization data (role/status) is put into the JWT. Claims stay valid
+      until the token expires, so suspensions and role changes would not apply
+      (threats T02, T08). Keep only sub/sid in the token and load role/status
+      from the database per request.
+    metadata: { owasp: "A01:2021 Broken Access Control", cwe: "CWE-613" }
+    pattern-either:
+      - pattern: 'jwt.sign({..., role: $R, ...}, ...)'
+      - pattern: 'jwt.sign({..., status: $S, ...}, ...)'

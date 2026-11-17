@@ -20,10 +20,12 @@ config({ path: ".env" });
 import mongoose from "mongoose";
 
 import AdminActionLog from "../src/db/models/admin-action-log";
+import AuthSession from "../src/db/models/auth-session";
 import Bookmark from "../src/db/models/bookmark";
 import ConsentRecord from "../src/db/models/consent-record";
 import ExtractionLog from "../src/db/models/extraction-log";
 import IngestJob from "../src/db/models/ingest-job";
+import LoginCode from "../src/db/models/login-code";
 import Notification from "../src/db/models/notification";
 import TORRecord from "../src/db/models/tor-record";
 import TORSource from "../src/db/models/tor-source";
@@ -33,10 +35,12 @@ import VendorProfile from "../src/db/models/vendor-profile";
 
 const MODELS = [
   AdminActionLog,
+  AuthSession,
   Bookmark,
   ConsentRecord,
   ExtractionLog,
   IngestJob,
+  LoginCode,
   Notification,
   TORRecord,
   TORSource,

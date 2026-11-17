@@ -53,7 +53,10 @@ MONGODB_URI=mongodb+srv://myuser:mypassword@cluster0.abc12.mongodb.net/icheertor
 | Variable                 | Required | Example                                  |
 | ------------------------ | -------- | ---------------------------------------- |
 | `JWT_SECRET`           | ✅ Yes   | `a1b2c3d4e5f6...` (32+ chars)          |
-| `JWT_EXPIRY`           | ❌ No    | `7d` (default)                          |
+| `SESSION_IDLE_TIMEOUT_MINUTES` | ❌ No | `30` (default) — sign-in again after this long without API activity |
+| `SESSION_MAX_HOURS`    | ❌ No    | `8` (default) — absolute session lifetime (also the JWT `exp`) |
+| `TRUST_PROXY`          | ❌ No    | `0` (default); set to `1` behind one reverse proxy so rate limits see the real client IP |
+| `RATE_LIMIT_API_MAX`   | ❌ No    | `300` (default) requests per IP per 15 min; raise only for a local ZAP scan |
 | `GOOGLE_CLIENT_ID`     | ✅ Yes   | `123456789.apps.googleusercontent.com` |
 | `GOOGLE_CLIENT_SECRET` | ✅ Yes   | `GOCSPX-xxxxx`                         |
 | `GOOGLE_CALLBACK_URL`  | ✅ Yes   | `http://localhost:3001/api/auth/google/callback` |
@@ -75,8 +78,19 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 ```env
 JWT_SECRET=K7gN2xQ9pLm...your-generated-string
-JWT_EXPIRY=7d
+SESSION_IDLE_TIMEOUT_MINUTES=30
+SESSION_MAX_HOURS=8
 ```
+
+With `NODE_ENV=production` the backend **refuses to start** if `JWT_SECRET` is missing, shorter than
+32 characters or the development default, if `MONGODB_URI` or the Google credentials are missing, if
+`FRONTEND_URL`/`GOOGLE_CALLBACK_URL` are not `https://`, or if a set `CRON_SECRET` is shorter than
+32 characters. In development these only print warnings. An unset `CRON_SECRET` disables
+`POST /api/cron/scrape`.
+
+Sessions are stored server-side (`authsessions` collection): logout, suspension, bans and account
+deletion end them immediately. After pulling this change, run `npm run db:sync-indexes` once so the
+TTL indexes for `authsessions` and `logincodes` are created.
 
 #### `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET`
 

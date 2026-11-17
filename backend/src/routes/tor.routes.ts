@@ -8,13 +8,17 @@ import { matchQualifications } from "../services/matching/qualification-matcher.
 import { resolveDownloadUrl } from "../services/ingestion/egp-document-url.js";
 import { bidWindow, displayPhase } from "../services/ingestion/data-checks.js";
 import { apiSuccess, Errors } from "../utils/api-response.js";
-import { authenticate } from "../middleware/auth.js";
-import { buildTorSearchFilter } from "../services/search/tor-search.js";
+import { authenticate, requireScope } from "../middleware/auth.js";
+import { sensitiveLimiter } from "../middleware/rate-limit.js";
+import { objectIdParam, validate } from "../middleware/validate.js";
+import { correctionBody, torListQuery } from "../validation/schemas.js";
+import { buildTorSearchFilter, escapeRegex } from "../services/search/tor-search.js";
 
 const router = Router();
 
-// All TOR routes require authentication
-router.use(authenticate);
+// All TOR routes require authentication and the tor:read scope; :id must be an ObjectId.
+router.use(authenticate, requireScope("tor:read"));
+router.param("id", objectIdParam);
 
 /**
  * Fields a procurement-list row needs: the egp2 data plus the few extraction
@@ -117,7 +121,7 @@ function openOpportunityFilter(now = new Date()): Record<string, unknown> {
  * GET /api/tor — Search and list TOR records with filtering.
  * ?scope=parsed|new|all (default parsed) — see scopeFilter.
  */
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", validate({ query: torListQuery }), async (req: Request, res: Response) => {
   await connectDB();
 
   if (req.query.q !== undefined && typeof req.query.q !== "string") {
@@ -170,7 +174,8 @@ router.get("/", async (req: Request, res: Response) => {
   try {
     const filter: Record<string, unknown> = {};
 
-    if (agency) filter.agencyName = { $regex: agency, $options: "i" };
+    // Literal match: user input is escaped so it cannot inject regex syntax or ReDoS patterns (T15, ASVS V1.2.9).
+    if (agency) filter.agencyName = { $regex: escapeRegex(agency), $options: "i" };
     if (budgetMin || budgetMax) {
       filter.medianPrice = {};
       if (budgetMin) (filter.medianPrice as Record<string, number>).$gte = Number(budgetMin);
@@ -188,7 +193,7 @@ router.get("/", async (req: Request, res: Response) => {
     if (openOnly || status === "open") tagConditions.push(openCondition);
     if (status === "closed") tagConditions.push({ $nor: [openCondition] });
     if (techStack) {
-      const stacks = techStack.split(",").map((s) => s.trim()).filter(Boolean);
+      const stacks = techStack.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 20);
       if (stacks.length) tagConditions.push({ tags: { $in: stacks } });
     }
     if (tagConditions.length === 1) {
@@ -298,7 +303,11 @@ router.get("/:id", async (req: Request, res: Response) => {
 /**
  * POST /api/tor/:id/corrections — Submit a field correction.
  */
-router.post("/:id/corrections", async (req: Request, res: Response) => {
+router.post(
+  "/:id/corrections",
+  requireScope("tor:correct"),
+  validate({ body: correctionBody }),
+  async (req: Request, res: Response) => {
   await connectDB();
 
   const tor = await TORRecord.findById(req.params.id);
@@ -307,16 +316,16 @@ router.post("/:id/corrections", async (req: Request, res: Response) => {
     return;
   }
 
-  const body = req.body;
-  if (!body.fieldPath || body.correctedValue === undefined) {
-    Errors.badRequest(res, "fieldPath and correctedValue are required");
-    return;
-  }
+  const body = req.body as { fieldPath: string; correctedValue: string | number | boolean | null };
 
-  const pathParts = body.fieldPath.split(".");
+  // Walk own properties only: the schema already forbids __proto__/constructor,
+  // and hasOwn makes inherited properties unreachable as well.
   let originalValue: unknown = tor.toObject();
-  for (const part of pathParts) {
-    originalValue = (originalValue as Record<string, unknown>)?.[part];
+  for (const part of body.fieldPath.split(".")) {
+    originalValue =
+      originalValue && typeof originalValue === "object" && Object.hasOwn(originalValue, part)
+        ? (originalValue as Record<string, unknown>)[part]
+        : undefined;
   }
 
   const correction = await UserCorrection.create({
@@ -329,12 +338,13 @@ router.post("/:id/corrections", async (req: Request, res: Response) => {
   });
 
   apiSuccess(res, correction, undefined, 201);
-});
+  },
+);
 
 /**
  * GET /api/tor/:id/document — Resolve the e-GP document archive URL.
  */
-router.get("/:id/document", async (req: Request, res: Response) => {
+router.get("/:id/document", sensitiveLimiter, async (req: Request, res: Response) => {
   await connectDB();
 
   try {
@@ -373,8 +383,9 @@ router.get("/:id/document", async (req: Request, res: Response) => {
       officialPortalUrl: record.officialPortalUrl ?? null,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    Errors.internal(res, `Failed to resolve e-GP document: ${message}`);
+    // Upstream errors can contain internal URLs or response bodies: log them, don't return them.
+    console.error("[tor] e-GP document resolution failed:", error instanceof Error ? error.message : error);
+    Errors.internal(res, "Failed to resolve e-GP document");
   }
 });
 

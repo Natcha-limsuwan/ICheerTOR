@@ -9,8 +9,8 @@ export interface IngestNotifyOptions {
   /** Label shown in email header, e.g. "BMA e-GP2" or "CGD e-GP RSS" */
   sourceLabel?: string;
   /**
-   * When true (default), sends email to all active users regardless of
-   * notificationPrefs.email. Set false to only email users with email: true.
+   * @deprecated Ignored. New-TOR emails are optional marketing-style messages,
+   * so they always follow the user's notificationPrefs.email choice (threat T23).
    */
   sendToAllUsers?: boolean;
   /** When true, logs what would be sent without creating notifications or sending emails. */
@@ -33,7 +33,7 @@ export async function notifyUsersOfNewTors(
   torIds: Array<string | Types.ObjectId>,
   options: IngestNotifyOptions = {},
 ): Promise<IngestNotifyResult> {
-  const { sourceLabel, sendToAllUsers = true, dryRun = false } = options;
+  const { sourceLabel, dryRun = false } = options;
 
   if (!torIds.length) {
     return {
@@ -129,7 +129,8 @@ export async function notifyUsersOfNewTors(
   );
 
   for (const user of users) {
-    const shouldSendEmail = sendToAllUsers || Boolean(user.notificationPrefs?.email);
+    // Checked at send time against the stored preference; no option can override it.
+    const shouldSendEmail = user.notificationPrefs?.email === true;
 
     const notification = await Notification.create({
       userId: user._id,
