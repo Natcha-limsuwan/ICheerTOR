@@ -9,6 +9,7 @@ import { resolveDownloadUrl } from "../services/ingestion/egp-document-url.js";
 import { bidWindow, displayPhase } from "../services/ingestion/data-checks.js";
 import { apiSuccess, Errors } from "../utils/api-response.js";
 import { authenticate, requireScope } from "../middleware/auth.js";
+import { processingAllowed } from "../services/pdpa/processing-permission.js";
 import { sensitiveLimiter } from "../middleware/rate-limit.js";
 import { objectIdParam, validate } from "../middleware/validate.js";
 import { correctionBody, torListQuery } from "../validation/schemas.js";
@@ -156,6 +157,10 @@ router.get("/", validate({ query: torListQuery }), async (req: Request, res: Res
   const techStack = req.query.techStack as string | undefined;
   /** Attach the authenticated user's qualification result to each list row. */
   const includeMatch = req.query.includeMatch === "true";
+  if (includeMatch && !(await processingAllowed(req.user!.id))) {
+    Errors.forbidden(res, "Matching is disabled after withdrawal of data processing consent");
+    return;
+  }
   const scopeParam = (req.query.scope as string | undefined) ?? "parsed";
   if (!LIST_SCOPES.includes(scopeParam as ListScope)) {
     Errors.badRequest(res, `scope must be one of: ${LIST_SCOPES.join(", ")}`);
@@ -394,6 +399,10 @@ router.get("/:id/document", sensitiveLimiter, async (req: Request, res: Response
  */
 router.get("/:id/match", async (req: Request, res: Response) => {
   await connectDB();
+  if (!(await processingAllowed(req.user!.id))) {
+    Errors.forbidden(res, "Matching is disabled after withdrawal of data processing consent");
+    return;
+  }
 
   const profile = await VendorProfile.findOne({ userId: req.user!.id });
   if (!profile) {

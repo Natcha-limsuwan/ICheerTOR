@@ -69,7 +69,7 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
     return;
   }
 
-  if (user.status === "suspended" || user.status === "banned") {
+  if (user.status !== "active") {
     await revokeUserSessions(check.userId, `account_${user.status}`);
     logSecurityEvent("account_disabled_access", { userId: check.userId, status: user.status, ip: req.ip }, "warn");
     res.status(403).json({

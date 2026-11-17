@@ -2,14 +2,13 @@ import type { Request, Response, NextFunction } from "express";
 import { rateLimit, ipKeyGenerator, type Options } from "express-rate-limit";
 import { env } from "../config/env.js";
 import { logSecurityEvent } from "../utils/security-log.js";
+import { MongoRateLimitStore } from "./mongo-rate-limit-store.js";
 
 /**
  * Rate limits (threat T16; ASVS V2.4.1).
  *
- * Counters use the default in-memory store, so they are per backend
- * instance. That is correct for the current single-container deployment;
- * running several replicas would need a shared store (e.g. Redis) to keep
- * limits consistent. Clients get 429 with RateLimit-* and Retry-After headers.
+ * MongoDB counters share fixed windows across replicas. A database failure
+ * fails closed. Clients get 429 with RateLimit-* and Retry-After headers.
  *
  * Behind a reverse proxy, set TRUST_PROXY so req.ip is the real client IP
  * rather than the proxy's (ASVS V15.3.4).
@@ -36,6 +35,7 @@ const common = {
 /** Baseline for every /api request, keyed by client IP. */
 export const apiLimiter = rateLimit({
   ...common,
+  store: new MongoRateLimitStore("api"),
   windowMs: 15 * 60 * 1000,
   // Configurable only so a local DAST run (ZAP) is not throttled; production keeps the default.
   limit: env.RATE_LIMIT_API_MAX,
@@ -45,6 +45,7 @@ export const apiLimiter = rateLimit({
 /** Login start, OAuth callback and code exchange: slows automated login attempts. */
 export const authLimiter = rateLimit({
   ...common,
+  store: new MongoRateLimitStore("auth"),
   windowMs: 15 * 60 * 1000,
   limit: 20,
   handler: onLimitReached("auth"),
@@ -57,6 +58,7 @@ export const authLimiter = rateLimit({
  */
 export const sensitiveLimiter = rateLimit({
   ...common,
+  store: new MongoRateLimitStore("sensitive"),
   windowMs: 60 * 60 * 1000,
   limit: 20,
   keyGenerator: (req) => (req.user?.id ? `user:${req.user.id}` : ipKeyGenerator(req.ip ?? "")),

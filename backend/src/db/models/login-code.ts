@@ -10,12 +10,14 @@ import mongoose, { Schema, Model, Types } from "mongoose";
  */
 export interface ILoginCode {
   codeHash: string;
+  browserChallenge: string;
   userId: Types.ObjectId;
   expiresAt: Date;
 }
 
 const LoginCodeSchema = new Schema<ILoginCode>({
   codeHash: { type: String, required: true, unique: true },
+  browserChallenge: { type: String, required: true },
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   expiresAt: { type: Date, required: true },
 });

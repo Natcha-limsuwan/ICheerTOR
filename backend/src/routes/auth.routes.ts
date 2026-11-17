@@ -62,7 +62,7 @@ router.get("/google/callback", authLimiter, (req: Request, res: Response, next: 
         return;
       }
 
-      createLoginCode(user.id)
+      createLoginCode(user.id, res.locals.oauthBrowserChallenge)
         .then((code) => {
           res.redirect(`${env.FRONTEND_URL}/callback#code=${code}`);
         })
@@ -78,7 +78,7 @@ router.get("/google/callback", authLimiter, (req: Request, res: Response, next: 
 router.post("/exchange", authLimiter, validate({ body: exchangeBody }), async (req: Request, res: Response) => {
   await connectDB();
 
-  const userId = await consumeLoginCode(req.body?.code);
+  const userId = await consumeLoginCode(req.body?.code, req.body?.browserVerifier);
   if (!userId) {
     logSecurityEvent("login_code_invalid", { ip: req.ip }, "warn");
     Errors.badRequest(res, "Invalid or expired login code");
@@ -86,7 +86,7 @@ router.post("/exchange", authLimiter, validate({ body: exchangeBody }), async (r
   }
 
   const user = await User.findById(userId).select("email name role status avatarUrl deletedAt").lean();
-  if (!user || user.deletedAt || user.status === "suspended" || user.status === "banned") {
+  if (!user || user.deletedAt || user.status !== "active") {
     logSecurityEvent("login_failure", { provider: "google", reason: "account_disabled", userId }, "warn");
     Errors.forbidden(res, "Account is suspended or banned");
     return;

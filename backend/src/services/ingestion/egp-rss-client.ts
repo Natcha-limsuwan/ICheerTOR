@@ -21,6 +21,7 @@
  */
 
 import { assertNotMaintenance, EgpMaintenanceError } from "./egp-maintenance";
+import { procurementFetch } from "./safe-fetch.js";
 
 export const RSS_URL = "https://process.gprocurement.go.th/EPROCRssFeedWeb/egpannouncerss.xml";
 
@@ -115,13 +116,12 @@ export async function fetchRssFeed(
 
   for (let attempt = 1; ; attempt++) {
     try {
-      const res = await fetch(`${RSS_URL}?${qs}`, {
+      const { response: res, body } = await procurementFetch(`${RSS_URL}?${qs}`, {
         headers: { "User-Agent": USER_AGENT, Accept: "application/rss+xml, application/xml, text/xml" },
-        redirect: "follow",
         signal: AbortSignal.timeout(TIMEOUT_MS),
-      });
+      }, 8 * 1024 * 1024);
       if (!res.ok) throw new Error(`HTTP ${res.status} จาก e-GP RSS`);
-      const xml = new TextDecoder("windows-874").decode(Buffer.from(await res.arrayBuffer()));
+      const xml = new TextDecoder("windows-874").decode(body);
       // Planned downtime answers 200 with an HTML notice: not retryable, not ours.
       assertNotMaintenance(xml);
       if (!xml.includes("<rss")) throw new Error(`e-GP RSS ตอบไม่ใช่ RSS: ${xml.slice(0, 120)}`);

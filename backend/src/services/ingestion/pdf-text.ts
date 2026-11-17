@@ -67,25 +67,34 @@ function buildLines(items: Item[]): string[] {
 }
 
 export async function extractPdfText(pdf: Buffer): Promise<PdfText> {
+  if (pdf.length > 40 * 1024 * 1024 || !pdf.subarray(0, 1024).includes(Buffer.from("%PDF-"))) throw new Error("Invalid or oversized PDF");
   const doc = await getDocumentProxy(new Uint8Array(pdf));
+  const pageCount = doc.numPages;
+  let textSize = 0;
   const pages: string[] = [];
-  for (let n = 1; n <= doc.numPages; n++) {
-    const page = await doc.getPage(n);
-    const content = await page.getTextContent();
-    const items: Item[] = [];
-    for (const raw of content.items) {
-      if (!("str" in raw) || !raw.str.trim()) continue;
-      const [a, b, , , x, y] = raw.transform as number[];
-      items.push({ str: raw.str, x, y, width: raw.width, size: Math.hypot(a, b) || raw.height || 10 });
+  try {
+    if (pageCount > 500) throw new Error("PDF page limit exceeded");
+    for (let n = 1; n <= doc.numPages; n++) {
+      const page = await doc.getPage(n);
+      const content = await page.getTextContent();
+      if (content.items.length > 100000) throw new Error("PDF content limit exceeded");
+      const items: Item[] = [];
+      for (const raw of content.items) {
+        if (!("str" in raw) || !raw.str.trim()) continue;
+        const [a, b, , , x, y] = raw.transform as number[];
+        items.push({ str: raw.str, x, y, width: raw.width, size: Math.hypot(a, b) || raw.height || 10 });
+      }
+      const text = buildLines(items).join("\n");
+      textSize += text.length;
+      if (textSize > 2000000) throw new Error("PDF text limit exceeded");
+      pages.push(text);
     }
-    pages.push(buildLines(items).join("\n"));
-  }
-  await doc.cleanup();
+  } finally { await doc.cleanup(); }
 
   const all = pages.join("");
   const nonSpace = all.replace(/\s/g, "");
   const charCount = nonSpace.length;
-  const perPage = doc.numPages ? charCount / doc.numPages : 0;
+  const perPage = pageCount ? charCount / pageCount : 0;
   const mojibake = charCount ? (nonSpace.match(/[À-ÿ]/g)?.length ?? 0) / charCount : 0;
 
   let hasTextLayer = true;
@@ -98,5 +107,5 @@ export async function extractPdfText(pdf: Buffer): Promise<PdfText> {
     reason = `text อ่านไม่ออก (อักขระเพี้ยน ${(mojibake * 100).toFixed(0)}%) — ฟอนต์ไทยแบบเก่า`;
   }
 
-  return { pageCount: doc.numPages, pages, charCount, hasTextLayer, reason };
+  return { pageCount, pages, charCount, hasTextLayer, reason };
 }

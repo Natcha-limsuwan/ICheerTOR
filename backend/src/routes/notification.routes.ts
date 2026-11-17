@@ -25,6 +25,7 @@ router.get("/unread-count", async (req: Request, res: Response) => {
   await connectDB();
   const unreadCount = await Notification.countDocuments({
     userId: req.user!.id,
+    "channels.inApp.sent": true,
     "channels.inApp.readAt": { $exists: false },
   });
   apiSuccess(res, { unreadCount });
@@ -38,7 +39,7 @@ router.get("/", validate({ query: notificationListQuery }), async (req: Request,
   const page = Math.max(1, parseInt((req.query.page as string) ?? "1", 10));
   const limit = Math.min(100, parseInt((req.query.limit as string) ?? "20", 10));
 
-  const filter: Record<string, unknown> = { userId: req.user!.id };
+  const filter: Record<string, unknown> = { userId: req.user!.id, "channels.inApp.sent": true };
   if (unreadOnly) {
     filter["channels.inApp.readAt"] = { $exists: false };
   }

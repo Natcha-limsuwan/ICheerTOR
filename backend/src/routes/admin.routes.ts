@@ -136,20 +136,23 @@ router.patch(
   }
 
   user.status = newStatus;
-  await user.save();
-
-  // Suspension and bans end the user's existing sessions immediately (threat T02, ASVS V7.4.2).
-  if (newStatus === "suspended" || newStatus === "banned") {
-    await revokeUserSessions(user._id.toString(), `admin_${action}`);
-  }
-
-  await AdminActionLog.create({
+  await mongoose.connection.transaction(async (session) => {
+    const changed = await User.updateOne(
+      { _id: user._id, role: user.role, status: previousStatus, updatedAt: user.updatedAt },
+      { $set: { status: newStatus, isVerified: user.isVerified } }, { session, runValidators: true },
+    );
+    if (changed.matchedCount !== 1) throw Object.assign(new Error("Account changed; retry"), { status: 409 });
+    if (newStatus === "suspended" || newStatus === "banned") {
+      await revokeUserSessions(user._id.toString(), `admin_${action}`, session);
+    }
+    await AdminActionLog.create([{
     adminUserId: req.user!.id as string,
     targetUserId: id as string,
     action,
     reason,
     previousStatus,
     newStatus,
+    }], { session });
   });
   logSecurityEvent("admin_account_action", { userId: req.user!.id, targetUserId: id, action, previousStatus, newStatus });
 
@@ -197,9 +200,14 @@ router.patch(
   user.role = role;
   user.roleAssignedBy = new mongoose.Types.ObjectId(req.user!.id);
   user.roleAssignedAt = new Date();
-  await user.save();
-
-  await AdminActionLog.create({
+  await mongoose.connection.transaction(async (session) => {
+    const changed = await User.updateOne(
+      { _id: user._id, role: previousRole, updatedAt: user.updatedAt },
+      { $set: { role, roleAssignedBy: user.roleAssignedBy, roleAssignedAt: user.roleAssignedAt } },
+      { session, runValidators: true },
+    );
+    if (changed.matchedCount !== 1) throw Object.assign(new Error("Account changed; retry"), { status: 409 });
+    await AdminActionLog.create([{
     adminUserId: req.user!.id as string,
     targetUserId: id as string,
     action: "change_role",
@@ -208,6 +216,7 @@ router.patch(
     newStatus: user.status,
     previousRole,
     newRole: role,
+    }], { session });
   });
   logSecurityEvent("admin_role_change", { userId: req.user!.id, targetUserId: id, previousRole, newRole: role });
 
@@ -339,6 +348,7 @@ router.get("/tor-review/:id", requireScope("tor:review"), async (req: Request, r
 router.put(
   "/tor-review/:id",
   requireScope("tor:review"),
+  requireRecentAuth(30),
   validate({ body: torReviewBody }),
   async (req: Request, res: Response) => {
   await connectDB();

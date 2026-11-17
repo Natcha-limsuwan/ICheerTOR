@@ -11,7 +11,7 @@
  * Edited values get confidence 1: a person checked them against the TOR.
  */
 
-import type { HydratedDocument, Types } from "mongoose";
+import mongoose, { type ClientSession, type HydratedDocument, type Types } from "mongoose";
 import TORRecord, {
   QUALIFICATION_TYPES,
   WORK_TYPES,
@@ -248,7 +248,18 @@ export async function applyChanges(
   admin: { id: string },
   options: { note?: string | null; verify?: boolean; dryRun?: boolean } = {},
 ): Promise<ApplyResult | null> {
-  const doc = (await TORRecord.findById(id)) as TorDoc | null;
+  if (options.dryRun) return applyChangesInSession(id, changes, admin, options);
+  return mongoose.connection.transaction((session) => applyChangesInSession(id, changes, admin, options, session));
+}
+
+async function applyChangesInSession(
+  id: string | Types.ObjectId,
+  changes: ReviewChanges,
+  admin: { id: string },
+  options: { note?: string | null; verify?: boolean; dryRun?: boolean },
+  session?: ClientSession,
+): Promise<ApplyResult | null> {
+  const doc = (await TORRecord.findById(id).session(session ?? null)) as TorDoc | null;
   if (!doc) return null;
 
   const log = setChanges(doc, changes);
@@ -273,7 +284,7 @@ export async function applyChanges(
     await doc.validate(); // same checks as save, nothing written
     return { changedFields, record: doc.toObject() as ITORRecord };
   }
-  await doc.save(); // schema validators (enums, required) run here
+  await doc.save({ session });
 
   if (log.length) {
     await UserCorrection.insertMany(
@@ -288,6 +299,7 @@ export async function applyChanges(
         reviewedBy: admin.id,
         reviewedAt: new Date(),
       })),
+      { session },
     );
   }
   return { changedFields, record: doc.toObject() as ITORRecord };

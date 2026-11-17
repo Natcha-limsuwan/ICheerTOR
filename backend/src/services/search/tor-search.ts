@@ -34,6 +34,7 @@ export function escapeRegex(value: string): string {
 }
 
 export function buildTorSearchFilter(query: string): Record<string, unknown> {
+  if (query.includes("\0")) throw new Error("Search must not contain null bytes");
   if (query.length > MAX_SEARCH_LENGTH) throw new Error(`คำค้นหายาวได้ไม่เกิน ${MAX_SEARCH_LENGTH} ตัวอักษร`);
   const terms = searchTerms(query);
   if (terms.length > MAX_SEARCH_TERMS) throw new Error(`ค้นหาได้ไม่เกิน ${MAX_SEARCH_TERMS} คำต่อครั้ง`);

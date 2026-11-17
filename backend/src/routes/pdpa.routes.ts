@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { connectDB } from "../db/connection.js";
 import ConsentRecord from "../db/models/consent-record.js";
 import User from "../db/models/user.js";
@@ -78,6 +78,7 @@ router.post(
     }
 
     const userId = req.user!.id;
+    await mongoose.connection.transaction(async (session) => {
     await User.findByIdAndUpdate(userId, {
       $set: {
         deletedAt: new Date(),
@@ -87,19 +88,19 @@ router.post(
         status: "banned",
         notificationPrefs: { inApp: false, email: false },
       },
-    });
+    }, { session });
 
     // Retention rule: personal working data goes now; consent records stay as
     // legal evidence and corrections stay for audit, both linked only to the
     // anonymised account.
-    await Promise.all([
-      VendorProfile.deleteOne({ userId }),
-      Bookmark.deleteMany({ userId }),
-      Notification.deleteMany({ userId }),
-    ]);
+    // Transaction operations are sequential, as required by the MongoDB driver.
+    await VendorProfile.deleteOne({ userId }, { session });
+    await Bookmark.deleteMany({ userId }, { session });
+    await Notification.deleteMany({ userId }, { session });
 
     // Deletion ends every session immediately, including copies of the token elsewhere (ASVS V7.4.2).
-    await revokeUserSessions(userId, "account_deleted");
+    await revokeUserSessions(userId, "account_deleted", session);
+    });
     logSecurityEvent("account_deletion", { userId });
 
     apiSuccess(res, {

@@ -4,6 +4,7 @@ import TORRecord from "../../db/models/tor-record.js";
 import User from "../../db/models/user.js";
 import Notification from "../../db/models/notification.js";
 import { sendNewTorIngestedEmail, NewTorItem } from "./email-sender.js";
+import { processingAllowed } from "../pdpa/processing-permission.js";
 
 export interface IngestNotifyOptions {
   /** Label shown in email header, e.g. "BMA e-GP2" or "CGD e-GP RSS" */
@@ -129,6 +130,8 @@ export async function notifyUsersOfNewTors(
   );
 
   for (const user of users) {
+    if (!(await processingAllowed(user._id.toString()))) continue;
+    if (!user.notificationPrefs?.inApp && !user.notificationPrefs?.email) continue;
     // Checked at send time against the stored preference; no option can override it.
     const shouldSendEmail = user.notificationPrefs?.email === true;
 
@@ -140,7 +143,7 @@ export async function notifyUsersOfNewTors(
       body: notifBody,
       linkUrl,
       channels: {
-        inApp: { sent: true },
+        inApp: { sent: user.notificationPrefs?.inApp === true },
         email: { sent: false },
       },
     });

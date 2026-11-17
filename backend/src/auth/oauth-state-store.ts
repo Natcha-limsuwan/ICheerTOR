@@ -61,8 +61,14 @@ export class CookieStateStore {
   // passport-oauth2 picks the PKCE signature by arity: store() must declare 5 parameters.
   store(req: Request, verifier: string, _state: unknown, _meta: unknown, callback: StoreCallback): void {
     if (!req.res) return callback(new Error("OAuth state store requires an Express response"));
+    const browserChallenge = req.query.browserChallenge;
+    if (typeof browserChallenge !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(browserChallenge)) {
+      return callback(new Error("Missing browser login binding"));
+    }
     const handle = crypto.randomBytes(24).toString("base64url");
-    req.res.cookie(COOKIE_NAME, `${handle}.${verifier}`, {
+    const payload = Buffer.from(JSON.stringify({ handle, verifier, browserChallenge, expires: Date.now() + COOKIE_MAX_AGE_MS })).toString("base64url");
+    const mac = crypto.createHmac("sha256", env.JWT_SECRET).update(payload).digest("base64url");
+    req.res.cookie(COOKIE_NAME, `${payload}.${mac}`, {
       ...cookieOptions(),
       maxAge: COOKIE_MAX_AGE_MS,
     });
@@ -76,13 +82,26 @@ export class CookieStateStore {
     if (!raw) return callback(null, false, { message: "Missing OAuth transaction state" });
 
     const dot = raw.indexOf(".");
-    const handle = dot > 0 ? raw.slice(0, dot) : "";
-    const verifier = dot > 0 ? raw.slice(dot + 1) : "";
+    const payload = raw.slice(0, dot);
+    const mac = raw.slice(dot + 1);
+    const expected = crypto.createHmac("sha256", env.JWT_SECRET).update(payload).digest("base64url");
+    if (raw.length > 3000 || dot < 1 || !safeEqual(mac, expected)) {
+      return callback(null, false, { message: "Invalid OAuth transaction" });
+    }
+    let transaction: { handle: string; verifier: string; browserChallenge: string; expires: number };
+    try { transaction = JSON.parse(Buffer.from(payload, "base64url").toString()); }
+    catch { return callback(null, false, { message: "Invalid OAuth transaction" }); }
+    const { handle, verifier, browserChallenge, expires } = transaction;
+    if (!Number.isFinite(expires) || expires <= Date.now() || typeof handle !== "string" || typeof verifier !== "string" ||
+        typeof browserChallenge !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(browserChallenge)) {
+      return callback(null, false, { message: "Expired OAuth transaction" });
+    }
     if (!handle || !verifier || typeof providedState !== "string" || !safeEqual(handle, providedState)) {
       return callback(null, false, { message: "Invalid OAuth transaction state" });
     }
 
     // For PKCE stores, the "ok" value passed back is the code_verifier.
+    if (req.res) req.res.locals.oauthBrowserChallenge = browserChallenge;
     callback(null, verifier);
   }
 }

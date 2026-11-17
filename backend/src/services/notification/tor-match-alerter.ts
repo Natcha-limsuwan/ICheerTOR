@@ -12,6 +12,7 @@
  */
 
 import { Types } from "mongoose";
+import { processingAllowed } from "../pdpa/processing-permission.js";
 import { connectDB } from "../../db/connection.js";
 import TORRecord, { ITORRecord } from "../../db/models/tor-record.js";
 import VendorProfile, { IVendorProfile } from "../../db/models/vendor-profile.js";
@@ -100,6 +101,7 @@ export async function evaluateAndAlertForTor(
   let emailsSent = 0;
 
   for (const user of users) {
+    if (!(await processingAllowed(user._id.toString()))) continue;
     const profile = await VendorProfile.findOne({ userId: user._id }).lean();
     if (!profile) {
       continue;

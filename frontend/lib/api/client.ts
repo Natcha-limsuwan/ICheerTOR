@@ -104,8 +104,15 @@ export const api = {
 /* ─── Auth helpers ─────────────────────────────────────────────────── */
 
 /** Start Google OAuth by redirecting to the backend. */
-export function loginWithGoogle(): void {
-  window.location.href = `${API_BASE_URL}/auth/google`;
+export async function loginWithGoogle(): Promise<void> {
+  // This proof stays in the initiating tab. A login code copied to another
+  // browser cannot be exchanged, even if it came from a valid Google login.
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  const base64url = (value: Uint8Array) => btoa(String.fromCharCode(...value)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const verifier = base64url(bytes);
+  const challenge = base64url(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier))));
+  sessionStorage.setItem("icheertor_login_verifier", verifier);
+  window.location.href = `${API_BASE_URL}/auth/google?browserChallenge=${encodeURIComponent(challenge)}`;
 }
 
 /**
@@ -113,11 +120,15 @@ export function loginWithGoogle(): void {
  * token. The code arrives in the URL fragment and is single use.
  */
 export async function exchangeLoginCode(code: string): Promise<void> {
+  const browserVerifier = sessionStorage.getItem("icheertor_login_verifier");
+  if (!browserVerifier) throw new Error("login_binding_missing");
+  const previousToken = getToken();
   const res = await fetch(`${API_BASE_URL}/auth/exchange`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code }),
+    headers: { "Content-Type": "application/json", ...(previousToken ? { Authorization: `Bearer ${previousToken}` } : {}) },
+    body: JSON.stringify({ code, browserVerifier }),
   });
+  sessionStorage.removeItem("icheertor_login_verifier");
   if (!res.ok) throw new Error("login_code_rejected");
   const body = (await res.json()) as { data?: { token?: string } };
   if (!body.data?.token) throw new Error("login_code_rejected");

@@ -3,6 +3,7 @@ import { connectDB } from "../../db/connection.js";
 import Notification, { INotification } from "../../db/models/notification.js";
 import User from "../../db/models/user.js";
 import { sendNotificationEmail } from "./email-sender.js";
+import { processingAllowed } from "../pdpa/processing-permission.js";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 
@@ -41,7 +42,7 @@ export async function dispatchNotification(
 
   // 1. Fetch user + prefs
   const user = await User.findById(input.userId).lean();
-  if (!user) {
+  if (!user || user.status !== "active" || user.deletedAt || !(await processingAllowed(user._id.toString()))) {
     throw new Error(`User not found: ${input.userId}`);
   }
 
@@ -56,7 +57,7 @@ export async function dispatchNotification(
     body: input.body,
     linkUrl: input.linkUrl,
     channels: {
-      inApp: { sent: true },
+      inApp: { sent: prefs.inApp === true },
       email: { sent: false },
     },
   });
@@ -64,7 +65,7 @@ export async function dispatchNotification(
   const result: DispatchResult = {
     notificationId: notification._id.toString(),
     channels: {
-      inApp: true,
+      inApp: prefs.inApp === true,
       email: { sent: false },
     },
   };

@@ -8,8 +8,11 @@
  * simulated by issuing a one-time login code exactly like the OAuth callback
  * does, then exchanging it through the real /api/auth/exchange endpoint.
  */
-import { MongoMemoryServer } from "mongodb-memory-server";
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 import jwt from "jsonwebtoken";
+import crypto from "node:crypto";
+const browserVerifier = crypto.randomBytes(32).toString("base64url");
+const browserChallenge = crypto.createHash("sha256").update(browserVerifier).digest("base64url");
 import mongoose from "mongoose";
 
 let pass = 0;
@@ -30,7 +33,7 @@ function check(name: string, ok: boolean, extra = "") {
 }
 
 const SECRET = "test-secret-".padEnd(48, "x");
-const mongo = await MongoMemoryServer.create();
+const mongo = await MongoMemoryReplSet.create({ replSet: { count: 1, storageEngine: "wiredTiger" } });
 Object.assign(process.env, {
   MONGODB_URI: mongo.getUri("icheertor_test"),
   JWT_SECRET: SECRET,
@@ -119,7 +122,7 @@ check("body > 100kb → 413", big.status === 413);
 
 /* ═══ 2. OAuth state + PKCE (T04) ══════════════════════════════════ */
 group("OAuth login CSRF protection");
-const start = await call("/auth/google");
+const start = await call(`/auth/google?browserChallenge=${browserChallenge}`);
 const loc = new URL(start.headers.get("location") ?? "http://x");
 const setCookie = start.headers.get("set-cookie") ?? "";
 check("authorization request carries state", !!loc.searchParams.get("state"));
@@ -132,8 +135,8 @@ check("callback with someone else's state rejected", (wrongState.headers.get("lo
 await new Promise<void>((resolve) => {
   const store = new CookieStateStore();
   let cookie = "";
-  const res = { cookie: (n: string, v: string) => (cookie = `${n}=${encodeURIComponent(v)}`), clearCookie: () => undefined };
-  store.store({ res } as never, "VERIFIER", undefined, {}, (_e, handle) => {
+  const res = { locals: {} as Record<string, unknown>, cookie: (n: string, v: string) => (cookie = `${n}=${encodeURIComponent(v)}`), clearCookie: () => undefined };
+  store.store({ res, query: { browserChallenge } } as never, "VERIFIER", undefined, {}, (_e, handle) => {
     store.verify({ res, headers: { cookie } } as never, handle!, (_e2, ok) => {
       check("matching state returns the PKCE verifier", ok === "VERIFIER");
       resolve();
@@ -143,11 +146,11 @@ await new Promise<void>((resolve) => {
 
 /* ═══ 3. Token handling (T01, T03) ═════════════════════════════════ */
 group("Login code exchange and JWT validation");
-const code = await createLoginCode(alice._id.toString());
-const ex = await call("/auth/exchange", { method: "POST", json: { code } });
+const code = await createLoginCode(alice._id.toString(), browserChallenge);
+const ex = await call("/auth/exchange", { method: "POST", json: { code, browserVerifier } });
 const tokA: string = (await json(ex)).data?.token;
 check("one-time code → session token", ex.status === 200 && !!tokA);
-check("login code cannot be reused", (await call("/auth/exchange", { method: "POST", json: { code } })).status === 400);
+check("login code cannot be reused", (await call("/auth/exchange", { method: "POST", json: { code, browserVerifier } })).status === 400);
 check("operator object as code rejected", (await call("/auth/exchange", { method: "POST", json: { code: { $ne: null } } })).status === 400);
 const dec = jwt.decode(tokA, { complete: true }) as { header: { alg: string }; payload: Record<string, unknown> };
 check("JWT carries no role/status/email", dec.payload.role === undefined && dec.payload.status === undefined && dec.payload.email === undefined);
@@ -235,6 +238,7 @@ check("malformed ObjectId → 400 not 500", (await call("/tor/not-an-id", { toke
 check("repeated query key (array) rejected", (await call("/tor?phase=bidding&phase=awarded", { token: tokAlice })).status === 400);
 check("limit=0 (would mean 'no limit') rejected", (await call("/bookmarks?limit=0", { token: tokAlice })).status === 400);
 check("invalid enum rejected", (await call("/tor?sortBy=$where", { token: tokAlice })).status === 400);
+check("null byte in search rejected before MongoDB", (await call("/tor?q=%00", { token: tokAlice })).status === 400);
 const redos = await call(`/tor?agency=${encodeURIComponent("(a+)+$")}`, { token: tokAlice });
 check("regex syntax in agency treated literally", redos.status === 200 && (await json(redos)).data?.length === 0);
 const dot = await json(await call(`/admin/users?q=${encodeURIComponent(".*")}`, { token: tokAdam }));
@@ -257,6 +261,51 @@ const consent = await json(await call("/pdpa/consent", { method: "POST", token: 
 check("consent IP not taken from spoofable X-Forwarded-For", consent.data?.ipAddress !== "6.6.6.6");
 check("consent status readable (ObjectId match)", ((await json(await call("/pdpa/consent", { token: tokAlice }))).data ?? []).length === 1);
 
+group("Browser-bound login and re-authentication");
+const boundCode = await createLoginCode(adam._id.toString(), browserChallenge);
+check("login code without verifier rejected", (await call("/auth/exchange", { method: "POST", json: { code: boundCode } })).status === 400);
+check("another browser cannot exchange the code", (await call("/auth/exchange", { method: "POST", json: { code: boundCode, browserVerifier: "x".repeat(43) } })).status === 400);
+const oldAdmin = await login(adam._id.toString());
+const renewed = await call("/auth/exchange", { method: "POST", token: oldAdmin, json: { code: boundCode, browserVerifier } });
+check("correct browser can exchange after a failed theft attempt", renewed.status === 200);
+check("re-authentication invalidates the previous session", (await call("/auth/me", { token: oldAdmin })).status === 401);
+check("browser-bound code is still single use", (await call("/auth/exchange", { method: "POST", json: { code: boundCode, browserVerifier } })).status === 400);
+
+group("Consent and in-app preferences");
+await call("/pdpa/consent", { method: "POST", token: tokAlice, json: { purpose: "data_processing", granted: false } });
+check("withdrawal blocks qualification matching", (await call(`/tor/${torId}/match`, { token: tokAlice })).status === 403);
+check("withdrawal blocks personalised list matching", (await call("/tor?includeMatch=true", { token: tokAlice })).status === 403);
+await call("/pdpa/consent", { method: "POST", token: tokAlice, json: { purpose: "data_processing", granted: true } });
+const { dispatchNotification } = await import("../src/services/notification/dispatcher.js");
+await User.updateOne({ _id: adam._id }, { $set: { notificationPrefs: { inApp: false, email: false } } });
+const hidden = await dispatchNotification({ userId: adam._id, type: "system", title: "Hidden", body: "Preference test" });
+check("disabled in-app channel is not marked sent", hidden.channels.inApp === false);
+const adminToken = await login(adam._id.toString());
+check("disabled in-app channel is not listed", ((await json(await call("/notifications", { token: adminToken }))).data ?? []).length === 0);
+
+group("Shared rate-limit counters");
+const { MongoRateLimitStore } = await import("../src/middleware/mongo-rate-limit-store.js");
+const limiter1 = new MongoRateLimitStore("test-shared"), limiter2 = new MongoRateLimitStore("test-shared");
+limiter1.init({ windowMs: 60000 }); limiter2.init({ windowMs: 60000 });
+await limiter1.resetKey("client");
+const hits = await Promise.all([limiter1.increment("client"), limiter2.increment("client")]);
+check("two replicas share an atomic counter", hits.map(h => h.totalHits).sort().join(",") === "1,2");
+
+group("Atomic TOR changes and audit rollback");
+const { applyChanges } = await import("../src/services/tor-review.js");
+const { default: UserCorrection } = await import("../src/db/models/user-correction.js");
+const reviewTor = await TORRecord.create({ title: "Original", agencyName: "Test", phase: "bidding", postingDate: new Date(), sourceUrl: "https://egp2.bangkok.go.th/", deduplicationHash: "security-review-tor" });
+await applyChanges(reviewTor._id.toString(), { title: "Reviewed" }, { id: adam._id.toString() });
+check("TOR correction commits with its audit entry", (await TORRecord.findById(reviewTor._id).lean())?.title === "Reviewed" && await UserCorrection.countDocuments({ torRecordId: reviewTor._id }) === 1);
+const originalInsert = UserCorrection.insertMany;
+let rolledBack = false;
+try {
+  UserCorrection.insertMany = (async () => { throw new Error("Simulated audit storage failure"); }) as typeof originalInsert;
+  try { await applyChanges(reviewTor._id.toString(), { title: "Must roll back" }, { id: adam._id.toString() }); }
+  catch { rolledBack = true; }
+} finally { UserCorrection.insertMany = originalInsert; }
+check("audit failure rolls back the TOR mutation", rolledBack && (await TORRecord.findById(reviewTor._id).lean())?.title === "Reviewed" && await UserCorrection.countDocuments({ torRecordId: reviewTor._id }) === 1);
+
 /* ═══ 8. Output encoding (T11) ═════════════════════════════════════ */
 group("Email output encoding");
 check("HTML special characters escaped", escapeHtml(`<img src=x onerror="alert(1)">&'`) === "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;&amp;&#39;");
@@ -270,7 +319,7 @@ const tokBob2 = await login(bob._id.toString());
 check("admin suspends a user", (await call(`/admin/users/${bob._id}`, { method: "PATCH", token: tokAdam, json: { action: "suspend", reason: "test" } })).status === 200);
 check("suspended user's existing token rejected", (await call("/auth/me", { token: tokBob2 })).status === 401);
 check("all sessions revoked on suspension", (await AuthSession.countDocuments({ userId: bob._id, revokedAt: null })) === 0);
-check("suspended user cannot sign in", (await call("/auth/exchange", { method: "POST", json: { code: await createLoginCode(bob._id.toString()) } })).status === 403);
+check("suspended user cannot sign in", (await call("/auth/exchange", { method: "POST", json: { code: await createLoginCode(bob._id.toString(), browserChallenge), browserVerifier } })).status === 403);
 const tokAlice2 = await login(alice._id.toString());
 await AuthSession.updateOne({ sid: sidOf(tokAlice2) }, { $set: { authenticatedAt: new Date(Date.now() - 3600_000) } });
 const lateDelete = await call("/pdpa/delete", { method: "POST", token: tokAlice2, json: { confirmEmail: "alice@example.com" } });
@@ -287,7 +336,7 @@ group("Rate limiting and secrets");
 check("cron endpoint disabled without CRON_SECRET", (await call("/cron/scrape", { method: "POST", headers: { "x-cron-secret": "" } })).status === 401);
 let limited: Response | null = null;
 for (let i = 0; i < 30 && !limited; i++) {
-  const r = await call("/auth/exchange", { method: "POST", json: { code: "z".repeat(43) } });
+  const r = await call("/auth/exchange", { method: "POST", json: { code: "z".repeat(43), browserVerifier } });
   if (r.status === 429) limited = r;
 }
 check("login endpoints rate limited → 429", !!limited);

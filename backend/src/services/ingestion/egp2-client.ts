@@ -22,6 +22,8 @@
  * silently returns zero rows instead of an error.
  */
 
+import { procurementFetch } from "./safe-fetch.js";
+
 const BASE = "https://egp2.bangkok.go.th/appapi/api";
 const DEFAULT_DELAY_MS = 300;
 
@@ -108,11 +110,11 @@ async function getJson<T>(path: string, params: Record<string, string | number |
     if (v !== undefined && v !== "") qs.set(k, String(v));
   }
   const url = `${BASE}${path}?${qs.toString()}`;
-  const res = await fetch(url, {
+  const { response: res, body: bytes } = await procurementFetch(url, {
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(90_000),
-  });
-  const body = await res.text();
+  }, 16 * 1024 * 1024);
+  const body = bytes.toString("utf8");
   if (!res.ok) {
     throw new Error(`HTTP ${res.status} จาก egp2 ${path} — ${body.slice(0, 200)}`);
   }

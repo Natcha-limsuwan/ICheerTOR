@@ -49,7 +49,7 @@ export default function LoginPage() {
         )}
 
         <button
-          onClick={() => loginWithGoogle()}
+          onClick={() => { void loginWithGoogle().catch(() => setNotice(NOTICES.auth_failed)); }}
           className="w-full bg-white border border-[var(--color-border)] rounded-lg py-3 px-6 flex items-center justify-center gap-3 hover:bg-gray-50 transition-colors font-medium cursor-pointer"
         >
           <img

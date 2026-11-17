@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import jwt, { JwtPayload, TokenExpiredError } from "jsonwebtoken";
-import { Types } from "mongoose";
+import { Types, type ClientSession } from "mongoose";
 import { env } from "../config/env.js";
 import AuthSession, { IAuthSession } from "../db/models/auth-session.js";
 import LoginCode from "../db/models/login-code.js";
@@ -25,10 +25,12 @@ const randomToken = () => crypto.randomBytes(32).toString("base64url"); // 256 b
 
 /* ─── One-time login codes ──────────────────────────────────────────── */
 
-export async function createLoginCode(userId: string): Promise<string> {
+export async function createLoginCode(userId: string, browserChallenge: string): Promise<string> {
+  if (!/^[A-Za-z0-9_-]{43}$/.test(browserChallenge)) throw new Error("Missing browser login binding");
   const code = randomToken();
   await LoginCode.create({
     codeHash: sha256(code),
+    browserChallenge,
     userId: new Types.ObjectId(userId),
     expiresAt: new Date(Date.now() + LOGIN_CODE_TTL_MS),
   });
@@ -36,10 +38,12 @@ export async function createLoginCode(userId: string): Promise<string> {
 }
 
 /** Atomically consume a login code. Returns the user id, or null if unknown/used/expired. */
-export async function consumeLoginCode(code: unknown): Promise<string | null> {
+export async function consumeLoginCode(code: unknown, browserVerifier: unknown): Promise<string | null> {
   if (typeof code !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(code)) return null;
+  if (typeof browserVerifier !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(browserVerifier)) return null;
   const doc = await LoginCode.findOneAndDelete({
     codeHash: sha256(code),
+    browserChallenge: crypto.createHash("sha256").update(browserVerifier).digest("base64url"),
     expiresAt: { $gt: new Date() },
   }).lean();
   return doc ? doc.userId.toString() : null;
@@ -123,7 +127,8 @@ export async function validateSessionToken(token: string): Promise<SessionCheck>
 
   const sid = payload.sid;
   const userId = payload.sub;
-  if (typeof sid !== "string" || typeof userId !== "string") {
+  if (typeof sid !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(sid) || typeof userId !== "string" || !/^[a-f0-9]{24}$/i.test(userId) ||
+      payload.jti !== sid || !Number.isFinite(payload.exp) || !Number.isFinite(payload.iat)) {
     return { ok: false, reason: "invalid_token" };
   }
 
@@ -157,10 +162,11 @@ export async function revokeSession(sid: string, reason: string): Promise<void> 
 }
 
 /** End every active session of a user (logout-all, suspension, ban, deletion). */
-export async function revokeUserSessions(userId: string, reason: string): Promise<number> {
+export async function revokeUserSessions(userId: string, reason: string, session?: ClientSession): Promise<number> {
   const result = await AuthSession.updateMany(
     { userId: new Types.ObjectId(userId), revokedAt: null },
     { $set: { revokedAt: new Date(), revokedReason: reason } },
+    { session },
   );
   if (result.modifiedCount > 0) {
     logSecurityEvent("sessions_revoked", { userId, reason, count: result.modifiedCount });

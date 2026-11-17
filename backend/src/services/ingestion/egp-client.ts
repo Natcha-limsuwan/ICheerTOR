@@ -25,6 +25,7 @@
  */
 
 import { assertNotMaintenance } from "./egp-maintenance";
+import { procurementFetch } from "./safe-fetch.js";
 
 const PROCESS5 = "https://process5.gprocurement.go.th";
 const APPROVAL_SERVICE = `${PROCESS5}/egp-approval-service/apv-common`;
@@ -97,11 +98,11 @@ export async function getZipInfo(projectId: string, stage: ArchiveStage = "final
   const timer = setTimeout(() => controller.abort(), INFO_TIMEOUT_MS);
 
   try {
-    const res = await fetch(url, {
+    const { response: res, body: bytes } = await procurementFetch(url, {
       headers: { ...baseHeaders(), Accept: "application/json, text/plain, */*" },
       signal: controller.signal,
-    });
-    const body = await res.text();
+    }, 4 * 1024 * 1024);
+    const body = bytes.toString("utf8");
     assertNotBlocked(body);
 
     if (!res.ok) {
@@ -135,13 +136,12 @@ export async function downloadZip(zipId: string): Promise<Buffer> {
   const timer = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
 
   try {
-    const res = await fetch(url, { headers: baseHeaders(), signal: controller.signal });
+    const { response: res, body: buf } = await procurementFetch(url, { headers: baseHeaders(), signal: controller.signal }, MAX_ZIP_BYTES);
 
     if (!res.ok) {
       throw new EgpError(`HTTP ${res.status} ขณะดาวน์โหลด ZIP`, res.status);
     }
 
-    const buf = Buffer.from(await res.arrayBuffer());
 
     // A rejection page is small and HTML; check bytes rather than trusting status.
     // Not a ZIP: a WAF rejection or e-GP's maintenance page (~3 KB of HTML).

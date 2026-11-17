@@ -26,6 +26,7 @@ import ConsentRecord from "../src/db/models/consent-record";
 import ExtractionLog from "../src/db/models/extraction-log";
 import IngestJob from "../src/db/models/ingest-job";
 import LoginCode from "../src/db/models/login-code";
+import RateLimitCounter from "../src/db/models/rate-limit-counter";
 import Notification from "../src/db/models/notification";
 import TORRecord from "../src/db/models/tor-record";
 import TORSource from "../src/db/models/tor-source";
@@ -41,6 +42,7 @@ const MODELS = [
   ExtractionLog,
   IngestJob,
   LoginCode,
+  RateLimitCounter,
   Notification,
   TORRecord,
   TORSource,

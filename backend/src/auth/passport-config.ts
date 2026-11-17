@@ -31,13 +31,16 @@ passport.use(
         await connectDB();
 
         const email = profile.emails?.[0]?.value ?? "";
+        if (!email || profile._json.email_verified !== true) {
+          return done(null, false, { message: "A verified Google email is required" });
+        }
         const googleId = profile.id;
         const isBootstrapDeveloper = env.ADMIN_EMAILS.includes(email.toLowerCase());
 
         let user = await User.findOne({ googleId });
 
         if (user) {
-          if (user.deletedAt || user.status === "suspended" || user.status === "banned") {
+          if (user.deletedAt || user.status !== "active") {
             return done(null, false, { message: "Account is suspended or banned" });
           }
           user.lastLoginAt = new Date();

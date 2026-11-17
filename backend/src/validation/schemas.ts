@@ -17,8 +17,8 @@ import { z } from "zod";
 /* ─── Building blocks ───────────────────────────────────────────────── */
 
 export const objectId = z.string().regex(/^[a-f0-9]{24}$/i, "must be a valid id");
-const text = (max: number) => z.string().trim().max(max);
-const requiredText = (max: number) => z.string().trim().min(1).max(max);
+const text = (max: number) => z.string().trim().max(max).refine((value) => !value.includes("\0"), "must not contain null bytes");
+const requiredText = (max: number) => z.string().trim().min(1).max(max).refine((value) => !value.includes("\0"), "must not contain null bytes");
 const page = z.string().regex(/^[1-9]\d{0,5}$/, "must be a positive integer").optional();
 /** limit=0 would mean "no limit" to MongoDB, so it must start at 1. */
 const limit = z.string().regex(/^[1-9]\d{0,2}$/, "must be 1-999").optional();
@@ -34,7 +34,10 @@ export const paginationQuery = z.object({ page, limit });
 
 /* ─── Auth ──────────────────────────────────────────────────────────── */
 
-export const exchangeBody = z.object({ code: z.string().max(64) }).strict();
+export const exchangeBody = z.object({
+  code: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+  browserVerifier: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+}).strict();
 
 /* ─── TOR ───────────────────────────────────────────────────────────── */
 

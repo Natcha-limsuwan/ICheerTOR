@@ -11,6 +11,7 @@ const SAFE_ERRORS: Record<number, { code: string; message: string }> = {
   403: { code: "FORBIDDEN", message: "Insufficient permissions" },
   404: { code: "NOT_FOUND", message: "Resource not found" },
   405: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed" },
+  409: { code: "CONFLICT", message: "The resource changed. Please refresh and try again." },
   413: { code: "PAYLOAD_TOO_LARGE", message: "Request body too large" },
   415: { code: "UNSUPPORTED_MEDIA_TYPE", message: "Unsupported content type" },
   429: { code: "RATE_LIMITED", message: "Too many requests, please try again later." },

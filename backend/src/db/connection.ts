@@ -35,6 +35,13 @@ export async function connectDB(): Promise<typeof mongoose> {
   }
 
   cached.conn = await cached.promise;
+  const topology = await cached.conn.connection.db!.admin().command({ hello: 1 });
+  if (!topology.setName && topology.msg !== "isdbgrid") {
+    cached.conn = null;
+    cached.promise = null;
+    await mongoose.disconnect();
+    throw new Error("MongoDB replica set required for atomic security/audit updates. Use the supplied Docker Compose replica set or MongoDB Atlas.");
+  }
   return cached.conn;
 }
 

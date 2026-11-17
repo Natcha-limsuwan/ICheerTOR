@@ -1,0 +1,143 @@
+
+> icheertor-backend@0.1.0 test:security
+> tsx tests/security.test.mts && tsx tests/ingestion-security.test.mts
+
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+
+── Headers, CORS and error handling
+  PASS  CSP frame-ancestors 'none'
+  PASS  HSTS max-age=1y includeSubDomains
+  PASS  X-Content-Type-Options nosniff
+  PASS  Referrer-Policy no-referrer
+  PASS  X-Powered-By removed
+  PASS  Cache-Control no-store on API
+  PASS  CORS allows only FRONTEND_URL
+  PASS  unknown route → JSON 404
+  PASS  malformed JSON → generic 400 (no parser message)
+  PASS  body > 100kb → 413
+
+── OAuth login CSRF protection
+  PASS  authorization request carries state
+  PASS  authorization request uses PKCE S256
+  PASS  state cookie is HttpOnly, SameSite=Lax, path-scoped
+  PASS  callback without state cookie rejected
+  PASS  callback with someone else's state rejected
+  PASS  matching state returns the PKCE verifier
+
+── Login code exchange and JWT validation
+  PASS  one-time code → session token
+  PASS  login code cannot be reused
+  PASS  operator object as code rejected
+  PASS  JWT carries no role/status/email
+  PASS  JWT is HS256 with iss + aud
+  PASS  JWT absolute lifetime 8h
+  PASS  alg=none rejected
+  PASS  wrong signing key rejected
+  PASS  wrong audience rejected
+  PASS  future nbf rejected
+  PASS  expired token rejected
+  PASS  session cannot be moved to another user (sub swap)
+
+── Logout, idle timeout, absolute lifetime
+  PASS  logout succeeds
+  PASS  token unusable after logout
+  PASS  idle > 30 min → 401 SESSION_EXPIRED
+  PASS  activity extends the idle window
+  PASS  absolute lifetime ends an active session
+  PASS  logout-all ends other sessions
+
+── Function-level authorization (roles, scopes, hierarchy)
+  PASS  user → admin API 403
+  PASS  admin → admin API 200
+  PASS  /me lists server-derived scopes
+  PASS  admin cannot change roles (README policy)
+  PASS  admin cannot suspend another admin
+  PASS  admin cannot act on own account
+  PASS  admin cannot suspend a developer
+  PASS  developer can change a role
+  PASS  promotion applies on the next request
+  PASS  demotion applies on the next request
+  PASS  admin user list hides googleId
+  PASS  role change needs a recent sign-in
+  PASS  scope matrix: user lacks tor:review
+  PASS  hierarchy: developer manages admin
+
+── Access to another user's data (IDOR)
+  PASS  alice creates a bookmark
+  PASS  bob cannot delete alice's bookmark
+  PASS  bob's list does not include alice's bookmark
+  PASS  alice's bookmark still exists
+  PASS  bob cannot mark alice's notification read
+  PASS  bob does not see alice's notifications
+  PASS  bob cannot read alice's profile
+  PASS  export contains only the caller's data
+  PASS  duplicate bookmark returns existing one (no duplicate)
+
+── Input validation and injection
+  PASS  NoSQL operator in body field rejected
+  PASS  unknown body field rejected (strict schema)
+  PASS  malformed ObjectId → 400 not 500
+  PASS  repeated query key (array) rejected
+  PASS  limit=0 (would mean 'no limit') rejected
+  PASS  invalid enum rejected
+  PASS  null byte in search rejected before MongoDB
+  PASS  regex syntax in agency treated literally
+  PASS  admin search '.*' is literal (no match-all)
+  PASS  prototype path in correction rejected
+  PASS  correction with object value rejected
+  PASS  notification prefs: extra field rejected
+  PASS  notification prefs write only notificationPrefs
+  PASS  profile update strips userId / maxContractValue
+  PASS  bob still has no profile after alice's attempt
+  PASS  negative money rejected
+  PASS  consent with invalid purpose rejected
+  PASS  consent IP not taken from spoofable X-Forwarded-For
+  PASS  consent status readable (ObjectId match)
+
+── Browser-bound login and re-authentication
+  PASS  login code without verifier rejected
+  PASS  another browser cannot exchange the code
+  PASS  correct browser can exchange after a failed theft attempt
+  PASS  re-authentication invalidates the previous session
+  PASS  browser-bound code is still single use
+
+── Consent and in-app preferences
+  PASS  withdrawal blocks qualification matching
+  PASS  withdrawal blocks personalised list matching
+[DISPATCH] Notification 6afc9645e246ed631b0d05a6 → inApp: ✅ | email: ⏭️ disabled
+  PASS  disabled in-app channel is not marked sent
+  PASS  disabled in-app channel is not listed
+
+── Shared rate-limit counters
+  PASS  two replicas share an atomic counter
+
+── Atomic TOR changes and audit rollback
+  PASS  TOR correction commits with its audit entry
+  PASS  audit failure rolls back the TOR mutation
+
+── Email output encoding
+  PASS  HTML special characters escaped
+  PASS  internal link kept
+  PASS  javascript: link replaced
+  PASS  protocol-relative link replaced
+
+── Suspension and account deletion
+  PASS  admin suspends a user
+  PASS  suspended user's existing token rejected
+  PASS  all sessions revoked on suspension
+  PASS  suspended user cannot sign in
+  PASS  deletion with an old session needs re-auth
+  PASS  deletion with wrong confirmation rejected
+  PASS  deletion with fresh sign-in succeeds
+  PASS  deleted account's token rejected
+  PASS  personal data removed (profile, bookmarks, notifications)
+  PASS  account anonymised
+
+── Rate limiting and secrets
+  PASS  cron endpoint disabled without CRON_SECRET
+  PASS  login endpoints rate limited → 429
+  PASS  429 has Retry-After
+  PASS  429 body code RATE_LIMITED
+
+106 passed, 0 failed
+Ingestion security checks passed (ZIP boundaries, decompression, streaming limits, egress and redirects).

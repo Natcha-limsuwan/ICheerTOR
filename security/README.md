@@ -3,9 +3,14 @@
 How to reproduce the security evidence for the project report.
 Reports land in [`reports/`](reports/).
 
+See [THREAT-COVERAGE.md](THREAT-COVERAGE.md) for the current implementation,
+excluded T05/T06/T12, residual risks and required replica-set migration.
+The regression suite now uses a temporary MongoDB replica set for atomic audit
+updates and includes ingestion/redirect limits as well as API attack cases.
+
 | What | Command | Output |
 |---|---|---|
-| Security regression tests (93 attack cases against the real API) | `cd backend && npm run test:security` | console |
+| Security regression tests (106 API checks plus ingestion checks) | `cd backend && npm run test:security` | console |
 | SAST – project rules | `semgrep scan --metrics=off --config security/semgrep/icheertor-rules.yml backend/src` | `reports/semgrep-custom-{before,after}.json` |
 | SAST – public rule packs | `semgrep scan --metrics=off --config p/owasp-top-ten --config p/nodejs --config p/typescript --config p/react --config p/jwt --config p/secrets backend/src frontend/app frontend/components frontend/lib` | `reports/semgrep-{before,after}.json` |
 | SAST – CodeQL | runs on GitHub (`.github/workflows/security.yml`) | repo → Security → Code scanning |
