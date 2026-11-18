@@ -34,6 +34,10 @@ export const paginationQuery = z.object({ page, limit });
 
 /* ─── Auth ──────────────────────────────────────────────────────────── */
 
+export const googleStartQuery = z.object({
+  browserChallenge: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+}).strict();
+
 export const exchangeBody = z.object({
   code: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
   browserVerifier: z.string().regex(/^[A-Za-z0-9_-]{43}$/),

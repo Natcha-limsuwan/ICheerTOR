@@ -202,7 +202,7 @@ export function requireConsent(purpose: string = "data_processing") {
       userId: req.user.id,
       purpose,
     })
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 })
       .lean();
 
     if (!latestConsent || !latestConsent.granted) {

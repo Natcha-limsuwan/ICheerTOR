@@ -87,6 +87,7 @@ router.get("/users", requireScope("users:read"), validate({ query: adminUsersQue
 router.patch(
   "/users/:id",
   requireScope("users:manage"),
+  requireRecentAuth(30),
   validate({ body: adminUserActionBody }),
   async (req: Request, res: Response) => {
   await connectDB();

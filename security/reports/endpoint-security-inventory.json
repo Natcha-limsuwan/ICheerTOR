@@ -1,0 +1,247 @@
+{
+  "routeMethodCount": 40,
+  "protectedRouteMethodCount": 35,
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/auth/google",
+      "boundary": "OAuth/login validation",
+      "anonymousDenialPassed": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/google/callback",
+      "boundary": "OAuth/login validation",
+      "anonymousDenialPassed": null
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/exchange",
+      "boundary": "OAuth/login validation",
+      "anonymousDenialPassed": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout-all",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/tor",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/tor/:id",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/tor/:id/corrections",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/tor/:id/document",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/tor/:id/match",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/users/:id",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/users/:id/role",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/logs",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/pipeline/health",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/tor-review",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/tor-review/:id",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/tor-review/:id",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/tor-checks",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/tor-checks/:id",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/bookmarks/tor/:torRecordId",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/bookmarks",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/bookmarks/:id",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/prefs",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/unread-count",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "PUT",
+      "path": "/api/notifications",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/notifications/read-all",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/notifications/:id/read",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/pdpa/consent",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/pdpa/consent",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/pdpa/delete",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/pdpa/export",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/profile",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/profile",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "PUT",
+      "path": "/api/profile",
+      "boundary": "bearer session",
+      "anonymousDenialPassed": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/cron/scrape",
+      "boundary": "cron secret",
+      "anonymousDenialPassed": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "boundary": "public health",
+      "anonymousDenialPassed": null
+    }
+  ],
+  "note": "Inventory and anonymous authentication-boundary evidence; successful business flows and role checks are in separate regression/browser/ZAP reports."
+}

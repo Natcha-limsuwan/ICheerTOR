@@ -11,6 +11,7 @@
 import { MongoMemoryReplSet } from "mongodb-memory-server";
 import jwt from "jsonwebtoken";
 import crypto from "node:crypto";
+import { readFile } from "node:fs/promises";
 const browserVerifier = crypto.randomBytes(32).toString("base64url");
 const browserChallenge = crypto.createHash("sha256").update(browserVerifier).digest("base64url");
 import mongoose from "mongoose";
@@ -44,6 +45,7 @@ Object.assign(process.env, {
   SESSION_MAX_HOURS: "8",
   CRON_SECRET: "",
   NODE_ENV: "test",
+  RATE_LIMIT_API_MAX: "10000", // Exercise endpoint logic; auth/sensitive limits remain enabled.
 });
 
 // Silence the app's own JSON security log lines so the test output stays readable.
@@ -122,6 +124,8 @@ check("body > 100kb → 413", big.status === 413);
 
 /* ═══ 2. OAuth state + PKCE (T04) ══════════════════════════════════ */
 group("OAuth login CSRF protection");
+check("missing browser binding rejected before OAuth", (await call("/auth/google")).status === 400);
+check("malformed browser binding rejected before OAuth", (await call("/auth/google?browserChallenge=bad")).status === 400);
 const start = await call(`/auth/google?browserChallenge=${browserChallenge}`);
 const loc = new URL(start.headers.get("location") ?? "http://x");
 const setCookie = start.headers.get("set-cookie") ?? "";
@@ -209,6 +213,9 @@ check("admin user list hides googleId", adminList.data?.every((u: Record<string,
 await AuthSession.updateOne({ sid: sidOf(tokDev) }, { $set: { authenticatedAt: new Date(Date.now() - 2 * 3600_000) } });
 const stale = await call(`/admin/users/${bob._id}/role`, { method: "PATCH", token: tokDev, json: { role: "admin" } });
 check("role change needs a recent sign-in", stale.status === 403 && (await json(stale)).error?.code === "REAUTH_REQUIRED");
+const staleAccountAction = await call(`/admin/users/${alice._id}`, { method: "PATCH", token: tokDev, json: { action: "suspend" } });
+check("account suspension needs a recent sign-in", staleAccountAction.status === 403 && (await json(staleAccountAction)).error?.code === "REAUTH_REQUIRED");
+check("stale administrative action leaves account active", (await User.findById(alice._id).lean())?.status === "active");
 check("scope matrix: user lacks tor:review", !hasScope("user", "tor:review") && hasScope("admin", "tor:review"));
 check("hierarchy: developer manages admin", canManageAccount({ id: "a", role: "developer" }, { id: "b", role: "admin" }));
 
@@ -272,6 +279,12 @@ check("re-authentication invalidates the previous session", (await call("/auth/m
 check("browser-bound code is still single use", (await call("/auth/exchange", { method: "POST", json: { code: boundCode, browserVerifier } })).status === 400);
 
 group("Consent and in-app preferences");
+const { default: ConsentRecord } = await import("../src/db/models/consent-record.js");
+const tiedAt = new Date();
+await ConsentRecord.create({ userId: alice._id, purpose: "tie_test", granted: true, scope: "all", createdAt: tiedAt });
+await ConsentRecord.create({ userId: alice._id, purpose: "tie_test", granted: false, scope: "all", createdAt: tiedAt });
+const tiedConsent = ((await json(await call("/pdpa/consent", { token: tokAlice }))).data ?? []).find((record: { _id: string }) => record._id === "tie_test");
+check("consent records with identical timestamps use the newer record", tiedConsent?.granted === false);
 await call("/pdpa/consent", { method: "POST", token: tokAlice, json: { purpose: "data_processing", granted: false } });
 check("withdrawal blocks qualification matching", (await call(`/tor/${torId}/match`, { token: tokAlice })).status === 403);
 check("withdrawal blocks personalised list matching", (await call("/tor?includeMatch=true", { token: tokAlice })).status === 403);
@@ -312,6 +325,44 @@ check("HTML special characters escaped", escapeHtml(`<img src=x onerror="alert(1
 check("internal link kept", safeAppUrl("/procurement/abc") === "http://localhost:3000/procurement/abc");
 check("javascript: link replaced", safeAppUrl("javascript:alert(1)") === "http://localhost:3000/");
 check("protocol-relative link replaced", safeAppUrl("//evil.example/x") === "http://localhost:3000/");
+
+group("Every protected route rejects anonymous requests");
+const publicAuthPaths = new Set(["/google", "/google/callback", "/exchange"]);
+for (const prefix of ["auth", "tor", "admin", "bookmark", "notification", "pdpa", "profile"]) {
+  const source = await readFile(new URL(`../src/routes/${prefix}.routes.ts`, import.meta.url), "utf8");
+  const mount = ({ bookmark: "bookmarks", notification: "notifications" } as Record<string, string>)[prefix] ?? prefix;
+  for (const match of source.matchAll(/router\.(get|post|put|patch|delete)\(\s*["']([^"']+)["']/g)) {
+    const [, method, route] = match;
+    if (prefix === "auth" && publicAuthPaths.has(route)) continue;
+    const path = `/${mount}${route === "/" ? "" : route}`.replace(/:id|:torRecordId/g, torId.toString());
+    const response = await call(path, { method: method.toUpperCase(), ...(["post", "put", "patch"].includes(method) ? { json: { unexpected: { $ne: null } } } : {}) });
+    check(`anonymous ${method.toUpperCase()} ${mount}${route} denied`, response.status === 401);
+  }
+}
+
+group("Administrative endpoint role and malformed-write matrix");
+const matrixUser = await login(anna._id.toString());
+// Use a real regular user for the negative role matrix, without altering the admin fixture.
+const matrixRegular = await mkUser("matrix-user", "user");
+const matrixRegularToken = await login(matrixRegular._id.toString());
+const matrixDeveloper = await login(dev._id.toString());
+const adminSource = await readFile(new URL("../src/routes/admin.routes.ts", import.meta.url), "utf8");
+const { default: AdminActionLog } = await import("../src/db/models/admin-action-log.js");
+const auditBefore = await AdminActionLog.countDocuments();
+for (const match of adminSource.matchAll(/router\.(get|post|put|patch|delete)\(\s*["']([^"']+)["']/g)) {
+  const [, method, route] = match;
+  const targetId = route.startsWith("/users/") ? matrixRegular._id.toString() : torId.toString();
+  const path = `/admin${route}`.replace(":id", targetId);
+  const body = ["patch", "put", "post"].includes(method) ? { json: { unexpected: { $where: "sleep(1000)" }, role: { $ne: "user" } } } : {};
+  check(`regular user denied ${method.toUpperCase()} ${route}`, (await call(path, { method: method.toUpperCase(), token: matrixRegularToken, ...body })).status === 403);
+  if (["patch", "put", "post"].includes(method)) {
+    const expectedAdmin = route.endsWith("/role") ? 403 : 400;
+    check(`admin malformed ${route} rejected`, (await call(path, { method: method.toUpperCase(), token: matrixUser, ...body })).status === expectedAdmin);
+    check(`developer malformed ${route} rejected`, (await call(path, { method: method.toUpperCase(), token: matrixDeveloper, ...body })).status === 400);
+  }
+}
+check("rejected administrative writes leave no audit entries", await AdminActionLog.countDocuments() === auditBefore);
+check("rejected administrative writes leave target privileges intact", (await User.findById(matrixRegular._id).lean())?.role === "user");
 
 /* ═══ 9. Account status and deletion (T02, T24) ════════════════════ */
 group("Suspension and account deletion");

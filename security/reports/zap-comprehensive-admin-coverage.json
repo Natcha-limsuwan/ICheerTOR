@@ -1,0 +1,17 @@
+{
+  "activeScans": [
+    {
+      "reqCount": "4216",
+      "alertCount": "0",
+      "progress": "100",
+      "newAlertCount": "0",
+      "id": "0",
+      "state": "FINISHED"
+    }
+  ],
+  "spiderScans": [],
+  "passiveRecordsRemaining": "0",
+  "recordedUrls": 74,
+  "browserExtensionWarnings": 0,
+  "errorLines": []
+}

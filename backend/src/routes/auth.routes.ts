@@ -16,7 +16,7 @@ import {
 import { apiSuccess, Errors } from "../utils/api-response.js";
 import { scopesForRole } from "../auth/permissions.js";
 import { validate } from "../middleware/validate.js";
-import { exchangeBody } from "../validation/schemas.js";
+import { exchangeBody, googleStartQuery } from "../validation/schemas.js";
 import { logSecurityEvent } from "../utils/security-log.js";
 
 const router = Router();
@@ -30,6 +30,7 @@ const loginRedirect = (error: string) => `${env.FRONTEND_URL}/login?error=${enco
 router.get(
   "/google",
   authLimiter,
+  validate({ query: googleStartQuery }),
   passport.authenticate("google", {
     scope: ["profile", "email"],
     session: false,
@@ -73,7 +74,7 @@ router.get("/google/callback", authLimiter, (req: Request, res: Response, next: 
 
 /**
  * POST /api/auth/exchange — Trade a one-time login code for a session token.
- * Body: { code: string }
+ * Body: { code: string, browserVerifier: string }
  */
 router.post("/exchange", authLimiter, validate({ body: exchangeBody }), async (req: Request, res: Response) => {
   await connectDB();

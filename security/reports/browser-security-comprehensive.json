@@ -1,0 +1,215 @@
+{
+  "tests": [
+    {
+      "test": "anonymous browser cannot view profile",
+      "passed": true
+    },
+    {
+      "test": "user browser loads /procurement",
+      "passed": true
+    },
+    {
+      "test": "user browser loads /procurement/6afd2ad6eb6f9ca75f93f01b",
+      "passed": true
+    },
+    {
+      "test": "user browser loads /profile",
+      "passed": true
+    },
+    {
+      "test": "user browser loads /bookmarks",
+      "passed": true
+    },
+    {
+      "test": "user browser loads /alerts",
+      "passed": true
+    },
+    {
+      "test": "user browser loads /compare?ids=6afd2ad6eb6f9ca75f93f01b,6afd2ad6eb6f9ca75f93f01c",
+      "passed": true
+    },
+    {
+      "test": "user browser is redirected from admin screen",
+      "passed": true
+    },
+    {
+      "test": "user direct admin API denied",
+      "passed": true
+    },
+    {
+      "test": "admin browser loads /procurement",
+      "passed": true
+    },
+    {
+      "test": "admin browser loads /procurement/6afd2ad6eb6f9ca75f93f01b",
+      "passed": true
+    },
+    {
+      "test": "admin browser loads /profile",
+      "passed": true
+    },
+    {
+      "test": "admin browser loads /bookmarks",
+      "passed": true
+    },
+    {
+      "test": "admin browser loads /alerts",
+      "passed": true
+    },
+    {
+      "test": "admin browser loads /compare?ids=6afd2ad6eb6f9ca75f93f01b,6afd2ad6eb6f9ca75f93f01c",
+      "passed": true
+    },
+    {
+      "test": "admin browser loads /admin",
+      "passed": true
+    },
+    {
+      "test": "admin browser loads /admin/users",
+      "passed": true
+    },
+    {
+      "test": "admin browser loads /admin/logs",
+      "passed": true
+    },
+    {
+      "test": "developer browser loads /procurement",
+      "passed": true
+    },
+    {
+      "test": "developer browser loads /procurement/6afd2ad6eb6f9ca75f93f01b",
+      "passed": true
+    },
+    {
+      "test": "developer browser loads /profile",
+      "passed": true
+    },
+    {
+      "test": "developer browser loads /bookmarks",
+      "passed": true
+    },
+    {
+      "test": "developer browser loads /alerts",
+      "passed": true
+    },
+    {
+      "test": "developer browser loads /compare?ids=6afd2ad6eb6f9ca75f93f01b,6afd2ad6eb6f9ca75f93f01c",
+      "passed": true
+    },
+    {
+      "test": "developer browser loads /admin",
+      "passed": true
+    },
+    {
+      "test": "developer browser loads /admin/users",
+      "passed": true
+    },
+    {
+      "test": "developer browser loads /admin/logs",
+      "passed": true
+    },
+    {
+      "test": "stored profile XSS rendered as data",
+      "passed": true,
+      "payload": "<img src=x onerror=\"window.__x=1\">"
+    },
+    {
+      "test": "stored procurement XSS rendered as data",
+      "passed": true,
+      "payload": "<img src=x onerror=\"window.__x=1\">"
+    },
+    {
+      "test": "stored title XSS remains data in /procurement",
+      "passed": true,
+      "payload": "<img src=x onerror=\"window.__x=1\">"
+    },
+    {
+      "test": "stored title XSS remains data in /bookmarks",
+      "passed": true,
+      "payload": "<img src=x onerror=\"window.__x=1\">"
+    },
+    {
+      "test": "stored title XSS remains data in /compare",
+      "passed": true,
+      "payload": "<img src=x onerror=\"window.__x=1\">"
+    },
+    {
+      "test": "stored profile XSS rendered as data",
+      "passed": true,
+      "payload": "<svg onload=\"window.__x=1\"></svg>"
+    },
+    {
+      "test": "stored procurement XSS rendered as data",
+      "passed": true,
+      "payload": "<svg onload=\"window.__x=1\"></svg>"
+    },
+    {
+      "test": "stored title XSS remains data in /procurement",
+      "passed": true,
+      "payload": "<svg onload=\"window.__x=1\"></svg>"
+    },
+    {
+      "test": "stored title XSS remains data in /bookmarks",
+      "passed": true,
+      "payload": "<svg onload=\"window.__x=1\"></svg>"
+    },
+    {
+      "test": "stored title XSS remains data in /compare",
+      "passed": true,
+      "payload": "<svg onload=\"window.__x=1\"></svg>"
+    },
+    {
+      "test": "stored profile XSS rendered as data",
+      "passed": true,
+      "payload": "</script><script>window.__x=1</script>"
+    },
+    {
+      "test": "stored procurement XSS rendered as data",
+      "passed": true,
+      "payload": "</script><script>window.__x=1</script>"
+    },
+    {
+      "test": "stored title XSS remains data in /procurement",
+      "passed": true,
+      "payload": "</script><script>window.__x=1</script>"
+    },
+    {
+      "test": "stored title XSS remains data in /bookmarks",
+      "passed": true,
+      "payload": "</script><script>window.__x=1</script>"
+    },
+    {
+      "test": "stored title XSS remains data in /compare",
+      "passed": true,
+      "payload": "</script><script>window.__x=1</script>"
+    },
+    {
+      "test": "URL payload does not execute",
+      "passed": true,
+      "path": "/login?error=%3Cimg%20src%3Dx%20onerror%3D%22window.__x%3D1%22%3E"
+    },
+    {
+      "test": "URL payload does not execute",
+      "passed": true,
+      "path": "/procurement?q=%3Csvg%20onload%3D%22window.__x%3D1%22%3E"
+    },
+    {
+      "test": "session token in URL is not accepted",
+      "passed": true
+    },
+    {
+      "test": "logout request accepted",
+      "passed": true
+    },
+    {
+      "test": "revoked session redirects browser to login",
+      "passed": true
+    }
+  ],
+  "passed": 47,
+  "failed": 0,
+  "scope": "Synthetic sessions in real Firefox; actual Google provider login excluded",
+  "driverRelease": "v0.37.1",
+  "driverAssetDigest": "sha256:8fd90b951422fbad5b56539fb344dff66eb3f986d615d8d6fde9f1f62dad610c",
+  "runtimeExitCode": 0
+}

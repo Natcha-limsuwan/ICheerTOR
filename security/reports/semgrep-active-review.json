@@ -1,0 +1,248 @@
+{
+  "version": "1.185.0",
+  "results": [],
+  "errors": [],
+  "paths": {
+    "scanned": [
+      "/src/backend/src/app.ts",
+      "/src/backend/src/auth/oauth-state-store.ts",
+      "/src/backend/src/auth/passport-config.ts",
+      "/src/backend/src/auth/permissions.ts",
+      "/src/backend/src/auth/session-service.ts",
+      "/src/backend/src/config/env.ts",
+      "/src/backend/src/db/connection.ts",
+      "/src/backend/src/db/models/admin-action-log.ts",
+      "/src/backend/src/db/models/auth-session.ts",
+      "/src/backend/src/db/models/bookmark.ts",
+      "/src/backend/src/db/models/consent-record.ts",
+      "/src/backend/src/db/models/extraction-log.ts",
+      "/src/backend/src/db/models/ingest-job.ts",
+      "/src/backend/src/db/models/login-code.ts",
+      "/src/backend/src/db/models/notification.ts",
+      "/src/backend/src/db/models/rate-limit-counter.ts",
+      "/src/backend/src/db/models/rss-candidate.ts",
+      "/src/backend/src/db/models/rss-poll-state.ts",
+      "/src/backend/src/db/models/tor-record.ts",
+      "/src/backend/src/db/models/tor-source.ts",
+      "/src/backend/src/db/models/user-correction.ts",
+      "/src/backend/src/db/models/user.ts",
+      "/src/backend/src/db/models/vendor-profile.ts",
+      "/src/backend/src/middleware/auth.ts",
+      "/src/backend/src/middleware/error-handler.ts",
+      "/src/backend/src/middleware/mongo-rate-limit-store.ts",
+      "/src/backend/src/middleware/rate-limit.ts",
+      "/src/backend/src/middleware/validate.ts",
+      "/src/backend/src/routes/admin.routes.ts",
+      "/src/backend/src/routes/auth.routes.ts",
+      "/src/backend/src/routes/bookmark.routes.ts",
+      "/src/backend/src/routes/cron.routes.ts",
+      "/src/backend/src/routes/notification.routes.ts",
+      "/src/backend/src/routes/pdpa.routes.ts",
+      "/src/backend/src/routes/profile.routes.ts",
+      "/src/backend/src/routes/tor.routes.ts",
+      "/src/backend/src/server.ts",
+      "/src/backend/src/services/ai/circuit-breaker.ts",
+      "/src/backend/src/services/ai/prompts/index.ts",
+      "/src/backend/src/services/ai/prompts/v1.ts",
+      "/src/backend/src/services/ai/prompts/v2.ts",
+      "/src/backend/src/services/ai/prompts/v3.ts",
+      "/src/backend/src/services/ai/prompts/v4.ts",
+      "/src/backend/src/services/ai/red-flag-analyzer.ts",
+      "/src/backend/src/services/ai/resolve-prices.ts",
+      "/src/backend/src/services/ai/thai-number.ts",
+      "/src/backend/src/services/ai/tor-parser.ts",
+      "/src/backend/src/services/ai/validate-extraction.ts",
+      "/src/backend/src/services/ai/vertex-client.ts",
+      "/src/backend/src/services/ingestion/archive-facts.ts",
+      "/src/backend/src/services/ingestion/bidding-doc.ts",
+      "/src/backend/src/services/ingestion/data-checks.ts",
+      "/src/backend/src/services/ingestion/dedupe.ts",
+      "/src/backend/src/services/ingestion/document-picker.ts",
+      "/src/backend/src/services/ingestion/egp-client.ts",
+      "/src/backend/src/services/ingestion/egp-document-url.ts",
+      "/src/backend/src/services/ingestion/egp-maintenance.ts",
+      "/src/backend/src/services/ingestion/egp-rss-client.ts",
+      "/src/backend/src/services/ingestion/egp2-client.ts",
+      "/src/backend/src/services/ingestion/pdf-text.ts",
+      "/src/backend/src/services/ingestion/phase-mapper.ts",
+      "/src/backend/src/services/ingestion/rss-ingest.ts",
+      "/src/backend/src/services/ingestion/rss-poll.ts",
+      "/src/backend/src/services/ingestion/safe-fetch.ts",
+      "/src/backend/src/services/ingestion/software-filter.ts",
+      "/src/backend/src/services/ingestion/types.ts",
+      "/src/backend/src/services/ingestion/zip-reader.ts",
+      "/src/backend/src/services/matching/qualification-matcher.ts",
+      "/src/backend/src/services/notification/dispatcher.ts",
+      "/src/backend/src/services/notification/email-sender.ts",
+      "/src/backend/src/services/notification/ingest-notifier.ts",
+      "/src/backend/src/services/notification/tor-match-alerter.ts",
+      "/src/backend/src/services/pdpa/data-exporter.ts",
+      "/src/backend/src/services/pdpa/processing-permission.ts",
+      "/src/backend/src/services/pipeline-health.ts",
+      "/src/backend/src/services/search/tor-search.ts",
+      "/src/backend/src/services/tor-review.ts",
+      "/src/backend/src/types.ts",
+      "/src/backend/src/utils/api-response.ts",
+      "/src/backend/src/utils/security-log.ts",
+      "/src/backend/src/validation/schemas.ts",
+      "/src/frontend/app/(admin)/admin/logs/page.tsx",
+      "/src/frontend/app/(admin)/admin/page.tsx",
+      "/src/frontend/app/(admin)/admin/users/page.tsx",
+      "/src/frontend/app/(admin)/layout.tsx",
+      "/src/frontend/app/(auth)/callback/page.tsx",
+      "/src/frontend/app/(auth)/login/page.tsx",
+      "/src/frontend/app/(dashboard)/alerts/page.tsx",
+      "/src/frontend/app/(dashboard)/bookmarks/page.tsx",
+      "/src/frontend/app/(dashboard)/compare/page.tsx",
+      "/src/frontend/app/(dashboard)/layout.tsx",
+      "/src/frontend/app/(dashboard)/procurement/[id]/page.tsx",
+      "/src/frontend/app/(dashboard)/procurement/page.tsx",
+      "/src/frontend/app/(dashboard)/profile/page.tsx",
+      "/src/frontend/app/layout.tsx",
+      "/src/frontend/app/page.tsx",
+      "/src/frontend/lib/api/client.ts",
+      "/src/frontend/lib/theme/mui-theme.ts",
+      "/src/frontend/lib/utils/currency-formatter.ts",
+      "/src/frontend/lib/utils/date-converter.ts",
+      "/src/frontend/lib/utils/i18n.ts",
+      "/src/frontend/proxy.ts"
+    ]
+  },
+  "time": {
+    "rules": [],
+    "rules_parse_time": 0.010651826858520508,
+    "profiling_times": {
+      "config_time": 3.6981208324432373,
+      "core_time": 156.59971523284912,
+      "ignores_time": 0.0015811920166015625,
+      "total_time": 160.37616753578186
+    },
+    "parsing_time": {
+      "total_time": 8.378350734710693,
+      "per_file_time": {
+        "mean": 0.14445432301225333,
+        "std_dev": 0.03312528173249872
+      },
+      "very_slow_stats": {
+        "time_ratio": 0.5852996825676874,
+        "count_ratio": 0.1896551724137931
+      },
+      "very_slow_files": [
+        {
+          "fpath": "/src/backend/src/routes/bookmark.routes.ts",
+          "ftime": 0.30873799324035645
+        },
+        {
+          "fpath": "/src/backend/src/db/models/tor-record.ts",
+          "ftime": 0.31589508056640625
+        },
+        {
+          "fpath": "/src/backend/src/middleware/error-handler.ts",
+          "ftime": 0.3376591205596924
+        },
+        {
+          "fpath": "/src/frontend/app/(admin)/admin/logs/page.tsx",
+          "ftime": 0.3448019027709961
+        },
+        {
+          "fpath": "/src/frontend/app/(dashboard)/alerts/page.tsx",
+          "ftime": 0.35152602195739746
+        },
+        {
+          "fpath": "/src/frontend/app/(admin)/admin/users/page.tsx",
+          "ftime": 0.4010159969329834
+        },
+        {
+          "fpath": "/src/backend/src/services/pipeline-health.ts",
+          "ftime": 0.4147331714630127
+        },
+        {
+          "fpath": "/src/backend/src/routes/admin.routes.ts",
+          "ftime": 0.4814178943634033
+        },
+        {
+          "fpath": "/src/frontend/app/(dashboard)/procurement/[id]/page.tsx",
+          "ftime": 0.6981818675994873
+        },
+        {
+          "fpath": "/src/frontend/app/(dashboard)/profile/page.tsx",
+          "ftime": 0.9436311721801758
+        }
+      ]
+    },
+    "scanning_time": {
+      "total_time": 12.919854640960693,
+      "per_file_time": {
+        "mean": 0.12666524157804598,
+        "std_dev": 0.04645425837153123
+      },
+      "very_slow_stats": {
+        "time_ratio": 0.0,
+        "count_ratio": 0.0
+      },
+      "very_slow_files": []
+    },
+    "matching_time": {
+      "total_time": 1.5777370929718018,
+      "per_file_and_rule_time": {
+        "mean": 0.027202363671927632,
+        "std_dev": 0.005470208126007281
+      },
+      "very_slow_stats": {
+        "time_ratio": 0.502924741016597,
+        "count_ratio": 0.05172413793103448
+      },
+      "very_slow_rules_on_files": [
+        {
+          "fpath": "/src/frontend/app/(dashboard)/procurement/[id]/page.tsx",
+          "rule_id": "security.semgrep.icheertor-request-body-spread-into-model",
+          "time": 0.12009501457214355
+        },
+        {
+          "fpath": "/src/frontend/app/(admin)/admin/users/page.tsx",
+          "rule_id": "security.semgrep.icheertor-request-body-spread-into-model",
+          "time": 0.12852907180786133
+        },
+        {
+          "fpath": "/src/backend/src/routes/admin.routes.ts",
+          "rule_id": "security.semgrep.icheertor-unescaped-regex-from-request",
+          "time": 0.5448589324951172
+        }
+      ]
+    },
+    "tainting_time": {
+      "total_time": 0.1341547966003418,
+      "per_def_and_rule_time": {
+        "mean": 0.016769349575042725,
+        "std_dev": 0.001222206340639076
+      },
+      "very_slow_stats": {
+        "time_ratio": 0.8075747397305069,
+        "count_ratio": 0.125
+      },
+      "very_slow_rules_on_defs": [
+        {
+          "fpath": "/src/backend/src/routes/admin.routes.ts",
+          "fline": 1,
+          "rule_id": "security.semgrep.icheertor-unescaped-regex-from-request",
+          "time": 0.10834002494812012
+        }
+      ]
+    },
+    "fixpoint_timeouts": [],
+    "prefiltering": {
+      "project_level_time": 0.0,
+      "file_level_time": 0.0,
+      "rules_with_project_prefilters_ratio": 0.0,
+      "rules_with_file_prefilters_ratio": 1.0,
+      "rules_selected_ratio": 0.08123249299719888,
+      "rules_matched_ratio": 0.08123249299719888
+    },
+    "targets": [],
+    "total_bytes": 0,
+    "max_memory_bytes": 247532928
+  },
+  "engine_requested": "OSS",
+  "skipped_rules": [],
+  "profiling_results": []
+}

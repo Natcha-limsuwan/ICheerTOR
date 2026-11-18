@@ -19,6 +19,7 @@ not a claim that all ASVS requirements or all possible threats are resolved.
 - T07/T08: object ownership and server-derived scopes; account role/status is
   reloaded on requests. Sensitive role changes and TOR review require recent
   application authentication. Google email must be verified before provisioning.
+  Administrative account-status changes also require recent authentication.
 - T09/T10: request schemas and writable-field allowlists from the previous
   hardening remain in place; regression tests cover injection and mass assignment.
 - T11/T25: email escaping from the previous hardening is retained. Frontend
@@ -97,3 +98,10 @@ not a claim that all ASVS requirements or all possible threats are resolved.
   Historical `*-after.json` files are evidence for the previous hardening, not
   automatically evidence for the current changes. Never infer Google browser E2E
   success or production TLS/IAM correctness from local API tests alone.
+- The [isolated active ZAP runner](zap/README.md) seeds existing object IDs and
+  scans anonymous/user/admin API scopes plus the unauthenticated frontend.
+  It complements, rather than replaces, ownership and session regression tests.
+- [The completed review](ACTIVE-ZAP-REVIEW.md) now records 100% completion of the
+  configured frontend and anonymous/user/admin/developer API scans, 166 API checks
+  and 47 authenticated Firefox checks. Dashboard pages also have a shared client
+  authentication guard; backend authentication remains the data-access boundary.

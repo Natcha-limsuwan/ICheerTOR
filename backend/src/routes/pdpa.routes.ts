@@ -27,7 +27,7 @@ router.get("/consent", async (req: Request, res: Response) => {
   // aggregate() does not cast types like find() does: match on a real ObjectId.
   const records = await ConsentRecord.aggregate([
     { $match: { userId: new Types.ObjectId(req.user!.id) } },
-    { $sort: { createdAt: -1 } },
+    { $sort: { createdAt: -1, _id: -1 } },
     {
       $group: {
         _id: "$purpose",

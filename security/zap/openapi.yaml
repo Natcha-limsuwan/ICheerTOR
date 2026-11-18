@@ -43,7 +43,10 @@ paths:
           application/json:
             schema:
               type: object
-              properties: { code: { type: string, example: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa } }
+              required: [code, browserVerifier]
+              properties:
+                code: { type: string, example: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa }
+                browserVerifier: { type: string, example: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb }
       responses: { "400": { description: invalid code } }
   /auth/me:
     get:
@@ -119,6 +122,12 @@ paths:
   /notifications/prefs:
     get:
       responses: { "200": { description: prefs } }
+  /notifications/unread-count:
+    get:
+      responses: { "200": { description: unread count } }
+  /notifications/read-all:
+    patch:
+      responses: { "200": { description: read } }
   /notifications/{id}/read:
     patch:
       parameters: [{ $ref: "#/components/parameters/id" }]
@@ -126,6 +135,17 @@ paths:
   /profile:
     get:
       responses: { "200": { description: profile } }
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [companyName, companyAge]
+              properties:
+                companyName: { type: string, example: ZAP Test Co }
+                companyAge: { type: number, example: 5 }
+      responses: { "409": { description: existing fixture profile } }
     put:
       requestBody:
         content:
@@ -157,3 +177,28 @@ paths:
       parameters:
         - { name: q, in: query, schema: { type: string, example: test } }
       responses: { "403": { description: user role must be denied } }
+  /admin/logs:
+    get:
+      parameters:
+        - { name: action, in: query, schema: { type: string, example: suspend } }
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+      responses: { "200": { description: audit log } }
+  /admin/pipeline/health:
+    get:
+      responses: { "200": { description: pipeline health } }
+  /admin/tor-review:
+    get:
+      parameters:
+        - { name: status, in: query, schema: { type: string, example: all } }
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+      responses: { "200": { description: review list } }
+  /admin/tor-review/{id}:
+    get:
+      parameters: [{ $ref: "#/components/parameters/id" }]
+      responses: { "200": { description: review detail } }
+  /admin/tor-checks:
+    get:
+      parameters: [{ $ref: "#/components/parameters/page" }, { $ref: "#/components/parameters/limit" }]
+      responses: { "200": { description: data checks } }

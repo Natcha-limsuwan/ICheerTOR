@@ -1,0 +1,169 @@
+{
+  "baseRevision": "caf61300e58448311c761404f023a939e9d1a5e4",
+  "branch": "security/zap-active-verification",
+  "workingTreeChangesIncluded": true,
+  "finishedAtUtc": "2026-11-18T04:13:02Z",
+  "image": "ghcr.io/zaproxy/zaproxy:stable",
+  "imageId": "sha256:9624669db72f54d86c4b46a7064518bd9bf79d8c61a4c31befa9923489f328af",
+  "excludedActiveRoutes": [
+    "/auth/exchange",
+    "/pdpa/export",
+    "/tor/{id}/corrections"
+  ],
+  "preflight": [
+    {
+      "role": "user",
+      "path": "/auth/me",
+      "status": 200
+    },
+    {
+      "role": "user",
+      "path": "/tor/6afd247b4a9343a4a209468d",
+      "status": 200
+    },
+    {
+      "role": "user",
+      "path": "/profile",
+      "status": 200
+    },
+    {
+      "role": "user",
+      "path": "/admin/users",
+      "status": 403
+    },
+    {
+      "role": "admin",
+      "path": "/auth/me",
+      "status": 200
+    },
+    {
+      "role": "admin",
+      "path": "/tor/6afd247b4a9343a4a209468d",
+      "status": 200
+    },
+    {
+      "role": "admin",
+      "path": "/profile",
+      "status": 200
+    },
+    {
+      "role": "admin",
+      "path": "/admin/users",
+      "status": 200
+    },
+    {
+      "role": "developer",
+      "path": "/auth/me",
+      "status": 200
+    },
+    {
+      "role": "developer",
+      "path": "/tor/6afd247b4a9343a4a209468d",
+      "status": 200
+    },
+    {
+      "role": "developer",
+      "path": "/profile",
+      "status": 200
+    },
+    {
+      "role": "developer",
+      "path": "/admin/users",
+      "status": 200
+    }
+  ],
+  "results": [
+    {
+      "scope": "frontend",
+      "exitCode": 2,
+      "alerts": [
+        {
+          "name": "CSP: style-src unsafe-inline",
+          "risk": "Medium (High)",
+          "instances": 5
+        },
+        {
+          "name": "Cross-Origin-Embedder-Policy Header Missing or Invalid",
+          "risk": "Low (Medium)",
+          "instances": 3
+        },
+        {
+          "name": "Modern Web Application",
+          "risk": "Informational (Medium)",
+          "instances": 5
+        },
+        {
+          "name": "Non-Storable Content",
+          "risk": "Informational (Medium)",
+          "instances": 5
+        },
+        {
+          "name": "Storable and Cacheable Content",
+          "risk": "Informational (Medium)",
+          "instances": 5
+        }
+      ]
+    },
+    {
+      "scope": "user",
+      "exitCode": 0,
+      "alerts": [
+        {
+          "name": "A Client Error response code was returned by the server",
+          "risk": "Informational (High)",
+          "instances": 58
+        },
+        {
+          "name": "Non-Storable Content",
+          "risk": "Informational (Medium)",
+          "instances": 5
+        }
+      ]
+    },
+    {
+      "scope": "admin",
+      "exitCode": 0,
+      "alerts": [
+        {
+          "name": "A Client Error response code was returned by the server",
+          "risk": "Informational (High)",
+          "instances": 49
+        },
+        {
+          "name": "Non-Storable Content",
+          "risk": "Informational (Medium)",
+          "instances": 5
+        }
+      ]
+    },
+    {
+      "scope": "anonymous",
+      "exitCode": 0,
+      "alerts": [
+        {
+          "name": "A Client Error response code was returned by the server",
+          "risk": "Informational (High)",
+          "instances": 86
+        },
+        {
+          "name": "Non-Storable Content",
+          "risk": "Informational (Medium)",
+          "instances": 5
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Synthetic sessions; real Google OAuth browser flow not tested",
+    "Developer token used for preflight, not a separate active scan",
+    "Administrative writes, logout and deletion excluded from ZAP; regression tests cover them",
+    "Frontend full scan is unauthenticated; client-only signed-in screens are not proven covered",
+    "No production deployment, external SMTP/AI or cloud IAM tests",
+    "API rate limit raised only inside disposable fixture; sensitive/auth limits retained"
+  ],
+  "runtimeNotes": [
+    "Frontend active scan stopped at its applied five-minute limit: ZAP reported FINISHED, progress 25%, 756 active requests. This is partial active-rule coverage, not a completed exhaustive frontend scan.",
+    "The initial frontend scanner used the wrong time-limit configuration key. The verified scanner.maxScanDurationInMins setting was applied through the ZAP API during the run, together with a live two-CPU limit. The committed runner uses the corrected key and bounds CPU/memory from startup.",
+    "Frontend scanner diagnostics contained browser-extension configuration warnings; DOM/browser test success must not be inferred from the absence of alerts."
+  ]
+}
