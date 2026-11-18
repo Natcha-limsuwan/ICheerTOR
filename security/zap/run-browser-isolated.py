@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reuses the production build from run-isolated.py; creates fresh test data."""
+"""Builds an env-free frontend copy and creates fresh disposable test data."""
 import hashlib
 import json
 import os
@@ -11,6 +11,7 @@ import tempfile
 import time
 import urllib.request
 import uuid
+from isolated_frontend import prepare_frontend, test_environment
 
 ROOT = Path(__file__).resolve().parents[2]
 WORK = Path(tempfile.mkdtemp(prefix="icheertor-browser-"))
@@ -22,7 +23,7 @@ name = "icheertor-browser-" + uuid.uuid4().hex[:8]
 
 
 def start(args, cwd, filename):
-    process = subprocess.Popen(args, cwd=cwd, stdout=(WORK / filename).open("w"), stderr=subprocess.STDOUT)
+    process = subprocess.Popen(args, cwd=cwd, env=test_environment(), stdout=(WORK / filename).open("w"), stderr=subprocess.STDOUT)
     processes.append(process)
     return process
 
@@ -61,10 +62,11 @@ try:
         (SHARED / "geckodriver").write_bytes(binary.read())
     (SHARED / "geckodriver").chmod(0o755)
     (SHARED / "browser-attacks.py").write_text((ROOT / "security/zap/browser-attacks.py").read_text())
+    frontend_directory = prepare_frontend(ROOT, WORK)
     api = start(["node", "--import", "tsx", "scripts/zap-fixture.mts", str(WORK)], ROOT / "backend", "api.log")
     wait_for(lambda: (WORK / "fixture.json").exists(), api)
     fixture = json.loads((WORK / "fixture.json").read_text())
-    front = start(["node", "node_modules/next/dist/bin/next", "start", "--port", "4300"], ROOT / "frontend", "frontend.log")
+    front = start(["node", "node_modules/next/dist/bin/next", "start", "--port", "4300"], frontend_directory, "frontend.log")
     wait_for(lambda: "Ready in" in (WORK / "frontend.log").read_text() and urllib.request.urlopen("http://127.0.0.1:4300/login", timeout=3).status == 200, front)
     print("Running authenticated Firefox security tests...", flush=True)
     with (WORK / "browser.log").open("w") as log:
@@ -74,6 +76,10 @@ try:
         evidence = json.loads(report.read_text())
         evidence.update(driverRelease=release["tag_name"], driverAssetDigest=digest, runtimeExitCode=result.returncode)
         (ROOT / "security/reports/browser-security-comprehensive.json").write_text(json.dumps(evidence, indent=2))
+        for screenshot in SHARED.glob("evidence-*.png"):
+            target = ROOT / "security/evidence"
+            target.mkdir(exist_ok=True)
+            (target / screenshot.name).write_bytes(screenshot.read_bytes())
         print(json.dumps({"passed": evidence["passed"], "failed": evidence["failed"], "runtimeExitCode": result.returncode}))
     if result.returncode:
         raise RuntimeError("Browser run failed; see " + str(WORK / "browser.log"))

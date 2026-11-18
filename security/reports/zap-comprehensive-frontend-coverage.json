@@ -1,10 +1,10 @@
 {
   "activeScans": [
     {
-      "reqCount": "3087",
-      "alertCount": "73",
+      "reqCount": "3089",
+      "alertCount": "74",
       "progress": "100",
-      "newAlertCount": "73",
+      "newAlertCount": "74",
       "id": "0",
       "state": "FINISHED"
     }
@@ -17,7 +17,7 @@
     }
   ],
   "passiveRecordsRemaining": "0",
-  "recordedUrls": 29,
+  "recordedUrls": 31,
   "browserExtensionWarnings": 2,
   "errorLines": []
 }

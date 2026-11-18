@@ -79,8 +79,7 @@ async function main() {
   console.log("[1] config");
   const mode = getAuthMode();
   if (mode === "express") {
-    const k = env.VERTEX_AI_API_KEY;
-    console.log(`  mode     express (API key ${k.slice(0, 3)}…${k.slice(-2)})`);
+    console.log("  mode     express (API key configured; value hidden)");
     console.log(`  model    ${env.VERTEX_AI_MODEL || "(ว่าง)"}`);
   } else {
     console.log("  mode     project (service account)");

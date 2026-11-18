@@ -46,6 +46,16 @@ app.use(
 );
 
 // CORS: a single fixed origin from configuration, never "*" (ASVS V3.4.2).
+app.use((req, res, next) => {
+  const methods = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"];
+  if (!methods.includes(req.method)) {
+    res.set("Allow", methods.join(", "));
+    res.status(405).json({ error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed" } });
+    return;
+  }
+  next();
+});
+
 app.use(
   cors({
     origin: env.FRONTEND_URL,

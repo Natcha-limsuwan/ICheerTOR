@@ -3,6 +3,7 @@
 Run inside the active ZAP container. Synthetic fixture JSON arrives on stdin.
 """
 import json
+import base64
 from pathlib import Path
 import subprocess
 import sys
@@ -10,6 +11,8 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from threading import Thread
 
 fixture = json.load(sys.stdin)
 FRONT = "http://host.docker.internal:4300"
@@ -40,6 +43,10 @@ def wd(path, method="GET", data=None):
 
 def execute(script, *args):
     return wd(f"/session/{session}/execute/sync", "POST", {"script": script, "args": args})
+
+
+def execute_async(script, *args):
+    return wd(f"/session/{session}/execute/async", "POST", {"script": script, "args": args})
 
 
 def go(path):
@@ -99,6 +106,55 @@ try:
     admin = fixture["identities"]["admin"]
     go("/login")
     execute("localStorage.setItem('icheertor_token',arguments[0])", user["token"])
+    go("/profile")
+    wait_for(lambda: execute("return [...document.querySelectorAll('input')].some(e=>e.value==='Synthetic user company')"))
+    company = execute("return [...document.querySelectorAll('input')].find(e=>e.value==='Synthetic user company')")
+    company_id = company["element-6066-11e4-a52e-4f735466cecf"]
+    wd(f"/session/{session}/element/{company_id}/value", "POST", {"text": " edited"})
+    execute_async("const done=arguments[arguments.length-1];requestAnimationFrame(()=>requestAnimationFrame(()=>done(true)))")
+    execute("const a=document.createElement('a');a.href='/bookmarks';document.body.append(a);a.click();a.remove()")
+    check("dirty profile uses the leave-confirmation guard", wait_for(lambda: execute("return !!document.querySelector('[role=dialog]')")))
+    execute("[...document.querySelectorAll('[role=dialog] button')].find(e=>e.innerText.includes('อยู่หน้านี้ต่อ')).click()")
+    for target in ["data:text/html,<script>window.__x=1</script>", "vbscript:msgbox(1)", "jAvAsCrIpT:window.__x=1"]:
+        outcome = execute("const a=document.createElement('a');a.href=arguments[0];document.body.append(a);const event=new MouseEvent('click',{bubbles:true,cancelable:true});a.dispatchEvent(event);a.remove();return {prevented:event.defaultPrevented,executed:!!window.__x}", target)
+        check("dirty profile blocks unsafe link scheme", outcome["prevented"] and not outcome["executed"], input=target.split(":")[0])
+    execute("[...document.querySelectorAll('button')].find(e=>e.innerText==='บันทึกโปรไฟล์').click()")
+    if not wait_for(lambda: execute("return document.body.innerText.includes('บันทึกโปรไฟล์สำเร็จ')")):
+        raise RuntimeError("Synthetic profile edit could not be saved before navigation tests")
+    normal = execute_async("const done=arguments[arguments.length-1]; fetch(arguments[0],{headers:{Authorization:'Bearer '+arguments[1]}}).then(r=>done({status:r.status})).catch(e=>done({error:e.name}));", API + "/auth/me", user["token"])
+    check("allowed frontend origin reads authenticated API in Firefox", normal.get("status") == 200)
+
+    class AttackerPage(BaseHTTPRequestHandler):
+        def do_GET(self):
+            body = ('<!doctype html><title>Synthetic attack origin</title><iframe id="victim" src="' + FRONT + '/profile"></iframe>').encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        def log_message(self, *args):
+            pass
+
+    attacker = HTTPServer(("127.0.0.1", 0), AttackerPage)
+    Thread(target=attacker.serve_forever, daemon=True).start()
+    try:
+        wd(f"/session/{session}/url", "POST", {"url": f"http://127.0.0.1:{attacker.server_port}/"})
+        denied = execute_async("const done=arguments[arguments.length-1]; fetch(arguments[0],{headers:{Authorization:'Bearer '+arguments[1]}}).then(r=>done({readable:true,status:r.status})).catch(e=>done({blocked:e.name==='TypeError'}));", API + "/auth/me", user["token"])
+        check("attacker origin cannot read authenticated API in Firefox", denied.get("blocked") is True)
+        execute("const p=document.createElement('p');p.textContent='CORS browser result: '+arguments[0];document.body.prepend(p)", json.dumps(denied))
+        Path("/zap/wrk/evidence-cors-and-iframe.png").write_bytes(base64.b64decode(wd(f"/session/{session}/screenshot")))
+        frame = wd(f"/session/{session}/element", "POST", {"using": "css selector", "value": "#victim"})
+        wd(f"/session/{session}/frame", "POST", {"id": frame})
+        frame_uri = execute("return document.documentURI")
+        check("Firefox blocks clickjacking iframe", frame_uri.startswith("about:neterror") and ("csp" in frame_uri.lower() or "denied" in frame_uri.lower()), observedFrameDocument=frame_uri)
+    finally:
+        wd(f"/session/{session}/frame", "POST", {"id": None})
+        attacker.shutdown()
+        attacker.server_close()
+
+    for next_value in ["https://evil.example.invalid", "//evil.example.invalid", "https://localhost.evil.example.invalid"]:
+        go("/login?next=" + urllib.parse.quote(next_value, safe=""))
+        check("login next parameter cannot redirect externally", urllib.parse.urlsplit(wd(f"/session/{session}/url")).netloc == "host.docker.internal:4300", input=next_value)
     for payload in ['<img src=x onerror="window.__x=1">', '<svg onload="window.__x=1"></svg>', '</script><script>window.__x=1</script>']:
         status, _ = request(API + "/profile", "PUT", {"companyName": payload}, user["token"])
         go("/profile")

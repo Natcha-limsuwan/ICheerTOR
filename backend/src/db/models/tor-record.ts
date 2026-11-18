@@ -218,6 +218,7 @@ export interface IExtractionMeta {
   attempts: number;
   /** Claim lock — a worker owns the record until this time passes. */
   lockedUntil?: Date;
+  lockOwner?: string;
   /** Some field came back below AI_CONFIDENCE_THRESHOLD. */
   needsReview: boolean;
   durationMs?: number;
@@ -528,6 +529,7 @@ const ExtractionMetaSchema = new Schema(
     extractedAt: { type: Date },
     attempts: { type: Number, default: 0, min: 0 },
     lockedUntil: { type: Date },
+    lockOwner: { type: String },
     needsReview: { type: Boolean, default: false },
     durationMs: { type: Number },
     skipReason: { type: String },

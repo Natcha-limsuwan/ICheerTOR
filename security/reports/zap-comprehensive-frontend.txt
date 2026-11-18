@@ -1,4 +1,4 @@
-Total of 29 URLs
+Total of 31 URLs
 PASS: Directory Browsing [0]
 PASS: Vulnerable JS Library (Powered by Retire.js) [10003]
 PASS: Swagger UI Secret & Vulnerability Detector [100043]
@@ -53,7 +53,6 @@ PASS: Cross-Domain Misconfiguration [10098]
 PASS: Source Code Disclosure [10099]
 PASS: User Agent Fuzzer [10104]
 PASS: Weak Authentication Method [10105]
-PASS: HTTP Only Site [10106]
 PASS: Httpoxy - Proxy Header Misuse [10107]
 PASS: Reverse Tabnabbing [10108]
 PASS: Modern Web Application [10109]
@@ -140,14 +139,16 @@ PASS: Server Side Template Injection [90035]
 PASS: Server Side Template Injection (Blind) [90036]
 PASS: Remote OS Command Injection (Time Based) [90037]
 PASS: NoSQL Injection - MongoDB (Time Based) [90039]
-WARN-NEW: CSP: style-src unsafe-inline [10055] x 6 
+WARN-NEW: CSP: style-src unsafe-inline [10055] x 6
+	http://host.docker.internal:4300/ (200 OK)
+	http://host.docker.internal:4300/sitemap.xml (404 Not Found)
+	http://host.docker.internal:4300 (200 OK)
 	http://host.docker.internal:4300/ (200 OK)
 	http://host.docker.internal:4300/robots.txt (404 Not Found)
-	http://host.docker.internal:4300/sitemap.xml (404 Not Found)
-	http://host.docker.internal:4300/ (200 OK)
-	http://host.docker.internal:4300 (200 OK)
-WARN-NEW: Cross-Origin-Embedder-Policy Header Missing or Invalid [90004] x 3 
+WARN-NEW: HTTP Only Site [10106] x 1
+	http://host.docker.internal:4300/ (0)
+WARN-NEW: Cross-Origin-Embedder-Policy Header Missing or Invalid [90004] x 3
 	http://host.docker.internal:4300/ (200 OK)
 	http://host.docker.internal:4300 (200 OK)
 	http://host.docker.internal:4300/login (200 OK)
-FAIL-NEW: 0	FAIL-INPROG: 0	WARN-NEW: 2	WARN-INPROG: 0	INFO: 0	IGNORE: 0	PASS: 141
+FAIL-NEW: 0	FAIL-INPROG: 0	WARN-NEW: 3	WARN-INPROG: 0	INFO: 0	IGNORE: 0	PASS: 140

@@ -1,8 +1,8 @@
 {
-  "baseRevision": "caf61300e58448311c761404f023a939e9d1a5e4",
+  "baseRevision": "f664929cc69a41991aa38270da144febac4eeee7",
   "branch": "security/zap-active-verification",
   "workingTreeChangesIncluded": true,
-  "finishedAtUtc": "2026-11-18T04:31:51Z",
+  "finishedAtUtc": "2026-11-18T12:42:11Z",
   "image": "ghcr.io/zaproxy/zaproxy:stable",
   "imageId": "sha256:9624669db72f54d86c4b46a7064518bd9bf79d8c61a4c31befa9923489f328af",
   "excludedActiveRoutes": [
@@ -18,7 +18,7 @@
     },
     {
       "role": "user",
-      "path": "/tor/6afd29564686fa05a7d293b7",
+      "path": "/tor/6afd9c2b68a3c6a2680698ff",
       "status": 200
     },
     {
@@ -38,7 +38,7 @@
     },
     {
       "role": "admin",
-      "path": "/tor/6afd29564686fa05a7d293b7",
+      "path": "/tor/6afd9c2b68a3c6a2680698ff",
       "status": 200
     },
     {
@@ -58,7 +58,7 @@
     },
     {
       "role": "developer",
-      "path": "/tor/6afd29564686fa05a7d293b7",
+      "path": "/tor/6afd9c2b68a3c6a2680698ff",
       "status": 200
     },
     {
@@ -83,6 +83,11 @@
           "instances": 5
         },
         {
+          "name": "HTTP Only Site",
+          "risk": "Medium (Medium)",
+          "instances": 1
+        },
+        {
           "name": "Cross-Origin-Embedder-Policy Header Missing or Invalid",
           "risk": "Low (Medium)",
           "instances": 3
@@ -95,7 +100,7 @@
         {
           "name": "Non-Storable Content",
           "risk": "Informational (Medium)",
-          "instances": 5
+          "instances": 4
         },
         {
           "name": "Storable and Cacheable Content",
@@ -111,10 +116,10 @@
       "coverage": {
         "activeScans": [
           {
-            "reqCount": "3087",
-            "alertCount": "73",
+            "reqCount": "3089",
+            "alertCount": "74",
             "progress": "100",
-            "newAlertCount": "73",
+            "newAlertCount": "74",
             "id": "0",
             "state": "FINISHED"
           }
@@ -127,7 +132,7 @@
           }
         ],
         "passiveRecordsRemaining": "0",
-        "recordedUrls": 29,
+        "recordedUrls": 31,
         "browserExtensionWarnings": 2,
         "errorLines": []
       }
@@ -265,22 +270,12 @@
       }
     }
   ],
+  "allConfiguredActiveScansFinished": true,
   "limitations": [
     "Synthetic sessions; real Google OAuth browser flow not tested",
     "Administrative writes, logout and deletion excluded from ZAP; endpoint-matrix/regression tests cover them",
     "Frontend ZAP full scan is unauthenticated; separate Firefox tests exercise signed-in screens and stored XSS",
     "No production deployment, external SMTP/AI or cloud IAM tests",
     "API rate limit raised only inside disposable fixture; sensitive/auth limits retained"
-  ],
-  "allConfiguredActiveScansFinished": true,
-  "totalActiveRequests": 19773,
-  "browserVerification": {
-    "report": "browser-security-comprehensive.json",
-    "passed": 47,
-    "failed": 0,
-    "runtimeExitCode": 0,
-    "scope": "Synthetic sessions in real Firefox; actual Google provider login excluded"
-  },
-  "applicationSourceSha256": "319c6d325fcae4ac4e854b3bc82b2a81717e57744312240749a6b5dfaf10190c",
-  "applicationSourceFingerprintFiles": 116
+  ]
 }

@@ -36,7 +36,9 @@ import { pickDocument, type PickedDocument } from "../ingestion/document-picker"
 import { extractPdfText } from "../ingestion/pdf-text";
 import { sliceBiddingDoc } from "../ingestion/bidding-doc";
 import { readArchiveFacts, type ArchiveFacts, type DocumentStage, type TextDocument } from "../ingestion/archive-facts";
-import { aiCircuitBreaker } from "./circuit-breaker";
+import { aiCircuitBreaker, type CircuitBreaker } from "./circuit-breaker";
+import { parseModelResponse, ModelResponseError } from "./response-validation";
+import { BoundedExecutor } from "./bounded-executor";
 import { getModelId, getVertexClient } from "./vertex-client";
 import { activePrompt, type ExtractionContext, type ExtractionPrompt } from "./prompts";
 import type { TorExtractionV4, QualificationV4 } from "./prompts/v4";
@@ -175,11 +177,30 @@ export function errorCode(e: unknown): string {
   return "error";
 }
 
+export interface ModelRuntime {
+  models: Pick<ReturnType<typeof getVertexClient>["models"], "generateContent">;
+  model: string;
+  breaker: CircuitBreaker;
+  wait: (ms: number) => Promise<void>;
+}
+const modelCapacity = new BoundedExecutor(2, 16);
+
 export async function callModel<T = TorExtractionV4>(
   prompt: ExtractionPrompt,
   prepared: PreparedDocuments,
   ctx: ExtractionContext,
   onRetry?: (attempt: number, waitMs: number, error: unknown) => void,
+  runtime?: ModelRuntime,
+): Promise<ModelCall<T>> {
+  return modelCapacity.run(() => callModelAttempt<T>(prompt, prepared, ctx, onRetry, runtime));
+}
+
+async function callModelAttempt<T>(
+  prompt: ExtractionPrompt,
+  prepared: PreparedDocuments,
+  ctx: ExtractionContext,
+  onRetry?: (attempt: number, waitMs: number, error: unknown) => void,
+  runtime?: ModelRuntime,
 ): Promise<ModelCall<T>> {
   if (!prompt.responseSchema || !prompt.buildUserPrompt) {
     throw new Error(`prompt ${prompt.version} ไม่มี responseSchema/buildUserPrompt`);
@@ -198,10 +219,11 @@ export async function callModel<T = TorExtractionV4>(
     }),
   });
 
-  const ai = getVertexClient();
-  const model = getModelId();
+  const ai = runtime ? { models: runtime.models } : getVertexClient();
+  const model = runtime?.model ?? getModelId();
+  const breaker = runtime?.breaker ?? aiCircuitBreaker;
   for (let attempt = 1; ; attempt++) {
-    if (aiCircuitBreaker.isOpen()) throw new CircuitOpenError();
+    if (breaker.isOpen()) throw new CircuitOpenError();
     const t0 = Date.now();
     try {
       const res = await ai.models.generateContent({
@@ -216,8 +238,8 @@ export async function callModel<T = TorExtractionV4>(
         },
       });
       if (!res.text) throw new Error(`Vertex AI ตอบว่างเปล่า (finishReason: ${res.candidates?.[0]?.finishReason})`);
-      const output = JSON.parse(res.text) as T;
-      aiCircuitBreaker.onSuccess();
+      const output = parseModelResponse<T>(res.text, prompt.responseSchema);
+      breaker.onSuccess();
       const u = res.usageMetadata;
       return {
         output,
@@ -231,15 +253,19 @@ export async function callModel<T = TorExtractionV4>(
         },
       };
     } catch (e) {
-      const retryable = RETRYABLE.test(String(e)) || (e instanceof Error && e.name === "TimeoutError");
+      if (breaker.getState().state === "HALF_OPEN") {
+        breaker.onFailure();
+        throw e; // A failed probe starts a fresh cooldown, not an unowned retry.
+      }
+      const retryable = !(e instanceof ModelResponseError) && (RETRYABLE.test(String(e)) || (e instanceof Error && e.name === "TimeoutError"));
       if (!retryable || attempt >= MAX_ATTEMPTS) {
-        aiCircuitBreaker.onFailure();
+        breaker.onFailure();
         throw e;
       }
       // Express mode's quota is per minute; a short back-off rarely clears it.
       const waitMs = attempt * 30_000;
       onRetry?.(attempt, waitMs, e);
-      await sleep(waitMs);
+      await (runtime?.wait ?? sleep)(waitMs);
     }
   }
 }
@@ -392,10 +418,11 @@ export type ExtractionOutcome =
 export async function extractTor(
   input: ExtractionInput,
   onProgress: (message: string) => void = () => {},
+  dependencies?: { fetchArchive?: typeof fetchProjectArchive; modelCall?: typeof callModel },
 ): Promise<ExtractionOutcome> {
   try {
     onProgress("ดาวน์โหลดเอกสารจาก e-GP");
-    const archive = await fetchProjectArchive(input.projectNumber);
+    const archive = await (dependencies?.fetchArchive ?? fetchProjectArchive)(input.projectNumber);
     if (!archive) return { status: "skipped", skipReason: "e-GP ไม่มีชุดเอกสารของโครงการนี้", sourceDocuments: [] };
 
     onProgress(`อ่าน ${(archive.zip.length / 1024 / 1024).toFixed(1)} MB`);
@@ -411,7 +438,7 @@ export async function extractTor(
       `ส่ง Vertex: ${prepared.pdf ? prepared.pdf.entry.name : "ไม่มี PDF"}` +
         `${prepared.biddingDoc ? ` + ${prepared.biddingDoc.fileName}` : ""} (ปกติ 20–95 วินาที)`,
     );
-    const call = await callModel<TorExtractionV4>(
+    const call = await (dependencies?.modelCall ?? callModel)<TorExtractionV4>(
       activePrompt,
       prepared,
       {

@@ -1,0 +1,154 @@
+{
+  "cli": "2.27.4",
+  "queryPack": "codeql/javascript-queries@2.5.0",
+  "suite": "javascript-security-extended",
+  "queriesExecuted": 105,
+  "beforeFindings": 18,
+  "afterFindings": 17,
+  "fixed": [
+    {
+      "rule": "js/incomplete-url-scheme-check",
+      "file": "frontend/app/(dashboard)/profile/page.tsx",
+      "change": "Only normalized same-origin HTTP(S) paths enter router.push; unsafe schemes blocked. Unit and dirty-profile Firefox regression checks added."
+    }
+  ],
+  "remainingFindings": [
+    {
+      "rule": "js/insufficient-password-hash",
+      "file": "backend/src/auth/oauth-state-store.ts",
+      "line": 87,
+      "classification": "not-password-storage",
+      "reviewReason": "The flagged operation is HMAC-SHA256 authentication of random short-lived OAuth transaction data, not hashing a human password. Cookie integrity, expiration and browser binding are enforced.",
+      "scope": "Local source review and synthetic regression evidence; no live credentials or real data tested."
+    },
+    {
+      "rule": "js/sql-injection",
+      "file": "backend/src/routes/admin.routes.ts",
+      "line": 72,
+      "classification": "mitigated-by-request-validation",
+      "reviewReason": "Routes apply Zod validation before querying. Body values are replaced with parsed allowlisted fields; query inputs are type/enum/format checked, search regexes are escaped, sort fields are allowlisted, and pagination is parsed/bounded. MongoDB operator objects are rejected. See security.test.mts injection and admin-matrix checks.",
+      "scope": "Local source review and synthetic regression evidence; no live credentials or real data tested."
+    },
+    {
+      "rule": "js/sql-injection",
+      "file": "backend/src/routes/admin.routes.ts",
+      "line": 78,
+      "classification": "mitigated-by-request-validation",
+      "reviewReason": "Routes apply Zod validation before querying. Body values are replaced with parsed allowlisted fields; query inputs are type/enum/format checked, search regexes are escaped, sort fields are allowlisted, and pagination is parsed/bounded. MongoDB operator objects are rejected. See security.test.mts injection and admin-matrix checks.",
+      "scope": "Local source review and synthetic regression evidence; no live credentials or real data tested."
+    },
+    {
+      "rule": "js/sql-injection",
+      "file": "backend/src/routes/bookmark.routes.ts",
+      "line": 84,
+      "classification": "mitigated-by-request-validation",
+      "reviewReason": "Routes apply Zod validation before querying. Body values are replaced with parsed allowlisted fields; query inputs are type/enum/format checked, search regexes are escaped, sort fields are allowlisted, and pagination is parsed/bounded. MongoDB operator objects are rejected. See security.test.mts injection and admin-matrix checks.",
+      "scope": "Local source review and synthetic regression evidence; no live credentials or real data tested."
+    },
+    {
+      "rule": "js/sql-injection",
+      "file": "backend/src/routes/bookmark.routes.ts",
+      "line": 91,
+      "classification": "mitigated-by-request-validation",
+      "reviewReason": "Routes apply Zod validation before querying. Body values are replaced with parsed allowlisted fields; query inputs are type/enum/format checked, search regexes are escaped, sort fields are allowlisted, and pagination is parsed/bounded. MongoDB operator objects are rejected. See security.test.mts injection and admin-matrix checks.",
+      "scope": "Local source review and synthetic regression evidence; no live credentials or real data tested."
+    },
+    {
+      "rule": "js/sql-injection",
+      "file": "backend/src/routes/admin.routes.ts",
+      "line": 242,
+      "classification": "mitigated-by-request-validation",
+      "reviewReason": "Routes apply Zod validation before querying. Body values are replaced with parsed allowlisted fields; query inputs are type/enum/format checked, search regexes are escaped, sort fields are allowlisted, and pagination is parsed/bounded. MongoDB operator objects are rejected. See security.test.mts injection and admin-matrix checks.",
+      "scope": "Local source review and synthetic regression evidence; no live credentials or real data tested."
+    },
+    {
+      "rule": "js/sql-injection",
+      "file": "backend/src/routes/admin.routes.ts",
+      "line": 258,
+      "classification": "mitigated-by-request-validation",
+      "reviewReason": "Routes apply Zod validation before querying. Body values are replaced with parsed allowlisted fields; query inputs are type/enum/format checked, search regexes are escaped, sort fields are allowlisted, and pagination is parsed/bounded. MongoDB operator objects are rejected. See security.test.mts injection and admin-matrix checks.",
+      "scope": "Local source review and synthetic regression evidence; no live credentials or real data tested."
+    },
+    {
+      "rule": "js/sql-injection",
+      "file": "backend/src/routes/admin.routes.ts",
+      "line": 305,
+      "classification": "mitigated-by-request-validation",
+      "reviewReason": "Routes apply Zod validation before querying. Body values are replaced with parsed allowlisted fields; query inputs are type/enum/format checked, search regexes are escaped, sort fields are allowlisted, and pagination is parsed/bounded. MongoDB operator objects are rejected. See security.test.mts injection and admin-matrix checks.",
+      "scope": "Local source review and synthetic regression evidence; no live credentials or real data tested."
+    },
+    {
+      "rule": "js/sql-injection",
+      "file": "backend/src/routes/admin.routes.ts",
+      "line": 311,
+      "classification": "mitigated-by-request-validation",
+      "reviewReason": "Routes apply Zod validation before querying. Body values are replaced with parsed allowlisted fields; query inputs are type/enum/format checked, search regexes are escaped, sort fields are allowlisted, and pagination is parsed/bounded. MongoDB operator objects are rejected. See security.test.mts injection and admin-matrix checks.",
+      "scope": "Local source review and synthetic regression evidence; no live credentials or real data tested."
+    },
+    {
+      "rule": "js/sql-injection",
+      "file": "backend/src/routes/tor.routes.ts",
+      "line": 228,
+      "classification": "mitigated-by-request-validation",
+      "reviewReason": "Routes apply Zod validation before querying. Body values are replaced with parsed allowlisted fields; query inputs are type/enum/format checked, search regexes are escaped, sort fields are allowlisted, and pagination is parsed/bounded. MongoDB operator objects are rejected. See security.test.mts injection and admin-matrix checks.",
+      "scope": "Local source review and synthetic regression evidence; no live credentials or real data tested."
+    },
+    {
+      "rule": "js/sql-injection",
+      "file": "backend/src/routes/tor.routes.ts",
+      "line": 234,
+      "classification": "mitigated-by-request-validation",
+      "reviewReason": "Routes apply Zod validation before querying. Body values are replaced with parsed allowlisted fields; query inputs are type/enum/format checked, search regexes are escaped, sort fields are allowlisted, and pagination is parsed/bounded. MongoDB operator objects are rejected. See security.test.mts injection and admin-matrix checks.",
+      "scope": "Local source review and synthetic regression evidence; no live credentials or real data tested."
+    },
+    {
+      "rule": "js/incomplete-sanitization",
+      "file": "backend/src/services/ingestion/archive-facts.ts",
+      "line": 133,
+      "classification": "constant-regex-input",
+      "reviewReason": "The month alternatives come from a fixed source-code dictionary containing Thai letters and literal periods. This is not an escaping function for arbitrary untrusted input.",
+      "scope": "Local source review and synthetic regression evidence; no live credentials or real data tested."
+    },
+    {
+      "rule": "js/incomplete-multi-character-sanitization",
+      "file": "backend/src/services/ingestion/egp-maintenance.ts",
+      "line": 23,
+      "classification": "plain-text-parser-not-html-sanitizer",
+      "reviewReason": "visibleText extracts a maintenance notice for plain text/error reporting. Its output is not trusted HTML and is not used with an HTML execution sink. It must not be reused as an HTML sanitizer.",
+      "scope": "Local source review and synthetic regression evidence; no live credentials or real data tested."
+    },
+    {
+      "rule": "js/type-confusion-through-parameter-tampering",
+      "file": "backend/src/services/search/tor-search.ts",
+      "line": 37,
+      "classification": "mitigated-by-request-validation",
+      "reviewReason": "TOR list validates query types and explicitly rejects non-string q before buildTorSearchFilter/searchTerms. Repeated query parameters and arrays are rejected in the API tests.",
+      "scope": "Local source review and synthetic regression evidence; no live credentials or real data tested."
+    },
+    {
+      "rule": "js/type-confusion-through-parameter-tampering",
+      "file": "backend/src/services/search/tor-search.ts",
+      "line": 38,
+      "classification": "mitigated-by-request-validation",
+      "reviewReason": "TOR list validates query types and explicitly rejects non-string q before buildTorSearchFilter/searchTerms. Repeated query parameters and arrays are rejected in the API tests.",
+      "scope": "Local source review and synthetic regression evidence; no live credentials or real data tested."
+    },
+    {
+      "rule": "js/regex/missing-regexp-anchor",
+      "file": "backend/src/services/ingestion/document-picker.ts",
+      "line": 63,
+      "classification": "intentional-filename-matching",
+      "reviewReason": "Only the generated e-GP filename alternatives need a start anchor; other aliases intentionally match keywords anywhere in an archive filename. This classification regex is not an access-control or path-validation boundary.",
+      "scope": "Local source review and synthetic regression evidence; no live credentials or real data tested."
+    },
+    {
+      "rule": "js/regex/missing-regexp-anchor",
+      "file": "backend/src/services/ingestion/document-picker.ts",
+      "line": 69,
+      "classification": "intentional-filename-matching",
+      "reviewReason": "Only the generated e-GP filename alternatives need a start anchor; other aliases intentionally match keywords anywhere in an archive filename. This classification regex is not an access-control or path-validation boundary.",
+      "scope": "Local source review and synthetic regression evidence; no live credentials or real data tested."
+    }
+  ],
+  "note": "These are recorded local review decisions, not GitHub dismissals or proof against all vulnerabilities. SARIF retains every finding."
+}

@@ -35,7 +35,7 @@ export class CircuitBreaker {
       }
       return true; // still cooling down
     }
-    return false; // HALF_OPEN allows one request
+    return true; // The request that transitioned OPEN -> HALF_OPEN owns the probe.
   }
 
   /** Record a successful request. */
@@ -48,7 +48,7 @@ export class CircuitBreaker {
   onFailure(): void {
     this.failureCount++;
     this.lastFailureTime = Date.now();
-    if (this.failureCount >= this.config.failureThreshold) {
+    if (this.state === "HALF_OPEN" || this.failureCount >= this.config.failureThreshold) {
       this.state = "OPEN";
     }
   }

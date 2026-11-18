@@ -1,8 +1,8 @@
 {
 	"@programName": "ZAP",
 	"@version": "2.17.0",
-	"@generated": "Wed, 18 Nov 2026 04:30:26",
-	"created": "2026-11-18T04:30:26.659325292Z",
+	"@generated": "Wed, 18 Nov 2026 12:40:40",
+	"created": "2026-11-18T12:40:40.515160844Z",
 	"insights":[
 		{
 			"level": "Medium",
@@ -77,13 +77,13 @@
 			"statistic": "61"
 		}
 	],
-	"site":[ 
+	"site":[
 		{
 			"@name": "http://host.docker.internal:4301",
 			"@host": "host.docker.internal",
 			"@port": "4301",
 			"@ssl": "false",
-			"alerts": [ 
+			"alerts": [
 				{
 					"pluginid": "100000",
 					"alertRef": "100000-1",
@@ -93,11 +93,11 @@
 					"confidence": "3",
 					"riskdesc": "Informational (High)",
 					"desc": "<p>A response code of 404 was returned by the server.</p><p>This may indicate that the application is failing to handle unexpected input correctly.</p><p>Raised by the 'Alert on HTTP Response Code Error' script</p>",
-					"instances":[ 
+					"instances":[
 						{
-							"id": "2904",
-							"uri": "http://host.docker.internal:4301/api/bookmarks/6afd29564686fa05a7d293bf/",
-							"nodeName": "http:\/\/host.docker.internal:4301\/api\/bookmarks\/6afd29564686fa05a7d293bf\/",
+							"id": "2905",
+							"uri": "http://host.docker.internal:4301/api/bookmarks/6afd9c2b68a3c6a268069908/",
+							"nodeName": "http:\/\/host.docker.internal:4301\/api\/bookmarks\/6afd9c2b68a3c6a268069908\/",
 							"method": "DELETE",
 							"param": "",
 							"attack": "",
@@ -175,7 +175,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "63",
+							"id": "58",
 							"uri": "http://host.docker.internal:4301",
 							"nodeName": "http:\/\/host.docker.internal:4301",
 							"method": "GET",
@@ -196,8 +196,8 @@
 						},
 						{
 							"id": "2",
-							"uri": "http://host.docker.internal:4301/6101671779219716735",
-							"nodeName": "http:\/\/host.docker.internal:4301\/6101671779219716735",
+							"uri": "http://host.docker.internal:4301/7684730504408040116",
+							"nodeName": "http:\/\/host.docker.internal:4301\/7684730504408040116",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -205,7 +205,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "75",
+							"id": "67",
 							"uri": "http://host.docker.internal:4301/api",
 							"nodeName": "http:\/\/host.docker.internal:4301\/api",
 							"method": "GET",
@@ -215,7 +215,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "2911",
+							"id": "2910",
 							"uri": "http://host.docker.internal:4301/api/",
 							"nodeName": "http:\/\/host.docker.internal:4301\/api\/",
 							"method": "GET",
@@ -226,8 +226,8 @@
 						},
 						{
 							"id": "3",
-							"uri": "http://host.docker.internal:4301/api/2376143871540346802",
-							"nodeName": "http:\/\/host.docker.internal:4301\/api\/2376143871540346802",
+							"uri": "http://host.docker.internal:4301/api/4506548596348166644",
+							"nodeName": "http:\/\/host.docker.internal:4301\/api\/4506548596348166644",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -235,7 +235,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "78",
+							"id": "68",
 							"uri": "http://host.docker.internal:4301/api/admin",
 							"nodeName": "http:\/\/host.docker.internal:4301\/api\/admin",
 							"method": "GET",
@@ -256,8 +256,8 @@
 						},
 						{
 							"id": "4",
-							"uri": "http://host.docker.internal:4301/api/admin/1934903376213772999",
-							"nodeName": "http:\/\/host.docker.internal:4301\/api\/admin\/1934903376213772999",
+							"uri": "http://host.docker.internal:4301/api/admin/6567732058161777394",
+							"nodeName": "http:\/\/host.docker.internal:4301\/api\/admin\/6567732058161777394",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -265,7 +265,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "79",
+							"id": "69",
 							"uri": "http://host.docker.internal:4301/api/admin/logs?action=http%3A%2F%2Fwww.google.com%2F&page=1&limit=20",
 							"nodeName": "http:\/\/host.docker.internal:4301\/api\/admin\/logs (action,limit,page)",
 							"method": "GET",
@@ -275,7 +275,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "80",
+							"id": "71",
 							"uri": "http://host.docker.internal:4301/api/admin/pipeline",
 							"nodeName": "http:\/\/host.docker.internal:4301\/api\/admin\/pipeline",
 							"method": "GET",
@@ -296,8 +296,8 @@
 						},
 						{
 							"id": "5",
-							"uri": "http://host.docker.internal:4301/api/admin/pipeline/6229400234894639805",
-							"nodeName": "http:\/\/host.docker.internal:4301\/api\/admin\/pipeline\/6229400234894639805",
+							"uri": "http://host.docker.internal:4301/api/admin/pipeline/5223610136301999533",
+							"nodeName": "http:\/\/host.docker.internal:4301\/api\/admin\/pipeline\/5223610136301999533",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -305,7 +305,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "107",
+							"id": "114",
 							"uri": "http://host.docker.internal:4301/api/admin/tor-checks?page=http%3A%2F%2Fwww.google.com%2F&limit=20",
 							"nodeName": "http:\/\/host.docker.internal:4301\/api\/admin\/tor-checks (limit,page)",
 							"method": "GET",
@@ -326,8 +326,8 @@
 						},
 						{
 							"id": "6",
-							"uri": "http://host.docker.internal:4301/api/admin/tor-review/5143215522845079310",
-							"nodeName": "http:\/\/host.docker.internal:4301\/api\/admin\/tor-review\/5143215522845079310",
+							"uri": "http://host.docker.internal:4301/api/admin/tor-review/3702181114356813727",
+							"nodeName": "http:\/\/host.docker.internal:4301\/api\/admin\/tor-review\/3702181114356813727",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -335,7 +335,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "2696",
+							"id": "2697",
 							"uri": "http://host.docker.internal:4301/api/admin/users?q=%23set%28%24engine%3D%22%22%29%0A%23set%28%24proc%3D%24engine.getClass%28%29.forName%28%22java.lang.Runtime%22%29.getRuntime%28%29.exec%28%22sleep+15%22%29%29%0A%23set%28%24null%3D%24proc.waitFor%28%29%29%0A%24%7Bnull%7D",
 							"nodeName": "http:\/\/host.docker.internal:4301\/api\/admin\/users (q)",
 							"method": "GET",
@@ -366,8 +366,8 @@
 						},
 						{
 							"id": "7",
-							"uri": "http://host.docker.internal:4301/api/auth/4116778925888154936",
-							"nodeName": "http:\/\/host.docker.internal:4301\/api\/auth\/4116778925888154936",
+							"uri": "http://host.docker.internal:4301/api/auth/9051709765803151434",
+							"nodeName": "http:\/\/host.docker.internal:4301\/api\/auth\/9051709765803151434",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -386,8 +386,8 @@
 						},
 						{
 							"id": "8",
-							"uri": "http://host.docker.internal:4301/api/bookmarks/4673282539302712461",
-							"nodeName": "http:\/\/host.docker.internal:4301\/api\/bookmarks\/4673282539302712461",
+							"uri": "http://host.docker.internal:4301/api/bookmarks/7569236411541210118",
+							"nodeName": "http:\/\/host.docker.internal:4301\/api\/bookmarks\/7569236411541210118",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -395,7 +395,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "3387",
+							"id": "3388",
 							"uri": "http://host.docker.internal:4301/api/bookmarks/actuator/health",
 							"nodeName": "http:\/\/host.docker.internal:4301\/api\/bookmarks\/actuator\/health",
 							"method": "GET",
@@ -405,7 +405,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "193",
+							"id": "192",
 							"uri": "http://host.docker.internal:4301/api/notifications?unreadOnly=http%3A%2F%2Fwww.google.com%2F&page=1&limit=20",
 							"nodeName": "http:\/\/host.docker.internal:4301\/api\/notifications (limit,page,unreadOnly)",
 							"method": "GET",
@@ -415,9 +415,19 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "173",
-							"uri": "http://host.docker.internal:4301/api/notifications/6afd29564686fa05a7d293c0",
-							"nodeName": "http:\/\/host.docker.internal:4301\/api\/notifications\/6afd29564686fa05a7d293c0",
+							"id": "9",
+							"uri": "http://host.docker.internal:4301/api/notifications/3186607716973840749",
+							"nodeName": "http:\/\/host.docker.internal:4301\/api\/notifications\/3186607716973840749",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "172",
+							"uri": "http://host.docker.internal:4301/api/notifications/6afd9c2b68a3c6a268069909",
+							"nodeName": "http:\/\/host.docker.internal:4301\/api\/notifications\/6afd9c2b68a3c6a268069909",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -426,8 +436,8 @@
 						},
 						{
 							"id": "2918",
-							"uri": "http://host.docker.internal:4301/api/notifications/6afd29564686fa05a7d293c0/",
-							"nodeName": "http:\/\/host.docker.internal:4301\/api\/notifications\/6afd29564686fa05a7d293c0\/",
+							"uri": "http://host.docker.internal:4301/api/notifications/6afd9c2b68a3c6a268069909/",
+							"nodeName": "http:\/\/host.docker.internal:4301\/api\/notifications\/6afd9c2b68a3c6a268069909\/",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -436,8 +446,8 @@
 						},
 						{
 							"id": "10",
-							"uri": "http://host.docker.internal:4301/api/notifications/6afd29564686fa05a7d293c0/3649619932902633631",
-							"nodeName": "http:\/\/host.docker.internal:4301\/api\/notifications\/6afd29564686fa05a7d293c0\/3649619932902633631",
+							"uri": "http://host.docker.internal:4301/api/notifications/6afd9c2b68a3c6a268069909/8089441263704343875",
+							"nodeName": "http:\/\/host.docker.internal:4301\/api\/notifications\/6afd9c2b68a3c6a268069909\/8089441263704343875",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -445,17 +455,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "9",
-							"uri": "http://host.docker.internal:4301/api/notifications/8578337442363943373",
-							"nodeName": "http:\/\/host.docker.internal:4301\/api\/notifications\/8578337442363943373",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "404",
-							"otherinfo": ""
-						},
-						{
-							"id": "192",
+							"id": "193",
 							"uri": "http://host.docker.internal:4301/api/pdpa",
 							"nodeName": "http:\/\/host.docker.internal:4301\/api\/pdpa",
 							"method": "GET",
@@ -476,8 +476,8 @@
 						},
 						{
 							"id": "11",
-							"uri": "http://host.docker.internal:4301/api/pdpa/5493799791170280319",
-							"nodeName": "http:\/\/host.docker.internal:4301\/api\/pdpa\/5493799791170280319",
+							"uri": "http://host.docker.internal:4301/api/pdpa/6508902303450368418",
+							"nodeName": "http:\/\/host.docker.internal:4301\/api\/pdpa\/6508902303450368418",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -496,8 +496,8 @@
 						},
 						{
 							"id": "12",
-							"uri": "http://host.docker.internal:4301/api/tor/1371895749756715280",
-							"nodeName": "http:\/\/host.docker.internal:4301\/api\/tor\/1371895749756715280",
+							"uri": "http://host.docker.internal:4301/api/tor/3738176992480101527",
+							"nodeName": "http:\/\/host.docker.internal:4301\/api\/tor\/3738176992480101527",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -506,8 +506,8 @@
 						},
 						{
 							"id": "13",
-							"uri": "http://host.docker.internal:4301/api/tor/6afd29564686fa05a7d293b7/5149928114671608606",
-							"nodeName": "http:\/\/host.docker.internal:4301\/api\/tor\/6afd29564686fa05a7d293b7\/5149928114671608606",
+							"uri": "http://host.docker.internal:4301/api/tor/6afd9c2b68a3c6a2680698ff/2202752141673687199",
+							"nodeName": "http:\/\/host.docker.internal:4301\/api\/tor\/6afd9c2b68a3c6a2680698ff\/2202752141673687199",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -525,7 +525,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "2905",
+							"id": "2904",
 							"uri": "http://host.docker.internal:4301/api/bookmarks/",
 							"nodeName": "http:\/\/host.docker.internal:4301\/api\/bookmarks\/ ()({torRecordId,notes})",
 							"method": "POST",
@@ -545,7 +545,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "58",
+							"id": "54",
 							"uri": "http://host.docker.internal:4301/api/profile",
 							"nodeName": "http:\/\/host.docker.internal:4301\/api\/profile ()({companyName,companyAge})",
 							"method": "POST",
@@ -575,7 +575,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "86",
+							"id": "70",
 							"uri": "http://host.docker.internal:4301/api/profile",
 							"nodeName": "http:\/\/host.docker.internal:4301\/api\/profile ()({companyName,companyAge})",
 							"method": "PUT",
@@ -592,7 +592,7 @@
 					"reference": "",
 					"cweid": "388",
 					"wascid": "20",
-					"sourceid": "3465"
+					"sourceid": "3466"
 				},
 				{
 					"pluginid": "10049",
@@ -603,9 +603,9 @@
 					"confidence": "2",
 					"riskdesc": "Informational (Medium)",
 					"desc": "<p>The response contents are not storable by caching components such as proxy servers. If the response does not contain sensitive, personal or user-specific information, it may benefit from being stored and cached, to improve performance.</p>",
-					"instances":[ 
+					"instances":[
 						{
-							"id": "44",
+							"id": "65",
 							"uri": "http://host.docker.internal:4301/api/auth/me",
 							"nodeName": "http:\/\/host.docker.internal:4301\/api\/auth\/me",
 							"method": "GET",
@@ -615,17 +615,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "59",
-							"uri": "http://host.docker.internal:4301/api/bookmarks?page=1&limit=20",
-							"nodeName": "http:\/\/host.docker.internal:4301\/api\/bookmarks (limit,page)",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "no-store",
-							"otherinfo": ""
-						},
-						{
-							"id": "43",
+							"id": "66",
 							"uri": "http://host.docker.internal:4301/api/health",
 							"nodeName": "http:\/\/host.docker.internal:4301\/api\/health",
 							"method": "GET",
@@ -635,7 +625,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "53",
+							"id": "72",
 							"uri": "http://host.docker.internal:4301/api/tor?q=%E0%B8%A3%E0%B8%B0%E0%B8%9A%E0%B8%9A&agency=%E0%B8%AA%E0%B8%B3%E0%B8%99%E0%B8%B1%E0%B8%81&budgetMin=0&budgetMax=1000000&phase=bidding&status=open&sortBy=postingDate&sortOrder=desc&includeMatch=true&page=1&limit=20",
 							"nodeName": "http:\/\/host.docker.internal:4301\/api\/tor (agency,budgetMax,budgetMin,includeMatch,limit,page,phase,q,sortBy,sortOrder,status)",
 							"method": "GET",
@@ -645,9 +635,19 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "51",
-							"uri": "http://host.docker.internal:4301/api/tor/6afd29564686fa05a7d293b7",
-							"nodeName": "http:\/\/host.docker.internal:4301\/api\/tor\/6afd29564686fa05a7d293b7",
+							"id": "73",
+							"uri": "http://host.docker.internal:4301/api/tor/6afd9c2b68a3c6a2680698ff",
+							"nodeName": "http:\/\/host.docker.internal:4301\/api\/tor\/6afd9c2b68a3c6a2680698ff",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "no-store",
+							"otherinfo": ""
+						},
+						{
+							"id": "87",
+							"uri": "http://host.docker.internal:4301/api/tor/6afd9c2b68a3c6a2680698ff/match",
+							"nodeName": "http:\/\/host.docker.internal:4301\/api\/tor\/6afd9c2b68a3c6a2680698ff\/match",
 							"method": "GET",
 							"param": "",
 							"attack": "",

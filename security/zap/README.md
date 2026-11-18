@@ -56,8 +56,10 @@ outside the scope. Complete mode separately checks authenticated screens,
 role redirects, stored/URL XSS and revocation in Firefox. Real Google login still
 requires a deployment/browser check with the provider.
 
-The runner builds a test frontend targeting port 4301. Rebuild with your normal
-environment before starting the application's production build for normal use.
+The runners build an env-free frontend copy in their private temporary directory,
+with port 4301 fixed as its test API. They do not reuse or overwrite the normal
+frontend build. Backend test mode skips .env loading and asserts its generated
+database URI before connecting. Persistent development databases are prohibited.
 
 Reports are saved as `security/reports/zap-active-*`. Synthetic bearer tokens are
 redacted before saving report evidence; private fixture credentials are removed
@@ -72,5 +74,5 @@ Official scanner documentation:
 [API scan](https://www.zaproxy.org/docs/docker/api-scan/) and
 [Full scan](https://www.zaproxy.org/docs/docker/full-scan/).
 
-The older `run-zap.sh` targets an already-running application and uses a passive
-frontend baseline. Prefer this isolated runner for repeatable active testing.
+The legacy `run-zap.sh` now forwards to the isolated runner and rejects external
+target/token inputs. It no longer scans an already-running application.

@@ -1,0 +1,75 @@
+
+> icheertor-backend@0.1.0 test:resilience
+> tsx tests/resilience.test.mts
+
+── Provider faults and untrusted AI output
+PASS document instructions stay in user evidence, outside system rules
+PASS system prompt explicitly marks documents as untrusted
+PASS valid mocked model response survives the real application boundary
+PASS schema rejects injected account/command fields
+PASS schema rejects malformed provider JSON
+PASS empty provider response is rejected
+PASS invalid model enums cannot enter extraction
+PASS out-of-range confidence is rejected
+PASS prototype-field model output is rejected
+PASS oversized model response is rejected before parsing
+PASS deterministic checks fill quarter-budget value from trusted context
+PASS low-confidence extraction is flagged for human review
+PASS AI injection cannot change the synthetic account role
+PASS generated ZIP and PDF pass through real document preparation and extraction
+PASS malicious generated document reaches only the mocked model evidence
+PASS full extraction retains low-confidence review flag
+PASS full extraction refuses injected fields without returning a database update
+PASS transient provider outage retries then recovers
+PASS non-retryable provider error stops immediately
+PASS non-retryable failure made one request
+PASS exhausted provider outage stops at three attempts
+PASS quota retry count is bounded
+PASS model timeout aborts all three mocked attempts
+PASS timeout retries are bounded
+PASS circuit blocks calls after repeated failures
+PASS half-open circuit admits exactly one recovery probe
+PASS failed recovery probe reopens circuit
+PASS next cooldown admits a fresh probe
+PASS successful probe closes circuit
+── Mocked document and email services
+PASS document-service outage is propagated without fabricated data
+PASS maintenance notice is distinguished from a valid archive
+PASS missing upstream archive returns no data
+PASS HTML disguised as a successful download is rejected
+PASS document client recovers on the next mocked response
+PASS SMTP missing configuration fails without a connection
+[EMAIL] Failed to send to owner@example.invalid: synthetic SMTP outage
+PASS SMTP error returns failure rather than false success
+[EMAIL] Sent to owner@example.invalid — messageId: synthetic-message
+PASS email template escapes hostile text and replaces unsafe links
+[EMAIL] Failed to send to owner@example.invalid: synthetic SMTP outage
+[DISPATCH] Notification 6afd8b21537e0c8633a7a00f → inApp: ✅ | email: ❌
+PASS email outage preserves in-app notification and records failed delivery
+[DISPATCH] Notification 6afd8b21537e0c8633a7a010 → inApp: ✅ | email: ⏭️ disabled
+PASS disabled email preference prevents provider invocation
+PASS consent withdrawal blocks dispatch even during retries
+PASS withdrawal sends no email
+── Bounded load and crashed-worker recovery
+PASS 64 concurrent synthetic tasks never exceed four active slots
+PASS executor remains usable after task failure
+PASS production model boundary limits simultaneous provider calls to two
+PASS bounded model queue sheds overflow instead of accumulating work
+PASS 24 workers competing for one record produce one owner
+PASS expired worker lease can be recovered
+PASS expired worker cannot overwrite replacement worker
+PASS replacement worker commits the recovered result
+PASS real child worker exits abruptly with an unfinished lease
+PASS crashed worker job cannot be stolen before expiry
+PASS job becomes claimable after crashed worker expiry
+── Synthetic backup and restore
+PASS corrupted backup is rejected before restore writes
+PASS corrupt backup leaves fresh target empty
+PASS backup round trip preserves ObjectId and Date types
+PASS restored synthetic account matches original data
+PASS restored record count matches consentrecords
+PASS restored record count matches users
+PASS restored record count matches torrecords
+PASS restored record count matches notifications
+PASS restored unique account indexes still reject duplicates
+61 resilience checks passed, 0 failed

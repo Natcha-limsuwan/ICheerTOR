@@ -1,0 +1,305 @@
+
+> icheertor-backend@0.1.0 test:security
+> tsx tests/security.test.mts && tsx tests/ingestion-security.test.mts && tsx tests/security-gaps.test.mts && npm run test:resilience
+
+
+── Headers, CORS and error handling
+  PASS  CSP frame-ancestors 'none'
+  PASS  HSTS max-age=1y includeSubDomains
+  PASS  X-Content-Type-Options nosniff
+  PASS  Referrer-Policy no-referrer
+  PASS  X-Powered-By removed
+  PASS  Cache-Control no-store on API
+  PASS  CORS allows only FRONTEND_URL
+  PASS  unknown route → JSON 404
+  PASS  malformed JSON → generic 400 (no parser message)
+  PASS  body > 100kb → 413
+
+── OAuth login CSRF protection
+  PASS  missing browser binding rejected before OAuth
+  PASS  malformed browser binding rejected before OAuth
+  PASS  authorization request carries state
+  PASS  authorization request uses PKCE S256
+  PASS  state cookie is HttpOnly, SameSite=Lax, path-scoped
+  PASS  callback without state cookie rejected
+  PASS  callback with someone else's state rejected
+  PASS  matching state returns the PKCE verifier
+
+── Login code exchange and JWT validation
+  PASS  one-time code → session token
+  PASS  login code cannot be reused
+  PASS  operator object as code rejected
+  PASS  JWT carries no role/status/email
+  PASS  JWT is HS256 with iss + aud
+  PASS  JWT absolute lifetime 8h
+  PASS  alg=none rejected
+  PASS  wrong signing key rejected
+  PASS  wrong audience rejected
+  PASS  future nbf rejected
+  PASS  expired token rejected
+  PASS  session cannot be moved to another user (sub swap)
+
+── Logout, idle timeout, absolute lifetime
+  PASS  logout succeeds
+  PASS  token unusable after logout
+  PASS  idle > 30 min → 401 SESSION_EXPIRED
+  PASS  activity extends the idle window
+  PASS  absolute lifetime ends an active session
+  PASS  logout-all ends other sessions
+
+── Function-level authorization (roles, scopes, hierarchy)
+  PASS  user → admin API 403
+  PASS  admin → admin API 200
+  PASS  /me lists server-derived scopes
+  PASS  admin cannot change roles (README policy)
+  PASS  admin cannot suspend another admin
+  PASS  admin cannot act on own account
+  PASS  admin cannot suspend a developer
+  PASS  developer can change a role
+  PASS  promotion applies on the next request
+  PASS  demotion applies on the next request
+  PASS  admin user list hides googleId
+  PASS  role change needs a recent sign-in
+  PASS  account suspension needs a recent sign-in
+  PASS  stale administrative action leaves account active
+  PASS  scope matrix: user lacks tor:review
+  PASS  hierarchy: developer manages admin
+
+── Access to another user's data (IDOR)
+  PASS  alice creates a bookmark
+  PASS  bob cannot delete alice's bookmark
+  PASS  bob's list does not include alice's bookmark
+  PASS  alice's bookmark still exists
+  PASS  bob cannot mark alice's notification read
+  PASS  bob does not see alice's notifications
+  PASS  bob cannot read alice's profile
+  PASS  export contains only the caller's data
+  PASS  duplicate bookmark returns existing one (no duplicate)
+
+── Input validation and injection
+  PASS  NoSQL operator in body field rejected
+  PASS  unknown body field rejected (strict schema)
+  PASS  malformed ObjectId → 400 not 500
+  PASS  repeated query key (array) rejected
+  PASS  limit=0 (would mean 'no limit') rejected
+  PASS  invalid enum rejected
+  PASS  null byte in search rejected before MongoDB
+  PASS  regex syntax in agency treated literally
+  PASS  admin search '.*' is literal (no match-all)
+  PASS  prototype path in correction rejected
+  PASS  correction with object value rejected
+  PASS  notification prefs: extra field rejected
+  PASS  notification prefs write only notificationPrefs
+  PASS  profile update strips userId / maxContractValue
+  PASS  bob still has no profile after alice's attempt
+  PASS  negative money rejected
+  PASS  consent with invalid purpose rejected
+  PASS  consent IP not taken from spoofable X-Forwarded-For
+  PASS  consent status readable (ObjectId match)
+
+── Browser-bound login and re-authentication
+  PASS  login code without verifier rejected
+  PASS  another browser cannot exchange the code
+  PASS  correct browser can exchange after a failed theft attempt
+  PASS  re-authentication invalidates the previous session
+  PASS  browser-bound code is still single use
+
+── Consent and in-app preferences
+  PASS  consent records with identical timestamps use the newer record
+  PASS  withdrawal blocks qualification matching
+  PASS  withdrawal blocks personalised list matching
+[DISPATCH] Notification 6afd8b346c0406aa9e1e0abe → inApp: ✅ | email: ⏭️ disabled
+  PASS  disabled in-app channel is not marked sent
+  PASS  disabled in-app channel is not listed
+
+── Shared rate-limit counters
+  PASS  two replicas share an atomic counter
+
+── Atomic TOR changes and audit rollback
+  PASS  TOR correction commits with its audit entry
+  PASS  audit failure rolls back the TOR mutation
+
+── Email output encoding
+  PASS  HTML special characters escaped
+  PASS  internal link kept
+  PASS  javascript: link replaced
+  PASS  protocol-relative link replaced
+
+── Every protected route rejects anonymous requests
+  PASS  anonymous GET auth/me denied
+  PASS  anonymous POST auth/logout denied
+  PASS  anonymous POST auth/logout-all denied
+  PASS  anonymous GET tor/ denied
+  PASS  anonymous GET tor/:id denied
+  PASS  anonymous POST tor/:id/corrections denied
+  PASS  anonymous GET tor/:id/document denied
+  PASS  anonymous GET tor/:id/match denied
+  PASS  anonymous GET admin/users denied
+  PASS  anonymous PATCH admin/users/:id denied
+  PASS  anonymous PATCH admin/users/:id/role denied
+  PASS  anonymous GET admin/logs denied
+  PASS  anonymous GET admin/pipeline/health denied
+  PASS  anonymous GET admin/tor-review denied
+  PASS  anonymous GET admin/tor-review/:id denied
+  PASS  anonymous PUT admin/tor-review/:id denied
+  PASS  anonymous GET admin/tor-checks denied
+  PASS  anonymous PATCH admin/tor-checks/:id denied
+  PASS  anonymous GET bookmarks/ denied
+  PASS  anonymous GET bookmarks/tor/:torRecordId denied
+  PASS  anonymous POST bookmarks/ denied
+  PASS  anonymous DELETE bookmarks/:id denied
+  PASS  anonymous GET notifications/prefs denied
+  PASS  anonymous GET notifications/unread-count denied
+  PASS  anonymous GET notifications/ denied
+  PASS  anonymous PUT notifications/ denied
+  PASS  anonymous PATCH notifications/read-all denied
+  PASS  anonymous PATCH notifications/:id/read denied
+  PASS  anonymous GET pdpa/consent denied
+  PASS  anonymous POST pdpa/consent denied
+  PASS  anonymous POST pdpa/delete denied
+  PASS  anonymous GET pdpa/export denied
+  PASS  anonymous GET profile/ denied
+  PASS  anonymous POST profile/ denied
+  PASS  anonymous PUT profile/ denied
+
+── Administrative endpoint role and malformed-write matrix
+  PASS  regular user denied GET /users
+  PASS  regular user denied PATCH /users/:id
+  PASS  admin malformed /users/:id rejected
+  PASS  developer malformed /users/:id rejected
+  PASS  regular user denied PATCH /users/:id/role
+  PASS  admin malformed /users/:id/role rejected
+  PASS  developer malformed /users/:id/role rejected
+  PASS  regular user denied GET /logs
+  PASS  regular user denied GET /pipeline/health
+  PASS  regular user denied GET /tor-review
+  PASS  regular user denied GET /tor-review/:id
+  PASS  regular user denied PUT /tor-review/:id
+  PASS  admin malformed /tor-review/:id rejected
+  PASS  developer malformed /tor-review/:id rejected
+  PASS  regular user denied GET /tor-checks
+  PASS  regular user denied PATCH /tor-checks/:id
+  PASS  admin malformed /tor-checks/:id rejected
+  PASS  developer malformed /tor-checks/:id rejected
+  PASS  rejected administrative writes leave no audit entries
+  PASS  rejected administrative writes leave target privileges intact
+
+── Suspension and account deletion
+  PASS  admin suspends a user
+  PASS  suspended user's existing token rejected
+  PASS  all sessions revoked on suspension
+  PASS  suspended user cannot sign in
+  PASS  deletion with an old session needs re-auth
+  PASS  deletion with wrong confirmation rejected
+  PASS  deletion with fresh sign-in succeeds
+  PASS  deleted account's token rejected
+  PASS  personal data removed (profile, bookmarks, notifications)
+  PASS  account anonymised
+
+── Rate limiting and secrets
+  PASS  cron endpoint disabled without CRON_SECRET
+  PASS  login endpoints rate limited → 429
+  PASS  429 has Retry-After
+  PASS  429 body code RATE_LIMITED
+
+166 passed, 0 failed
+Ingestion security checks passed (ZIP boundaries, decompression, streaming limits, egress and redirects).
+PASS internal navigation preserves a relative path
+PASS internal navigation normalizes an own-origin URL
+PASS internal router refuses javascript
+PASS internal router refuses JaVaScRiPt
+PASS internal router refuses data
+PASS internal router refuses vbscript
+PASS internal router refuses //evil.example.invalid
+PASS internal router refuses https
+PASS TRACE rejected with 405
+PASS PROPFIND rejected with 405
+PASS log-injection payload stays one physical JSON line
+PASS log event cannot be forged by control characters
+PASS HTTP request with injected-looking User-Agent remains unauthorized
+PASS HTTP User-Agent cannot forge a security log event
+PASS invalid newline-injected HTTP header is rejected by the server
+PASS global API limit accepts the first 300 requests
+{"ts":"2026-11-18T11:25:45.089Z","level":"warn","type":"security","event":"rate_limited","limiter":"api","ip":"127.0.0.1","method":"GET","path":"/api/health"}
+PASS global API request 301 returns 429
+PASS global API limit includes Retry-After
+PASS global API limit recovers after the real configured window
+PASS database outage fails closed with generic 500
+PASS database outage does not disclose URI, stack or driver internals
+PASS database outage is logged internally
+22 supplementary checks passed, 0 failed
+
+> icheertor-backend@0.1.0 test:resilience
+> tsx tests/resilience.test.mts
+
+── Provider faults and untrusted AI output
+PASS document instructions stay in user evidence, outside system rules
+PASS system prompt explicitly marks documents as untrusted
+PASS valid mocked model response survives the real application boundary
+PASS schema rejects injected account/command fields
+PASS schema rejects malformed provider JSON
+PASS empty provider response is rejected
+PASS invalid model enums cannot enter extraction
+PASS out-of-range confidence is rejected
+PASS prototype-field model output is rejected
+PASS oversized model response is rejected before parsing
+PASS deterministic checks fill quarter-budget value from trusted context
+PASS low-confidence extraction is flagged for human review
+PASS AI injection cannot change the synthetic account role
+PASS generated ZIP and PDF pass through real document preparation and extraction
+PASS malicious generated document reaches only the mocked model evidence
+PASS full extraction retains low-confidence review flag
+PASS full extraction refuses injected fields without returning a database update
+PASS transient provider outage retries then recovers
+PASS non-retryable provider error stops immediately
+PASS non-retryable failure made one request
+PASS exhausted provider outage stops at three attempts
+PASS quota retry count is bounded
+PASS model timeout aborts all three mocked attempts
+PASS timeout retries are bounded
+PASS circuit blocks calls after repeated failures
+PASS half-open circuit admits exactly one recovery probe
+PASS failed recovery probe reopens circuit
+PASS next cooldown admits a fresh probe
+PASS successful probe closes circuit
+── Mocked document and email services
+PASS document-service outage is propagated without fabricated data
+PASS maintenance notice is distinguished from a valid archive
+PASS missing upstream archive returns no data
+PASS HTML disguised as a successful download is rejected
+PASS document client recovers on the next mocked response
+PASS SMTP missing configuration fails without a connection
+[EMAIL] Failed to send to owner@example.invalid: synthetic SMTP outage
+PASS SMTP error returns failure rather than false success
+[EMAIL] Sent to owner@example.invalid — messageId: synthetic-message
+PASS email template escapes hostile text and replaces unsafe links
+[EMAIL] Failed to send to owner@example.invalid: synthetic SMTP outage
+[DISPATCH] Notification 6afd8b59cabc251080025446 → inApp: ✅ | email: ❌
+PASS email outage preserves in-app notification and records failed delivery
+[DISPATCH] Notification 6afd8b59cabc251080025447 → inApp: ✅ | email: ⏭️ disabled
+PASS disabled email preference prevents provider invocation
+PASS consent withdrawal blocks dispatch even during retries
+PASS withdrawal sends no email
+── Bounded load and crashed-worker recovery
+PASS 64 concurrent synthetic tasks never exceed four active slots
+PASS executor remains usable after task failure
+PASS production model boundary limits simultaneous provider calls to two
+PASS bounded model queue sheds overflow instead of accumulating work
+PASS 24 workers competing for one record produce one owner
+PASS expired worker lease can be recovered
+PASS expired worker cannot overwrite replacement worker
+PASS replacement worker commits the recovered result
+PASS real child worker exits abruptly with an unfinished lease
+PASS crashed worker job cannot be stolen before expiry
+PASS job becomes claimable after crashed worker expiry
+── Synthetic backup and restore
+PASS corrupted backup is rejected before restore writes
+PASS corrupt backup leaves fresh target empty
+PASS backup round trip preserves ObjectId and Date types
+PASS restored synthetic account matches original data
+PASS restored record count matches notifications
+PASS restored record count matches users
+PASS restored record count matches consentrecords
+PASS restored record count matches torrecords
+PASS restored unique account indexes still reject duplicates
+61 resilience checks passed, 0 failed

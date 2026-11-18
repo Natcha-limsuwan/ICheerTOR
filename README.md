@@ -27,7 +27,7 @@ The project is split into two services:
 
 - [Node.js](https://nodejs.org/) v20+
 - [npm](https://www.npmjs.com/) v10+
-- MongoDB (local or [Atlas](https://cloud.mongodb.com/))
+- MongoDB replica set (local Compose or [Atlas](https://cloud.mongodb.com/)); standalone MongoDB cannot run the security/audit transactions
 - Google OAuth credentials ([setup guide](./ENV_SETUP_GUIDE.md#2-authentication--passport--jwt))
 
 ### Installation
@@ -48,6 +48,7 @@ cp .env.example .env
 # 4. Install frontend dependencies
 cd ../frontend
 npm install
+cp .env.local.example .env.local
 
 # 5. Start both servers (in separate terminals)
 
@@ -68,7 +69,7 @@ The API is served at [http://localhost:3001/api](http://localhost:3001/api).
 ```bash
 # 1. Configure backend environment variables
 cp backend/.env.example backend/.env
-# Edit backend/.env (use MONGODB_URI=mongodb://mongo:27017/icheertor for Docker)
+# Edit backend/.env (use MONGODB_URI=mongodb://mongo:27017/icheertor?replicaSet=rs0 for Docker)
 
 # 2. Build and start the full stack (backend + frontend + MongoDB)
 docker compose up --build

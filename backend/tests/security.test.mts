@@ -12,6 +12,7 @@ import { MongoMemoryReplSet } from "mongodb-memory-server";
 import jwt from "jsonwebtoken";
 import crypto from "node:crypto";
 import { readFile } from "node:fs/promises";
+import assert from "node:assert/strict";
 const browserVerifier = crypto.randomBytes(32).toString("base64url");
 const browserChallenge = crypto.createHash("sha256").update(browserVerifier).digest("base64url");
 import mongoose from "mongoose";
@@ -35,8 +36,9 @@ function check(name: string, ok: boolean, extra = "") {
 
 const SECRET = "test-secret-".padEnd(48, "x");
 const mongo = await MongoMemoryReplSet.create({ replSet: { count: 1, storageEngine: "wiredTiger" } });
+const disposableUri = mongo.getUri("icheertor_test");
 Object.assign(process.env, {
-  MONGODB_URI: mongo.getUri("icheertor_test"),
+  MONGODB_URI: disposableUri,
   JWT_SECRET: SECRET,
   GOOGLE_CLIENT_ID: "test-client",
   GOOGLE_CLIENT_SECRET: "test-secret",
@@ -46,6 +48,8 @@ Object.assign(process.env, {
   CRON_SECRET: "",
   NODE_ENV: "test",
   RATE_LIMIT_API_MAX: "10000", // Exercise endpoint logic; auth/sensitive limits remain enabled.
+  SMTP_USER: "", SMTP_PASS: "", VERTEX_AI_API_KEY: "", VERTEX_AI_PROJECT_ID: "",
+  GOOGLE_APPLICATION_CREDENTIALS: "", ADMIN_EMAILS: "",
 });
 
 // Silence the app's own JSON security log lines so the test output stays readable.
@@ -66,6 +70,8 @@ const { createLoginCode, startSession } = await import("../src/auth/session-serv
 const { CookieStateStore } = await import("../src/auth/oauth-state-store.js");
 const { escapeHtml, safeAppUrl } = await import("../src/services/notification/email-sender.js");
 const { canManageAccount, hasScope } = await import("../src/auth/permissions.js");
+const { env: testEnvironment } = await import("../src/config/env.js");
+assert.equal(testEnvironment.MONGODB_URI, disposableUri, "Refusing any database except our generated fixture");
 await connectDB();
 
 const server = app.listen(0);

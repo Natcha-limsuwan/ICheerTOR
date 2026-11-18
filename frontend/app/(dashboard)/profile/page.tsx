@@ -1,6 +1,7 @@
 "use client";
 
 import { getToken } from "@/lib/api/client";
+import { internalNavigationPath } from "@/lib/api/internal-navigation";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Card from "@mui/material/Card";
@@ -224,12 +225,23 @@ export default function ProfilePage() {
       if (!target) return;
 
       const href = target.getAttribute("href");
-      if (!href || href.startsWith("#") || href.startsWith("javascript:")) return;
-      if (href === window.location.pathname || href === "/profile") return;
+      if (!href || href.startsWith("#")) return;
+      const path = internalNavigationPath(href, window.location.href);
+      if (path === null) {
+        // External HTTP(S) links use normal browser navigation/beforeunload.
+        try {
+          const url = new URL(href, window.location.href);
+          if (url.protocol === "https:" || url.protocol === "http:") return;
+        } catch { /* Invalid/opaque destinations are blocked. */ }
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      if (path === window.location.pathname || path === "/profile") return;
 
       e.preventDefault();
       e.stopPropagation();
-      setPendingUrl(href);
+      setPendingUrl(path);
       setShowLeaveDialog(true);
     };
 

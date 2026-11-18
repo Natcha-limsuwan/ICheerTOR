@@ -1,5 +1,14 @@
 # Complete configured ZAP scans and authenticated browser review
 
+Latest rerun: see [FINAL-SECURITY-REVIEW.md](FINAL-SECURITY-REVIEW.md). On
+18 November 2026 all five scopes completed 19,775 active requests and the
+authenticated Firefox suite passed 57 checks. The current comprehensive reports
+and manifest contain this newer run; narrative counts below are historical.
+
+For the later incremental comparison tests (188 API checks, 57 Firefox checks,
+Gitleaks, CodeQL and finding triage), see [GAP-TEST-RESULTS.md](GAP-TEST-RESULTS.md).
+The ZAP request counts below remain evidence of their original recorded run.
+
 Reviewed on 18 November 2026 on `security/zap-active-verification`, based on
 `caf6130`, including the uncommitted application changes. T05, T06 and T12 remain
 excluded. All tests used disposable local data and synthetic sessions.

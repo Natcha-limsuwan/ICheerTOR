@@ -1,0 +1,19 @@
+{
+  "commitsScanned": 52,
+  "findings": [
+    {
+      "RuleID": "generic-api-key",
+      "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+      "File": "ENV_SETUP_GUIDE.md",
+      "StartLine": 107,
+      "EndLine": 107,
+      "Commit": "24f458a755348d003ff74fa10c26af8a33f9e18e",
+      "Fingerprint": "24f458a755348d003ff74fa10c26af8a33f9e18e:ENV_SETUP_GUIDE.md:generic-api-key:107",
+      "Secret": "REDACTED",
+      "Match": "REDACTED",
+      "triage": "documented example, not validated against any service",
+      "reason": "The match is a placeholder Google client secret inside the setup guide example, next to a clearly synthetic example client ID."
+    }
+  ],
+  "scope": "All locally available Git refs; read-only, network-disabled scanner. Ignored .env files are not included."
+}

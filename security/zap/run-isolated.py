@@ -13,6 +13,7 @@ import urllib.request
 import uuid
 
 import yaml
+from isolated_frontend import prepare_frontend, test_environment
 
 ROOT = Path(__file__).resolve().parents[2]
 REPORTS = ROOT / "security/reports"
@@ -42,7 +43,7 @@ def wait_for(check, process, seconds=120):
 
 
 def start(args, cwd, log):
-    process = subprocess.Popen(args, cwd=cwd, stdout=(WORK / log).open("w"), stderr=subprocess.STDOUT)
+    process = subprocess.Popen(args, cwd=cwd, env=test_environment(), stdout=(WORK / log).open("w"), stderr=subprocess.STDOUT)
     PROCESSES.append(process)
     return process
 
@@ -99,13 +100,11 @@ try:
             probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             probe.bind(("127.0.0.1", port))
     print("Building frontend production code...", flush=True)
-    with (WORK / "frontend-build.log").open("w") as log:
-        build_env = {**os.environ, "NEXT_PUBLIC_API_URL": "http://host.docker.internal:4301/api"}
-        subprocess.run(["npm", "run", "build", "--", "--webpack"], cwd=ROOT / "frontend", env=build_env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=300)
+    frontend_directory = prepare_frontend(ROOT, WORK)
     api = start(["node", "--import", "tsx", "scripts/zap-fixture.mts", str(WORK)], ROOT / "backend", "api.log")
     wait_for(lambda: (WORK / "fixture.json").exists(), api)
     fixture = json.loads((WORK / "fixture.json").read_text())
-    frontend = start(["node", "node_modules/next/dist/bin/next", "start", "--port", "4300"], ROOT / "frontend", "frontend.log")
+    frontend = start(["node", "node_modules/next/dist/bin/next", "start", "--port", "4300"], frontend_directory, "frontend.log")
     wait_for(lambda: "Ready in" in (WORK / "frontend.log").read_text() and urllib.request.urlopen("http://127.0.0.1:4300/login", timeout=3).status == 200, frontend)
     original = yaml.safe_load((ROOT / "security/zap/openapi.yaml").read_text())
     (SCAN / "evidence-hook.py").write_text((ROOT / "security/zap/evidence-hook.py").read_text())

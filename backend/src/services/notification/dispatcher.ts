@@ -37,6 +37,7 @@ export interface DispatchResult {
  */
 export async function dispatchNotification(
   input: CreateNotificationInput,
+  deliverEmail: typeof sendNotificationEmail = sendNotificationEmail,
 ): Promise<DispatchResult> {
   await connectDB();
 
@@ -72,7 +73,7 @@ export async function dispatchNotification(
 
   // 3. Email channel
   if (prefs.email && !input.skipEmail) {
-    const emailResult = await sendNotificationEmail(user.email, {
+    const emailResult = await deliverEmail(user.email, {
       type: input.type,
       title: input.title,
       body: input.body,

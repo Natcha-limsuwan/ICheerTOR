@@ -3,9 +3,23 @@
 How to reproduce the security evidence for the project report.
 Reports land in [`reports/`](reports/).
 
+The [additional comparison tests](GAP-TEST-RESULTS.md) cover browser CORS,
+clickjacking, open redirects, methods, log injection, outage, global throttling,
+secret history scanning and actual local CodeQL results/triage. The current API
+command runs 166 existing checks plus 22 supplementary checks and ingestion tests;
+the latest Firefox suite contains 57 checks. Historical reports retain old counts.
+
+**Never modify or attack real application data.** Source reads/copies are allowed
+only under AGENTS.md's read-only restrictions. Tests use owned disposable
+databases with synthetic data or sanitized copies, never a source database URI.
+The scans reported here use generated synthetic records, not copied real records.
+
+The regression command now includes 61 resilience assertions: 249 counted checks
+plus ingestion tests. See [the final mapping review](FINAL-SECURITY-REVIEW.md).
+
 For repeatable **active** frontend/API testing against disposable data, see
 [the isolated ZAP runner](zap/README.md). The older runner below uses a passive
-frontend baseline. Current regression tests contain 166 API checks plus ingestion
+frontend baseline. Current regression tests contain 188 API checks plus ingestion
 boundary tests; older reports describe their own historical test counts.
 See [the additional review results](ACTIVE-ZAP-REVIEW.md) for the current active
 scans, including completion evidence, authenticated browser tests and remaining limits.

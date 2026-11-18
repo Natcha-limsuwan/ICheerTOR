@@ -50,8 +50,10 @@ not a claim that all ASVS requirements or all possible threats are resolved.
 
 ## Existing controls with remaining work
 
-- T17/T18: AI schema validation, confidence and human review exist, but require
-  adversarial document tests and evaluation evidence. No claim of complete
+- T17/T18: strict local schema validation, confidence review flags and an explicit
+  untrusted-document prompt boundary now have generated PDF/ZIP and mocked-model
+  attack evidence in RESILIENCE-TEST-RESULTS.md. Real-model adversarial evaluation
+  remains pending. No claim of complete
   prompt-injection or hallucination prevention is made.
 - T21: structured logs and restricted API access exist. Immutable/off-host logs,
   database credentials that prohibit log modification, and retention are deployment tasks.
@@ -62,9 +64,11 @@ not a claim that all ASVS requirements or all possible threats are resolved.
   describe the operation as irreversible erasure of every personal-data copy.
 - T26/T27: configuration checks, Docker exclusions and CI scanning exist.
   Verify actual IAM, secrets, final images, dependency/SBOM provenance and live CI.
-- T28: bounded network calls and circuit breaking exist. Isolated parser workers,
-  global job concurrency, durable email deduplication/quotas and tested backup/
-  restore procedures remain open; no external service availability is guaranteed.
+- T28: bounded network calls, single recovery probes, per-process AI capacity and
+  fenced extraction leases have synthetic fault/load/crashed-child tests. A fixture
+  EJSON backup/restore round trip passes. Isolated parser workers, global job
+  concurrency, durable email deduplication/quotas and operational disaster recovery
+  remain open; no external service availability is guaranteed.
 
 ## Runtime and migration requirements
 

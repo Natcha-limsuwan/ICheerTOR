@@ -1,0 +1,15 @@
+---
+description: Read or copy real data only; never modify sources or attack them
+alwaysApply: true
+---
+
+Follow the user data restriction in the repository-root AGENTS.md in every task.
+Real production/shared/persistent development data may be read or copied using
+read-only credentials. Never write, delete, migrate, change indexes/configuration,
+or attack a real source; disable automatic startup writes during source access.
+Security tests must create their own temporary MongoDB with synthetic data or a
+sanitized copy, skip real .env loading, and assert the generated test URI differs
+from the source before connecting. Keep exports private and out of Git/logs.
+Do not use real provider services without separate authorization and dedicated
+test accounts with synthetic inputs. Never notify real users or validate found secrets.
+Never stop an existing database to simulate an outage; stop only the owned fixture.

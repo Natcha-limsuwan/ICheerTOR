@@ -236,6 +236,16 @@ export function validateExtraction<T extends TorExtractionV3 | TorExtractionV4>(
     });
   }
 
+  const inspectConfidence = (value: unknown, path: string): void => {
+    if (Array.isArray(value)) { value.forEach((item, i) => inspectConfidence(item, `${path}[${i}]`)); return; }
+    if (value === null || typeof value !== "object") return;
+    const item = value as Record<string, unknown>;
+    if (typeof item.confidence === "number" && item.confidence < env.AI_CONFIDENCE_THRESHOLD) {
+      issues.push({ severity: "review", field: path, message: "Model confidence below review threshold", from: item.confidence });
+    }
+    for (const [name, nested] of Object.entries(item)) if (name !== "confidence") inspectConfidence(nested, path ? `${path}.${name}` : name);
+  };
+  inspectConfidence(output, "");
   return { output, issues, needsReview: issues.some((i) => i.severity === "review") };
 }
 

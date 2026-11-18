@@ -52,6 +52,9 @@ function getTransporter(): Transporter {
       host: env.SMTP_HOST,
       port: env.SMTP_PORT,
       secure: env.SMTP_PORT === 465,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 30000,
       auth: {
         user: env.SMTP_USER,
         pass: env.SMTP_PASS,
@@ -92,9 +95,9 @@ export async function verifyEmailConnection(): Promise<{
 /**
  * Send a raw email.
  */
-export async function sendEmail(payload: EmailPayload): Promise<EmailResult> {
+export async function sendEmail(payload: EmailPayload, transport?: Pick<Transporter, "sendMail">): Promise<EmailResult> {
   try {
-    const info = await getTransporter().sendMail({
+    const info = await (transport ?? getTransporter()).sendMail({
       from: `"iCheerTOR" <${env.SMTP_USER}>`,
       to: payload.to,
       subject: payload.subject,
@@ -132,6 +135,7 @@ export async function sendNotificationEmail(
     body: string;
     linkUrl?: string;
   },
+  transport?: Pick<Transporter, "sendMail">,
 ): Promise<EmailResult> {
   const typeLabel = typeLabels[notification.type] ?? "แจ้งเตือน";
   const linkButton = notification.linkUrl
@@ -191,7 +195,7 @@ export async function sendNotificationEmail(
     subject: `[iCheerTOR] ${notification.title}`,
     html,
     text,
-  });
+  }, transport);
 }
 
 /* ─── TOR Match Specific Email Template ────────────────────────────── */

@@ -9,7 +9,7 @@
       "passed": true
     },
     {
-      "test": "user browser loads /procurement/6afd2ad6eb6f9ca75f93f01b",
+      "test": "user browser loads /procurement/6afd9d331470b6d226450ede",
       "passed": true
     },
     {
@@ -25,7 +25,7 @@
       "passed": true
     },
     {
-      "test": "user browser loads /compare?ids=6afd2ad6eb6f9ca75f93f01b,6afd2ad6eb6f9ca75f93f01c",
+      "test": "user browser loads /compare?ids=6afd9d331470b6d226450ede,6afd9d331470b6d226450edf",
       "passed": true
     },
     {
@@ -41,7 +41,7 @@
       "passed": true
     },
     {
-      "test": "admin browser loads /procurement/6afd2ad6eb6f9ca75f93f01b",
+      "test": "admin browser loads /procurement/6afd9d331470b6d226450ede",
       "passed": true
     },
     {
@@ -57,7 +57,7 @@
       "passed": true
     },
     {
-      "test": "admin browser loads /compare?ids=6afd2ad6eb6f9ca75f93f01b,6afd2ad6eb6f9ca75f93f01c",
+      "test": "admin browser loads /compare?ids=6afd9d331470b6d226450ede,6afd9d331470b6d226450edf",
       "passed": true
     },
     {
@@ -77,7 +77,7 @@
       "passed": true
     },
     {
-      "test": "developer browser loads /procurement/6afd2ad6eb6f9ca75f93f01b",
+      "test": "developer browser loads /procurement/6afd9d331470b6d226450ede",
       "passed": true
     },
     {
@@ -93,7 +93,7 @@
       "passed": true
     },
     {
-      "test": "developer browser loads /compare?ids=6afd2ad6eb6f9ca75f93f01b,6afd2ad6eb6f9ca75f93f01c",
+      "test": "developer browser loads /compare?ids=6afd9d331470b6d226450ede,6afd9d331470b6d226450edf",
       "passed": true
     },
     {
@@ -107,6 +107,53 @@
     {
       "test": "developer browser loads /admin/logs",
       "passed": true
+    },
+    {
+      "test": "dirty profile uses the leave-confirmation guard",
+      "passed": true
+    },
+    {
+      "test": "dirty profile blocks unsafe link scheme",
+      "passed": true,
+      "input": "data"
+    },
+    {
+      "test": "dirty profile blocks unsafe link scheme",
+      "passed": true,
+      "input": "vbscript"
+    },
+    {
+      "test": "dirty profile blocks unsafe link scheme",
+      "passed": true,
+      "input": "jAvAsCrIpT"
+    },
+    {
+      "test": "allowed frontend origin reads authenticated API in Firefox",
+      "passed": true
+    },
+    {
+      "test": "attacker origin cannot read authenticated API in Firefox",
+      "passed": true
+    },
+    {
+      "test": "Firefox blocks clickjacking iframe",
+      "passed": true,
+      "observedFrameDocument": "about:neterror?e=cspBlocked&u=http%3A//host.docker.internal%3A4300/profile&s=neterror&c=UTF-8&captivePortalState=unknown&d=This%20page%20has%20a%20content%20security%20policy%20that%20prevents%20it%20from%20being%20loaded%20in%20this%20way.&a="
+    },
+    {
+      "test": "login next parameter cannot redirect externally",
+      "passed": true,
+      "input": "https://evil.example.invalid"
+    },
+    {
+      "test": "login next parameter cannot redirect externally",
+      "passed": true,
+      "input": "//evil.example.invalid"
+    },
+    {
+      "test": "login next parameter cannot redirect externally",
+      "passed": true,
+      "input": "https://localhost.evil.example.invalid"
     },
     {
       "test": "stored profile XSS rendered as data",
@@ -206,7 +253,7 @@
       "passed": true
     }
   ],
-  "passed": 47,
+  "passed": 57,
   "failed": 0,
   "scope": "Synthetic sessions in real Firefox; actual Google provider login excluded",
   "driverRelease": "v0.37.1",

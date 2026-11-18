@@ -1,8 +1,8 @@
 {
 	"@programName": "ZAP",
 	"@version": "2.17.0",
-	"@generated": "Wed, 18 Nov 2026 04:30:56",
-	"created": "2026-11-18T04:30:56.141023167Z",
+	"@generated": "Wed, 18 Nov 2026 12:41:12",
+	"created": "2026-11-18T12:41:12.251758970Z",
 	"insights":[
 		{
 			"level": "Medium",
@@ -127,19 +127,51 @@
 		{
 			"level": "Info",
 			"reason": "Informational",
+			"site": "https://host.docker.internal:4300",
+			"key": "insight.endpoint.method.GET",
+			"description": "Percentage of endpoints with method GET",
+			"statistic": "100"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://host.docker.internal:4300",
+			"key": "insight.endpoint.total",
+			"description": "Count of total endpoints",
+			"statistic": "1"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
 			"site": "https://www.gstatic.com",
 			"key": "insight.code.2xx",
 			"description": "Percentage of responses with status code 2xx",
 			"statistic": "100"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://www.gstatic.com",
+			"key": "insight.response.slow",
+			"description": "Percentage of slow responses",
+			"statistic": "50"
 		}
 	],
-	"site":[ 
+	"site":[
+		{
+			"@name": "https://host.docker.internal:4300",
+			"@host": "host.docker.internal",
+			"@port": "4300",
+			"@ssl": "true",
+			"alerts": [
+			]
+		},
 		{
 			"@name": "http://host.docker.internal:4301",
 			"@host": "host.docker.internal",
 			"@port": "4301",
 			"@ssl": "false",
-			"alerts": [ 
+			"alerts": [
 			]
 		},
 		{
@@ -147,7 +179,7 @@
 			"@host": "host.docker.internal",
 			"@port": "4300",
 			"@ssl": "false",
-			"alerts": [ 
+			"alerts": [
 				{
 					"pluginid": "10055",
 					"alertRef": "10055-6",
@@ -157,15 +189,15 @@
 					"confidence": "3",
 					"riskdesc": "Medium (High)",
 					"desc": "<p>Content Security Policy (CSP) is an added layer of security that helps to detect and mitigate certain types of attacks. Including (but not limited to) Cross Site Scripting (XSS), and data injection attacks. These attacks are used for everything from data theft to site defacement or distribution of malware. CSP provides a set of standard HTTP headers that allow website owners to declare approved sources of content that browsers should be allowed to load on that page \u2014 covered types are JavaScript, CSS, HTML frames, fonts, images and embeddable objects such as Java applets, ActiveX, audio and video files.</p>",
-					"instances":[ 
+					"instances":[
 						{
-							"id": "11",
+							"id": "5",
 							"uri": "http://host.docker.internal:4300",
 							"nodeName": "http:\/\/host.docker.internal:4300",
 							"method": "GET",
 							"param": "content-security-policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'nonce-MjYwZmEzNDktMzA1MC00N2MzLWI3N2ItYmUwNGI4NTM3MmZj' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.gstatic.com https://lh3.googleusercontent.com; font-src 'self'; connect-src 'self' http://host.docker.internal:4301; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+							"evidence": "default-src 'self'; script-src 'self' 'nonce-M2YwMzIzZjQtYzQ4NS00YTRjLTgwZDYtOTA1MjllZDBhMzM5' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.gstatic.com https://lh3.googleusercontent.com; font-src 'self'; connect-src 'self' http://host.docker.internal:4301; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
 							"otherinfo": "style-src includes unsafe-inline."
 						},
 						{
@@ -175,37 +207,37 @@
 							"method": "GET",
 							"param": "content-security-policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'nonce-MDdkZmQyMjYtZWUxOS00MTVhLWFjZjAtN2ZjM2ZjM2FmMzM4' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.gstatic.com https://lh3.googleusercontent.com; font-src 'self'; connect-src 'self' http://host.docker.internal:4301; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+							"evidence": "default-src 'self'; script-src 'self' 'nonce-MmYwNTk3YmYtMjUwNS00ODk5LWI2NTQtNzc3ZjgwNTkyNzhi' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.gstatic.com https://lh3.googleusercontent.com; font-src 'self'; connect-src 'self' http://host.docker.internal:4301; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
 							"otherinfo": "style-src includes unsafe-inline."
 						},
 						{
-							"id": "10",
+							"id": "11",
 							"uri": "http://host.docker.internal:4300/",
 							"nodeName": "http:\/\/host.docker.internal:4300\/",
 							"method": "GET",
 							"param": "content-security-policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'nonce-NTg4ZTU3Y2YtYjNmZS00ZjNlLWE0MDgtOWY1NGE0ZTIzZGMw' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.gstatic.com https://lh3.googleusercontent.com; font-src 'self'; connect-src 'self' http://host.docker.internal:4301; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+							"evidence": "default-src 'self'; script-src 'self' 'nonce-YjE3YzlmYmUtMDViMC00OTAzLWI5NmEtMGI2YWI1N2E1Nzk0' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.gstatic.com https://lh3.googleusercontent.com; font-src 'self'; connect-src 'self' http://host.docker.internal:4301; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
 							"otherinfo": "style-src includes unsafe-inline."
 						},
 						{
-							"id": "4",
+							"id": "13",
 							"uri": "http://host.docker.internal:4300/robots.txt",
 							"nodeName": "http:\/\/host.docker.internal:4300\/robots.txt",
 							"method": "GET",
 							"param": "content-security-policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'nonce-YTY4ZmI1Y2QtNjYzZC00ODAzLTk1ZGEtMWEwMDc0MjkzOTY0' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.gstatic.com https://lh3.googleusercontent.com; font-src 'self'; connect-src 'self' http://host.docker.internal:4301; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+							"evidence": "default-src 'self'; script-src 'self' 'nonce-ZjQ4ODI1ZTQtMmVkMy00OTJjLWFjNTEtY2E0NDg1YjA0ZTdl' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.gstatic.com https://lh3.googleusercontent.com; font-src 'self'; connect-src 'self' http://host.docker.internal:4301; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
 							"otherinfo": "style-src includes unsafe-inline."
 						},
 						{
-							"id": "5",
+							"id": "4",
 							"uri": "http://host.docker.internal:4300/sitemap.xml",
 							"nodeName": "http:\/\/host.docker.internal:4300\/sitemap.xml",
 							"method": "GET",
 							"param": "content-security-policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'nonce-NzhlOWY3NzMtNWJkZC00OWM4LWE1YjYtN2IyZTFhM2VmNjg4' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.gstatic.com https://lh3.googleusercontent.com; font-src 'self'; connect-src 'self' http://host.docker.internal:4301; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+							"evidence": "default-src 'self'; script-src 'self' 'nonce-OWI3MTc0ODAtYzMzMS00MTMyLWEzOWEtY2MwY2Q0ZjE3MDVk' 'strict-dynamic'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.gstatic.com https://lh3.googleusercontent.com; font-src 'self'; connect-src 'self' http://host.docker.internal:4301; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
 							"otherinfo": "style-src includes unsafe-inline."
 						}
 					],
@@ -216,7 +248,37 @@
 					"reference": "<p>https://www.w3.org/TR/CSP/</p><p>https://caniuse.com/#search=content+security+policy</p><p>https://content-security-policy.com/</p><p>https://github.com/HtmlUnit/htmlunit-csp</p><p>https://web.dev/articles/csp#resource-options</p>",
 					"cweid": "693",
 					"wascid": "15",
-					"sourceid": "9"
+					"sourceid": "8"
+				},
+				{
+					"pluginid": "10106",
+					"alertRef": "10106",
+					"alert": "HTTP Only Site",
+					"name": "HTTP Only Site",
+					"riskcode": "2",
+					"confidence": "2",
+					"riskdesc": "Medium (Medium)",
+					"desc": "<p>The site is only served under HTTP and not HTTPS.</p>",
+					"instances":[
+						{
+							"id": "28",
+							"uri": "http://host.docker.internal:4300/",
+							"nodeName": "https:\/\/host.docker.internal:4300\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "Failed to connect.\nZAP attempted to connect via: https://host.docker.internal:4300/"
+						}
+					],
+					"count": "1",
+					"systemic": false,
+					"solution": "<p>Configure your web or application server to use SSL (https).</p>",
+					"otherinfo": "<p>Failed to connect.</p><p>ZAP attempted to connect via: https://host.docker.internal:4300/</p>",
+					"reference": "<p>https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html</p><p>https://letsencrypt.org/</p>",
+					"cweid": "311",
+					"wascid": "4",
+					"sourceid": "1176"
 				},
 				{
 					"pluginid": "90004",
@@ -227,9 +289,9 @@
 					"confidence": "2",
 					"riskdesc": "Low (Medium)",
 					"desc": "<p>Cross-Origin-Embedder-Policy header is a response header that prevents a document from loading any cross-origin resources that don't explicitly grant the document permission (using CORP or CORS).</p>",
-					"instances":[ 
+					"instances":[
 						{
-							"id": "17",
+							"id": "10",
 							"uri": "http://host.docker.internal:4300",
 							"nodeName": "http:\/\/host.docker.internal:4300",
 							"method": "GET",
@@ -249,7 +311,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "22",
+							"id": "27",
 							"uri": "http://host.docker.internal:4300/login",
 							"nodeName": "http:\/\/host.docker.internal:4300\/login",
 							"method": "GET",
@@ -266,7 +328,7 @@
 					"reference": "<p>https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cross-Origin-Embedder-Policy</p>",
 					"cweid": "693",
 					"wascid": "14",
-					"sourceid": "9"
+					"sourceid": "8"
 				},
 				{
 					"pluginid": "10109",
@@ -277,9 +339,9 @@
 					"confidence": "2",
 					"riskdesc": "Informational (Medium)",
 					"desc": "<p>The application appears to be a modern web application. If you need to explore it automatically then the Client Spider may well be more effective than the standard one.</p>",
-					"instances":[ 
+					"instances":[
 						{
-							"id": "13",
+							"id": "8",
 							"uri": "http://host.docker.internal:4300",
 							"nodeName": "http:\/\/host.docker.internal:4300",
 							"method": "GET",
@@ -299,7 +361,7 @@
 							"otherinfo": "Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application."
 						},
 						{
-							"id": "20",
+							"id": "26",
 							"uri": "http://host.docker.internal:4300/login",
 							"nodeName": "http:\/\/host.docker.internal:4300\/login",
 							"method": "GET",
@@ -309,23 +371,23 @@
 							"otherinfo": "Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application."
 						},
 						{
-							"id": "6",
+							"id": "15",
 							"uri": "http://host.docker.internal:4300/robots.txt",
 							"nodeName": "http:\/\/host.docker.internal:4300\/robots.txt",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "<script src=\"/_next/static/chunks/4bd1b696-7a3b7f6429414305.js\" async=\"\" nonce=\"YTY4ZmI1Y2QtNjYzZC00ODAzLTk1ZGEtMWEwMDc0MjkzOTY0\"></script>",
+							"evidence": "<script src=\"/_next/static/chunks/08eb5313-6fdffe88131adc99.js\" async=\"\" nonce=\"ZjQ4ODI1ZTQtMmVkMy00OTJjLWFjNTEtY2E0NDg1YjA0ZTdl\"></script>",
 							"otherinfo": "No links have been found while there are scripts, which is an indication that this is a modern web application."
 						},
 						{
-							"id": "7",
+							"id": "6",
 							"uri": "http://host.docker.internal:4300/sitemap.xml",
 							"nodeName": "http:\/\/host.docker.internal:4300\/sitemap.xml",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "<script src=\"/_next/static/chunks/4bd1b696-7a3b7f6429414305.js\" async=\"\" nonce=\"NzhlOWY3NzMtNWJkZC00OWM4LWE1YjYtN2IyZTFhM2VmNjg4\"></script>",
+							"evidence": "<script src=\"/_next/static/chunks/08eb5313-6fdffe88131adc99.js\" async=\"\" nonce=\"OWI3MTc0ODAtYzMzMS00MTMyLWEzOWEtY2MwY2Q0ZjE3MDVk\"></script>",
 							"otherinfo": "No links have been found while there are scripts, which is an indication that this is a modern web application."
 						}
 					],
@@ -336,7 +398,7 @@
 					"reference": "",
 					"cweid": "-1",
 					"wascid": "-1",
-					"sourceid": "9"
+					"sourceid": "8"
 				},
 				{
 					"pluginid": "10049",
@@ -347,9 +409,9 @@
 					"confidence": "2",
 					"riskdesc": "Informational (Medium)",
 					"desc": "<p>The response contents are not storable by caching components such as proxy servers. If the response does not contain sensitive, personal or user-specific information, it may benefit from being stored and cached, to improve performance.</p>",
-					"instances":[ 
+					"instances":[
 						{
-							"id": "15",
+							"id": "9",
 							"uri": "http://host.docker.internal:4300",
 							"nodeName": "http:\/\/host.docker.internal:4300",
 							"method": "GET",
@@ -369,17 +431,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "21",
-							"uri": "http://host.docker.internal:4300/login",
-							"nodeName": "http:\/\/host.docker.internal:4300\/login",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "no-store",
-							"otherinfo": ""
-						},
-						{
-							"id": "8",
+							"id": "17",
 							"uri": "http://host.docker.internal:4300/robots.txt",
 							"nodeName": "http:\/\/host.docker.internal:4300\/robots.txt",
 							"method": "GET",
@@ -389,7 +441,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "9",
+							"id": "7",
 							"uri": "http://host.docker.internal:4300/sitemap.xml",
 							"nodeName": "http:\/\/host.docker.internal:4300\/sitemap.xml",
 							"method": "GET",
@@ -399,14 +451,14 @@
 							"otherinfo": ""
 						}
 					],
-					"count": "5",
+					"count": "4",
 					"systemic": false,
 					"solution": "<p>The content may be marked as storable by ensuring that the following conditions are satisfied:</p><p>The request method must be understood by the cache and defined as being cacheable (\"GET\", \"HEAD\", and \"POST\" are currently defined as cacheable)</p><p>The response status code must be understood by the cache (one of the 1XX, 2XX, 3XX, 4XX, or 5XX response classes are generally understood)</p><p>The \"no-store\" cache directive must not appear in the request or response header fields</p><p>For caching by \"shared\" caches such as \"proxy\" caches, the \"private\" response directive must not appear in the response</p><p>For caching by \"shared\" caches such as \"proxy\" caches, the \"Authorization\" header field must not appear in the request, unless the response explicitly allows it (using one of the \"must-revalidate\", \"public\", or \"s-maxage\" Cache-Control response directives)</p><p>In addition to the conditions above, at least one of the following conditions must also be satisfied by the response:</p><p>It must contain an \"Expires\" header field</p><p>It must contain a \"max-age\" response directive</p><p>For \"shared\" caches such as \"proxy\" caches, it must contain a \"s-maxage\" response directive</p><p>It must contain a \"Cache Control Extension\" that allows it to be cached</p><p>It must have a status code that is defined as cacheable by default (200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501).</p>",
 					"otherinfo": "",
 					"reference": "<p>https://datatracker.ietf.org/doc/html/rfc7234</p><p>https://datatracker.ietf.org/doc/html/rfc7231</p><p>https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html</p>",
 					"cweid": "524",
 					"wascid": "13",
-					"sourceid": "9"
+					"sourceid": "8"
 				},
 				{
 					"pluginid": "10049",
@@ -417,11 +469,11 @@
 					"confidence": "2",
 					"riskdesc": "Informational (Medium)",
 					"desc": "<p>The response contents are storable by caching components such as proxy servers, and may be retrieved directly from the cache, rather than from the origin server by the caching servers, in response to similar requests from other users. If the response data is sensitive, personal or user-specific, this may result in sensitive information being leaked. In some cases, this may even result in a user gaining complete control of the session of another user, depending on the configuration of the caching components in use in their environment. This is primarily an issue where \"shared\" caching servers such as \"proxy\" caches are configured on the local network. This configuration is typically found in corporate or educational environments, for instance.</p>",
-					"instances":[ 
+					"instances":[
 						{
-							"id": "25",
-							"uri": "http://host.docker.internal:4300/_next/static/chunks/4bd1b696-7a3b7f6429414305.js",
-							"nodeName": "http:\/\/host.docker.internal:4300\/_next\/static\/chunks\/4bd1b696-7a3b7f6429414305.js",
+							"id": "21",
+							"uri": "http://host.docker.internal:4300/_next/static/chunks/08eb5313-6fdffe88131adc99.js",
+							"nodeName": "http:\/\/host.docker.internal:4300\/_next\/static\/chunks\/08eb5313-6fdffe88131adc99.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -429,9 +481,9 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "26",
-							"uri": "http://host.docker.internal:4300/_next/static/chunks/794-81a0d925025fe236.js",
-							"nodeName": "http:\/\/host.docker.internal:4300\/_next\/static\/chunks\/794-81a0d925025fe236.js",
+							"id": "22",
+							"uri": "http://host.docker.internal:4300/_next/static/chunks/main-app-3e9c9a72543e3cdb.js",
+							"nodeName": "http:\/\/host.docker.internal:4300\/_next\/static\/chunks\/main-app-3e9c9a72543e3cdb.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -439,9 +491,9 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "23",
-							"uri": "http://host.docker.internal:4300/_next/static/chunks/webpack-0863e7af81f953e6.js",
-							"nodeName": "http:\/\/host.docker.internal:4300\/_next\/static\/chunks\/webpack-0863e7af81f953e6.js",
+							"id": "20",
+							"uri": "http://host.docker.internal:4300/_next/static/chunks/webpack-2870cfcdfaa8c942.js",
+							"nodeName": "http:\/\/host.docker.internal:4300\/_next\/static\/chunks\/webpack-2870cfcdfaa8c942.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -449,7 +501,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "24",
+							"id": "19",
 							"uri": "http://host.docker.internal:4300/_next/static/css/c6f2c000c9cb9603.css",
 							"nodeName": "http:\/\/host.docker.internal:4300\/_next\/static\/css\/c6f2c000c9cb9603.css",
 							"method": "GET",
@@ -476,7 +528,7 @@
 					"reference": "<p>https://datatracker.ietf.org/doc/html/rfc7234</p><p>https://datatracker.ietf.org/doc/html/rfc7231</p><p>https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html</p>",
 					"cweid": "524",
 					"wascid": "13",
-					"sourceid": "35"
+					"sourceid": "31"
 				},
 				{
 					"pluginid": "10104",
@@ -487,19 +539,9 @@
 					"confidence": "2",
 					"riskdesc": "Informational (Medium)",
 					"desc": "<p>Check for differences in response based on fuzzed User Agent (eg. mobile sites, access as a Search Engine Crawler). Compares the response statuscode and the hashcode of the response body with the original response.</p>",
-					"instances":[ 
+					"instances":[
 						{
-							"id": "33",
-							"uri": "http://host.docker.internal:4300",
-							"nodeName": "http:\/\/host.docker.internal:4300",
-							"method": "GET",
-							"param": "Header User-Agent",
-							"attack": "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)",
-							"evidence": "",
-							"otherinfo": ""
-						},
-						{
-							"id": "30",
+							"id": "32",
 							"uri": "http://host.docker.internal:4300",
 							"nodeName": "http:\/\/host.docker.internal:4300",
 							"method": "GET",
@@ -509,12 +551,22 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "28",
+							"id": "30",
 							"uri": "http://host.docker.internal:4300",
 							"nodeName": "http:\/\/host.docker.internal:4300",
 							"method": "GET",
 							"param": "Header User-Agent",
 							"attack": "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1)",
+							"evidence": "",
+							"otherinfo": ""
+						},
+						{
+							"id": "34",
+							"uri": "http://host.docker.internal:4300/",
+							"nodeName": "http:\/\/host.docker.internal:4300\/",
+							"method": "GET",
+							"param": "Header User-Agent",
+							"attack": "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)",
 							"evidence": "",
 							"otherinfo": ""
 						},
@@ -546,7 +598,7 @@
 					"reference": "<p>https://owasp.org/www-project-web-security-testing-guide/</p>",
 					"cweid": "0",
 					"wascid": "0",
-					"sourceid": "1423"
+					"sourceid": "1422"
 				}
 			]
 		}

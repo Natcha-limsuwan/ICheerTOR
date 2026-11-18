@@ -1,5 +1,7 @@
 import dotenv from "dotenv";
-dotenv.config();
+// Test harnesses supply a disposable database and synthetic credentials before
+// importing this module. Never read a developer's real .env during tests.
+if (process.env.NODE_ENV !== "test") dotenv.config();
 
 interface EnvConfig {
   PORT: number;

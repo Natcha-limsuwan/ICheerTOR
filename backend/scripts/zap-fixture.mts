@@ -1,5 +1,6 @@
 /** Local DAST fixture. Never reads a configured database or external credentials. */
 import crypto from "node:crypto";
+import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { MongoMemoryReplSet } from "mongodb-memory-server";
@@ -12,11 +13,12 @@ if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("Inv
 const directory = resolve(output);
 await mkdir(directory, { recursive: true, mode: 0o700 });
 const mongo = await MongoMemoryReplSet.create({ replSet: { count: 1, storageEngine: "wiredTiger" } });
+const disposableUri = mongo.getUri("icheertor_zap_disposable");
 
 // Override inherited settings BEFORE importing the app. No dotenv, real SMTP,
 // scheduler, Google, or Vertex credentials are used by this fixture.
 Object.assign(process.env, {
-  NODE_ENV: "test", MONGODB_URI: mongo.getUri("icheertor_zap_disposable"),
+  NODE_ENV: "test", MONGODB_URI: disposableUri,
   JWT_SECRET: crypto.randomBytes(48).toString("hex"),
   GOOGLE_CLIENT_ID: "synthetic-zap-client", GOOGLE_CLIENT_SECRET: "synthetic-zap-secret",
   GOOGLE_CALLBACK_URL: `http://localhost:${port}/api/auth/google/callback`,
@@ -36,6 +38,8 @@ const { default: Notification } = await import("../src/db/models/notification.js
 const { default: VendorProfile } = await import("../src/db/models/vendor-profile.js");
 const { default: ConsentRecord } = await import("../src/db/models/consent-record.js");
 const { startSession } = await import("../src/auth/session-service.js");
+const { env: testEnvironment } = await import("../src/config/env.js");
+assert.equal(testEnvironment.MONGODB_URI, disposableUri, "Refusing any database except our generated fixture");
 await connectDB();
 await Promise.all([User.init(), Bookmark.init(), VendorProfile.init()]);
 

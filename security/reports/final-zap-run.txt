@@ -1,0 +1,16 @@
+Building frontend production code...
+Starting ZAP active scan: frontend
+Starting ZAP active scan: user
+Finished user: exit=0, 2 alert types
+Starting ZAP active scan: admin
+Finished admin: exit=0, 2 alert types
+Starting ZAP active scan: developer
+Finished frontend: exit=2, 7 alert types
+Starting ZAP active scan: anonymous
+Finished developer: exit=0, 2 alert types
+Finished anonymous: exit=0, 2 alert types
+Reports saved in security/reports; exit 1/2 means findings, not a clean scan.
+Temporary runtime stopped. Private logs: /var/folders/t9/xlzy6fq113q0b0l1r63h5_j40000gn/T/icheertor-zap-v_7vkijl
+Running authenticated Firefox security tests...
+{"passed": 57, "failed": 0, "runtimeExitCode": 0}
+Private runtime logs: /var/folders/t9/xlzy6fq113q0b0l1r63h5_j40000gn/T/icheertor-browser-54__b_5l
