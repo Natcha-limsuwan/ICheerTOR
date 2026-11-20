@@ -1,0 +1,26 @@
+{
+  "generatedAtUtc": "2026-11-20T03:23:48.068267+00:00",
+  "command": "npm sbom --package-lock-only --omit=dev --sbom-format=cyclonedx --sbom-type=application",
+  "scope": "Production dependency graph from package-lock.json; not installed runtime, image/OS inventory or provenance attestation.",
+  "ciStatus": "Configured; no GitHub run triggered or verified.",
+  "applications": [
+    {
+      "application": "backend",
+      "format": "CycloneDX",
+      "specVersion": "1.5",
+      "components": 164,
+      "dependencyNodes": 165,
+      "lockfileSha256": "1a5b8f3b4d7a6f4ced46730309b85229e2bcbc8c21f85dedb23961550541027c",
+      "sbomSha256": "3fa60415798e05ca8312b48f222293c84da5e1d1729b3215e1c4926921e7e136"
+    },
+    {
+      "application": "frontend",
+      "format": "CycloneDX",
+      "specVersion": "1.5",
+      "components": 93,
+      "dependencyNodes": 94,
+      "lockfileSha256": "ad610be94afc4b7ce46ea51e68142db95e330c3b586b10222c64acd84fa6ff96",
+      "sbomSha256": "326e2c95d426f9e82f37f1373acb1fe41c5a11621289a0914dc6ce994527d9a4"
+    }
+  ]
+}

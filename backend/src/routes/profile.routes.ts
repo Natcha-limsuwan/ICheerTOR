@@ -11,9 +11,9 @@ router.use(authenticate, requireScope("profile:own"));
 
 /*
  * The profile is always looked up by the session's userId, so there is no
- * profile id a client could change to reach another company's data (T07).
+ * profile id a client could change to reach another company's data (T05).
  * Bodies pass through an allowlist schema: userId, _id, timestamps and the
- * server-derived maxContractValue can never be written (T10).
+ * server-derived maxContractValue can never be written (T08).
  */
 
 /** GET /api/profile — Get current user's vendor profile. */

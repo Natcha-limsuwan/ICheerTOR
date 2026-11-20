@@ -23,3 +23,4 @@ export async function updateOwnedExtraction(id: string, owner: string, update: U
   }, update);
   if (result.matchedCount !== 1) throw new LeaseLostError();
 }
+

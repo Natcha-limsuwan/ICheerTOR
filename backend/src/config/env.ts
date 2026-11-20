@@ -93,7 +93,7 @@ export const env: EnvConfig = {
 };
 
 /**
- * Fail closed on insecure configuration (ASVS V13.3.1, threat T03/T26).
+ * Fail closed on insecure configuration (ASVS V13.3.1, threat T03/T23).
  *
  * In production the server refuses to start with a missing, default or short
  * JWT secret, missing OAuth/database credentials, or a non-HTTPS frontend.

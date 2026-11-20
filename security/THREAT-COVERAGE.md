@@ -1,8 +1,6 @@
 # Security hardening coverage
 
-Scope: Google OAuth only. T05 (application passwords), T06 (application MFA),
-and T12 (cookie-authenticated application API) are excluded. The short-lived
-OAuth transaction cookie is not an application session cookie.
+Scope: Google OAuth only. Application passwords, application MFA and cookie-authenticated application APIs are outside the current feature scope. The short-lived OAuth transaction cookie is not an application session cookie. Threat IDs use the current sequential T01–T25 register.
 
 This checklist distinguishes implemented code from deployment evidence. It is
 not a claim that all ASVS requirements or all possible threats are resolved.
@@ -16,33 +14,33 @@ not a claim that all ASVS requirements or all possible threats are resolved.
 - T02/T03: server-side session revocation, idle and absolute timeouts, fixed
   JWT algorithm/issuer/audience and required claims. The frontend presents its
   existing token during exchange so re-login invalidates the old session.
-- T07/T08: object ownership and server-derived scopes; account role/status is
+- T05/T06: object ownership and server-derived scopes; account role/status is
   reloaded on requests. Sensitive role changes and TOR review require recent
   application authentication. Google email must be verified before provisioning.
   Administrative account-status changes also require recent authentication.
-- T09/T10: request schemas and writable-field allowlists from the previous
+- T07/T08: request schemas and writable-field allowlists from the previous
   hardening remain in place; regression tests cover injection and mass assignment.
-- T11/T25: email escaping from the previous hardening is retained. Frontend
+- T09/T22: email escaping from the previous hardening is retained. Frontend
   scripts use per-request nonces, with no production script `unsafe-inline` or
   `unsafe-eval`. HTML responses are private/no-store. MUI styles still allow
   inline CSS; this is an explicitly outstanding hardening opportunity.
-- T13: procurement clients use exact HTTPS host allowlists, reject credentials
+- T10: procurement clients use exact HTTPS host allowlists, reject credentials
   and alternate ports, and validate each redirect (maximum three). Google/SMTP/
   Vertex integrations are SDK/provider integrations and require their own egress
   network configuration in production. DNS/network-level restrictions remain operational work.
-- T14/T15: streamed response limits stop oversized downloads before buffering
+- T11/T12: streamed response limits stop oversized downloads before buffering
   the entire body. ZIP parsing caps archive size (80 MiB), per-entry expansion
   (40 MiB), total declared expansion (128 MiB), and entry count (500). It checks
   directory bounds, unsupported/encrypted entries, symlinks, duplicates and unsafe
   paths. Decompression is capped independently of untrusted declared sizes.
   PDF text extraction also bounds bytes/pages/items/text and cleans up parser resources.
-- T16: MongoDB-backed fixed-window counters share API/auth/sensitive limits
+- T13: MongoDB-backed fixed-window counters share API/auth/sensitive limits
   across replicas. No silent in-memory fallback exists if the store fails.
-- T19/T20: TOR mutation and correction history share a transaction. Account
+- T16/T17: TOR mutation and correction history share a transaction. Account
   status/role updates and audit records share a transaction; compare-and-set
   conditions reject stale target snapshots. Account deletion and session revocation
   are transactional. Tests inject an audit failure and verify rollback.
-- T23/T24: in-app listing respects the sent channel; notification producers
+- T20/T21: in-app listing respects the sent channel; notification producers
   honour in-app preferences. Explicit withdrawal of `data_processing` blocks
   personalised matching and background notifications. Existing accounts without
   a consent record retain existing service behaviour; absence of a record must
@@ -50,21 +48,21 @@ not a claim that all ASVS requirements or all possible threats are resolved.
 
 ## Existing controls with remaining work
 
-- T17/T18: strict local schema validation, confidence review flags and an explicit
+- T14/T15: strict local schema validation, confidence review flags and an explicit
   untrusted-document prompt boundary now have generated PDF/ZIP and mocked-model
   attack evidence in RESILIENCE-TEST-RESULTS.md. Real-model adversarial evaluation
   remains pending. No claim of complete
   prompt-injection or hallucination prevention is made.
-- T21: structured logs and restricted API access exist. Immutable/off-host logs,
+- T18: structured logs and restricted API access exist. Immutable/off-host logs,
   database credentials that prohibit log modification, and retention are deployment tasks.
-- T22: API no-store, projections and generic errors exist. Review all logs and
+- T19: API no-store, projections and generic errors exist. Review all logs and
   exported/retained personal data against a documented classification policy.
-- T24: related working data is deleted; Google ID, consent/audit records and
+- T21: related working data is deleted; Google ID, consent/audit records and
   backups still require an approved retention/pseudonymisation policy. Do not
   describe the operation as irreversible erasure of every personal-data copy.
-- T26/T27: configuration checks, Docker exclusions and CI scanning exist.
+- T23/T24: configuration checks, Docker exclusions and CI scanning exist.
   Verify actual IAM, secrets, final images, dependency/SBOM provenance and live CI.
-- T28: bounded network calls, single recovery probes, per-process AI capacity and
+- T25: bounded network calls, single recovery probes, per-process AI capacity and
   fenced extraction leases have synthetic fault/load/crashed-child tests. A fixture
   EJSON backup/restore round trip passes. Isolated parser workers, global job
   concurrency, durable email deduplication/quotas and operational disaster recovery

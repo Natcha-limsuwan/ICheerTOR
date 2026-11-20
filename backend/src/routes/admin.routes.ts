@@ -41,13 +41,14 @@ router.use(authenticate);
 router.use(requireRole("admin", "developer"));
 router.param("id", objectIdParam);
 
-/** Fields an admin needs about an account; googleId and preferences are never returned (T22). */
+/** Fields an admin needs about an account; googleId and preferences are never returned (T19). */
 const ADMIN_USER_FIELDS = "name email avatarUrl role status isVerified lastLoginAt createdAt deletedAt";
 
 /**
  * GET /api/admin/users — List all users.
  */
-router.get("/users", requireScope("users:read"), validate({ query: adminUsersQuery }), async (req: Request, res: Response) => {
+router.get("/users", requireScope("users:read"), validate({ query: adminUsersQuery }), 
+  async (req: Request, res: Response) => {
   await connectDB();
 
   const status = req.query.status as string | undefined;
@@ -60,7 +61,7 @@ router.get("/users", requireScope("users:read"), validate({ query: adminUsersQue
   if (status) filter.status = status;
   if (role) filter.role = role;
   if (q) {
-    // Escaped: the search is a literal substring match, not a user-supplied regex (T15).
+    // Escaped: the search is a literal substring match, not a user-supplied regex (T12).
     const pattern = escapeRegex(q);
     filter.$or = [
       { name: { $regex: pattern, $options: "i" } },

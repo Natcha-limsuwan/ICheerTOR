@@ -35,7 +35,9 @@ export async function readLimitedBody(response: Response, maxBytes: number): Pro
   } finally { reader.releaseLock(); }
 }
 
-export async function procurementFetch(value: string, options: RequestInit, maxBytes: number): Promise<{ response: Response; body: Buffer }> {
+export async function procurementFetch(value: string, options: RequestInit, maxBytes: number): 
+  Promise<{ response: Response; body: Buffer }> 
+{
   let url = assertProcurementUrl(value);
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     const response = await fetch(url, { ...options, redirect: "manual" });

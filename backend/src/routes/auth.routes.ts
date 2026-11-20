@@ -27,9 +27,7 @@ const loginRedirect = (error: string) => `${env.FRONTEND_URL}/login?error=${enco
  * GET /api/auth/google — Start Google OAuth.
  * The strategy adds a per-browser `state` and a PKCE code_challenge.
  */
-router.get(
-  "/google",
-  authLimiter,
+router.get("/google",authLimiter,
   validate({ query: googleStartQuery }),
   passport.authenticate("google", {
     scope: ["profile", "email"],

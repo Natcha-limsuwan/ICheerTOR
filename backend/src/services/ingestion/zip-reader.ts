@@ -95,7 +95,8 @@ export function listEntries(zip: Buffer): ZipEntry[] {
 
     const nameBuf = zip.subarray(offset + 46, offset + 46 + nameLen);
     const name = decodeName(nameBuf, (flags & 0x800) !== 0);
-    if (name.includes("\0") || name.startsWith("/") || name.includes("\\") || /^[a-z]:/i.test(name) || name.split("/").includes("..") || names.has(name)) throw new Error("Unsafe or duplicate ZIP entry name");
+    if (name.includes("\0") || name.startsWith("/") || name.includes("\\") ||
+      /^[a-z]:/i.test(name) || name.split("/").includes("..") || names.has(name)) throw new Error("Unsafe or duplicate ZIP entry name");
     names.add(name);
 
     entries.push({
@@ -116,8 +117,9 @@ export function listEntries(zip: Buffer): ZipEntry[] {
 
 /** Read one entry's bytes, decompressing when needed. */
 export function readEntry(zip: Buffer, entry: ZipEntry): Buffer {
-  if (!listEntries(zip).some((e) => e.offset === entry.offset && e.size === entry.size && e.compressedSize === entry.compressedSize && e.method === entry.method && e.rawName === entry.rawName)) {
-    throw new Error("Unknown ZIP entry");
+  if (!listEntries(zip).some((e) => e.offset === entry.offset && e.size === entry.size &&
+    e.compressedSize === entry.compressedSize && e.method === entry.method && e.rawName === entry.rawName)) {
+      throw new Error("Unknown ZIP entry");
   }
   if (zip.readUInt32LE(entry.offset) !== LOC_SIG) {
     throw new Error(`local header ไม่ถูกต้องสำหรับ ${entry.name}`);

@@ -67,8 +67,30 @@ const ui = http.createServer(async (req, res) => {
   }
   res.setHeader("Content-Type", "text/html; charset=utf-8"); res.end(html);
 });
-const server = app.listen(4401, "localhost");
-ui.listen(4400, "localhost");
-async function cleanup() { ui.close(); server.close(); await mongoose.disconnect(); await mongo.stop(); process.exit(0); }
-process.once("SIGINT", cleanup); process.once("SIGTERM", cleanup);
-console.log("Isolated database ready (no source DB connection).\nGoogle callback: http://localhost:4401/api/auth/google/callback\nOpen http://localhost:4400 and sign in yourself.\nCtrl+C removes the disposable database. Do not run ZAP against Google.");
+const server = http.createServer(app);
+let cleaning = false;
+async function cleanup() {
+  if (cleaning) return;
+  cleaning = true;
+  ui.close(); server.close();
+  await mongoose.disconnect(); await mongo.stop();
+}
+function listen(target: http.Server, port: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    target.once("error", reject);
+    target.listen(port, "localhost", () => { target.removeListener("error", reject); resolve(); });
+  });
+}
+process.once("SIGINT", () => { void cleanup().then(() => process.exit(0)); });
+process.once("SIGTERM", () => { void cleanup().then(() => process.exit(0)); });
+try {
+  await listen(server, 4401);
+  await listen(ui, 4400);
+  console.log("Isolated database ready (no source DB connection).\nGoogle callback: http://localhost:4401/api/auth/google/callback\nOpen http://localhost:4400 and sign in yourself.\nCtrl+C removes the disposable database. Do not run ZAP against Google.");
+} catch (error) {
+  console.error((error as NodeJS.ErrnoException).code === "EADDRINUSE"
+    ? "Port 4400 or 4401 is already in use. Stop the previous isolated login test before retrying."
+    : "Could not start isolated login listeners.");
+  await cleanup();
+  process.exitCode = 1;
+}

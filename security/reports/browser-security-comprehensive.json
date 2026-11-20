@@ -9,7 +9,7 @@
       "passed": true
     },
     {
-      "test": "user browser loads /procurement/6afd9d331470b6d226450ede",
+      "test": "user browser loads /procurement/6afea57a5a7b896c56ab7cf3",
       "passed": true
     },
     {
@@ -25,7 +25,7 @@
       "passed": true
     },
     {
-      "test": "user browser loads /compare?ids=6afd9d331470b6d226450ede,6afd9d331470b6d226450edf",
+      "test": "user browser loads /compare?ids=6afea57a5a7b896c56ab7cf3,6afea57a5a7b896c56ab7cf4",
       "passed": true
     },
     {
@@ -41,7 +41,7 @@
       "passed": true
     },
     {
-      "test": "admin browser loads /procurement/6afd9d331470b6d226450ede",
+      "test": "admin browser loads /procurement/6afea57a5a7b896c56ab7cf3",
       "passed": true
     },
     {
@@ -57,7 +57,7 @@
       "passed": true
     },
     {
-      "test": "admin browser loads /compare?ids=6afd9d331470b6d226450ede,6afd9d331470b6d226450edf",
+      "test": "admin browser loads /compare?ids=6afea57a5a7b896c56ab7cf3,6afea57a5a7b896c56ab7cf4",
       "passed": true
     },
     {
@@ -77,7 +77,7 @@
       "passed": true
     },
     {
-      "test": "developer browser loads /procurement/6afd9d331470b6d226450ede",
+      "test": "developer browser loads /procurement/6afea57a5a7b896c56ab7cf3",
       "passed": true
     },
     {
@@ -93,7 +93,7 @@
       "passed": true
     },
     {
-      "test": "developer browser loads /compare?ids=6afd9d331470b6d226450ede,6afd9d331470b6d226450edf",
+      "test": "developer browser loads /compare?ids=6afea57a5a7b896c56ab7cf3,6afea57a5a7b896c56ab7cf4",
       "passed": true
     },
     {

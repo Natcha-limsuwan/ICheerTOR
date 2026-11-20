@@ -2,7 +2,7 @@ import type { UserRole } from "../types.js";
 
 /**
  * Permission model: roles grant scopes, routes require scopes
- * (threat T08; ASVS V8.1.1, V8.2.1, V8.3.1).
+ * (threat T06; ASVS V8.1.1, V8.2.1, V8.3.1).
  *
  * Scopes are derived on the server from the user's *current* role in the
  * database on every request (see middleware/auth.ts). They are never read

@@ -25,7 +25,7 @@ See [the additional review results](ACTIVE-ZAP-REVIEW.md) for the current active
 scans, including completion evidence, authenticated browser tests and remaining limits.
 
 See [THREAT-COVERAGE.md](THREAT-COVERAGE.md) for the current implementation,
-excluded T05/T06/T12, residual risks and required replica-set migration.
+the current T01–T25 register, residual risks and required replica-set migration.
 The regression suite now uses a temporary MongoDB replica set for atomic audit
 updates and includes ingestion/redirect limits as well as API attack cases.
 

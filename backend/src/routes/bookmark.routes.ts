@@ -14,7 +14,7 @@ router.param("id", objectIdParam);
 router.param("torRecordId", objectIdParam);
 
 /*
- * Object-level access control (threat T07; ASVS V8.2.2): every query below
+ * Object-level access control (threat T05; ASVS V8.2.2): every query below
  * includes userId taken from the authenticated session, never from the
  * request, so one user can never read or delete another user's bookmarks.
  */
@@ -80,13 +80,12 @@ router.post("/", validate({ body: bookmarkCreateBody }), async (req: Request, re
   await connectDB();
   const { torRecordId, notes } = req.body as { torRecordId: string; notes?: string };
 
-  // Business-logic step check: the TOR must exist before it can be bookmarked (ASVS V2.3.1).
   if (!(await TORRecord.exists({ _id: torRecordId }))) {
     Errors.notFound(res, "TOR record not found");
     return;
   }
 
-  // Atomic upsert: concurrent requests cannot create duplicates (threat T20).
+  // Atomic upsert: concurrent requests cannot create duplicates (threat T17).
   const bookmark = await Bookmark.findOneAndUpdate(
     { userId: req.user!.id, torRecordId },
     { $setOnInsert: { userId: req.user!.id, torRecordId, notes } },

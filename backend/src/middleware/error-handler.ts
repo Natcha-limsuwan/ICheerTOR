@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 
 /**
- * Generic, client-safe messages per status (threat T22; ASVS V16.5.1).
+ * Generic, client-safe messages per status (threat T19; ASVS V16.5.1).
  * The original error message never reaches the client: body-parser and
  * library messages can reveal parser internals, queries or file paths.
  */
@@ -55,3 +55,4 @@ export function errorHandler(err: unknown, req: Request, res: Response, next: Ne
   const body = status >= 500 ? INTERNAL : (SAFE_ERRORS[status] ?? SAFE_ERRORS[400]);
   res.status(status).json({ error: body });
 }
+

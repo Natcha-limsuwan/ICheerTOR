@@ -7,7 +7,7 @@ does not change the Google Sheet, source database, or external Google settings.
 
 - **Password authentication — MISSING.** Current routes provide Google OAuth,
   not a local password flow. The instructor checklist supplied in chat explicitly
-  includes password authentication. Excluding T05 from the threat model does not
+  includes password authentication. Excluding the password threat from the threat model does not
   remove that assignment requirement; obtain an instructor exception or implement
   and test the feature separately. Do not report Google login as both methods.
 - **Social OAuth/OpenID — implementation present, live evidence pending.** Real
@@ -67,9 +67,10 @@ and the earlier plan text, excluding team-member rows. [Selected-item review](re
 covers **all 58 selected IDs**, with code, evidence and explicit limits:
 
 - 28 implemented with scoped tests; 3 implemented with scoped source review.
-- 17 partial; 2 source-reviewed without comprehensive runtime proof.
+- 18 partial; 2 source-reviewed without comprehensive runtime proof.
 - 4 need operational evidence; 3 are not applicable to current input/storage
-  features; 1 gap is the maintained SBOM/component-provenance inventory.
+  features. The SBOM item is now partial: production lockfile inventories and a
+  CI artifact job exist, while full component provenance review remains open.
 
 These are review categories, not ASVS certification or 31 fully verified ASVS
 requirements. Scope reductions need justification, not automatic green ticks.
@@ -78,10 +79,9 @@ or replace that spreadsheet status.
 
 ## Threat model
 
-T05, T06 and T12 remain excluded as requested. Do not renumber the remaining
-threats. [THREAT-COVERAGE.md](THREAT-COVERAGE.md) describes the retained controls
-and residual risks. T17/T18 now have mocked-model and generated-document evidence;
-real-model prompt injection remains pending. T28 has synthetic lease/crash/load
+Application-password, application-MFA and cookie-authenticated API threats are excluded. References below use the current sequential T01–T25 register. [THREAT-COVERAGE.md](THREAT-COVERAGE.md) describes the retained controls
+and residual risks. T14/T15 now have mocked-model and generated-document evidence;
+real-model prompt injection remains pending. T25 has synthetic lease/crash/load
 and fixture restore evidence, not global quotas or production recovery proof.
 The original detailed Google Docs threat text was not re-fetched for this run;
 this mapping uses the repository threat IDs and scope. Compare any later Docs
@@ -93,26 +93,47 @@ Version: **2025**, based on [OWASP's official list](https://top10.owasp.org/2025
 Category mapping is traceability, not proof of complete mitigation. If the class
 requires 2021 numbering, use an explicit 2021 crosswalk rather than mixing IDs.
 
-- **A01 Broken Access Control:** T07/T08/T13; role/scope/ownership and procurement
+- **A01 Broken Access Control:** T05/T06/T10; role/scope/ownership and procurement
   egress controls; API matrix and redirect/allowlist tests.
-- **A02 Security Misconfiguration:** T25/T26; CORS, headers and configuration
+- **A02 Security Misconfiguration:** T22/T23; CORS, headers and configuration
   checks; local browser/ZAP evidence, deployment settings unverified.
-- **A03 Software Supply Chain Failures:** T26/T27; lockfiles, scanner/workflow
-  source; SBOM/provenance and current dependency evidence remain incomplete.
+- **A03 Software Supply Chain Failures:** T23/T24; lockfiles, scanner/workflow
+  source; production CycloneDX inventories now exist. Provenance and complete
+  runtime/image/development-component inventory remain incomplete.
+
 - **A04 Cryptographic Failures:** T03; random JWT secrets, HMAC/signature controls;
   source/token tests, not transport/cloud certification.
-- **A05 Injection:** T09/T10/T11; schemas, query allowlists, escaping and safe
+- **A05 Injection:** T07/T08/T09; schemas, query allowlists, escaping and safe
   rendering; API attacks and Firefox evidence.
-- **A06 Insecure Design:** T16/T17/T18/T28; limits, review boundaries and recovery
+- **A06 Insecure Design:** T13/T14/T15/T25; limits, review boundaries and recovery
   design; synthetic resilience tests, residual AI/global-quota risks.
 - **A07 Authentication Failures:** T01/T02/T03/T04; OAuth state/PKCE, browser
   binding, JWT/session revocation and timeouts; live Google flow pending.
-- **A08 Software or Data Integrity Failures:** T14/T15/T19/T20; archive checks,
+- **A08 Software or Data Integrity Failures:** T11/T12/T16/T17; archive checks,
   transaction rollback and fenced updates; not a signed artifact supply chain.
-- **A09 Security Logging and Alerting Failures:** T21/T22; structured security
+- **A09 Security Logging and Alerting Failures:** T18/T19; structured security
   logs and restricted audit APIs; immutable retention/alerting not established.
-- **A10 Mishandling of Exceptional Conditions:** T28; fail-closed rate/session
+- **A10 Mishandling of Exceptional Conditions:** T25; fail-closed rate/session
   stores, provider timeout/circuit handling, worker recovery; synthetic faults.
+
+### SBOM addition — 20 November 2026
+
+Generated CycloneDX 1.5 inventories using npm 10.9.3:
+`npm sbom --package-lock-only --omit=dev --sbom-format=cyclonedx --sbom-type=application`.
+The backend contains 164 components and frontend 93 components. Both JSON outputs
+were parsed and dependency references checked for consistency; this is not full
+CycloneDX schema validation. Files are
+[backend SBOM](reports/sbom-backend.cyclonedx.json) and
+[frontend SBOM](reports/sbom-frontend.cyclonedx.json), with lockfile/output SHA-256
+values in [generation summary](reports/sbom-generation-summary.json).
+
+The security workflow now generates the same inventories from each app lockfile
+and uploads `sbom-backend` and `sbom-frontend` artifacts, retained for 30 days.
+The job does not install packages or run their lifecycle scripts. It has been
+configured and locally inspected, but a successful GitHub CI run is not yet
+verified. Regenerate inventories whenever lockfiles change. These are production
+lockfile graphs, not proof of installed runtime contents, image/OS packages,
+development dependencies or signed build provenance. ASVS V15.1.2 remains partial.
 
 ## Final scan evidence
 

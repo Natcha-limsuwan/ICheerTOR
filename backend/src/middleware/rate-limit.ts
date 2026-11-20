@@ -5,7 +5,7 @@ import { logSecurityEvent } from "../utils/security-log.js";
 import { MongoRateLimitStore } from "./mongo-rate-limit-store.js";
 
 /**
- * Rate limits (threat T16; ASVS V2.4.1).
+ * Rate limits (threat T13; ASVS V2.4.1).
  *
  * MongoDB counters share fixed windows across replicas. A database failure
  * fails closed. Clients get 429 with RateLimit-* and Retry-After headers.
@@ -37,7 +37,6 @@ export const apiLimiter = rateLimit({
   ...common,
   store: new MongoRateLimitStore("api"),
   windowMs: 15 * 60 * 1000,
-  // Configurable only so a local DAST run (ZAP) is not throttled; production keeps the default.
   limit: env.RATE_LIMIT_API_MAX,
   handler: onLimitReached("api"),
 });

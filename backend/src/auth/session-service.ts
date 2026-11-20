@@ -6,24 +6,20 @@ import AuthSession, { IAuthSession } from "../db/models/auth-session.js";
 import LoginCode from "../db/models/login-code.js";
 import { logSecurityEvent } from "../utils/security-log.js";
 
-/* ─── Token profile ─────────────────────────────────────────────────── */
-
-/** Only this algorithm is accepted (ASVS V9.1.2); "none" and RS/HS confusion are rejected. */
 const JWT_ALGORITHM = "HS256" as const;
 const JWT_ISSUER = "icheertor-api";
 const JWT_AUDIENCE = "icheertor-web";
 
 const LOGIN_CODE_TTL_MS = 60 * 1000;
-/** Avoid a DB write on every request: refresh lastActivityAt at most once a minute. */
 const ACTIVITY_WRITE_INTERVAL_MS = 60 * 1000;
 
 const idleTimeoutMs = () => env.SESSION_IDLE_TIMEOUT_MINUTES * 60 * 1000;
 const maxLifetimeMs = () => env.SESSION_MAX_HOURS * 60 * 60 * 1000;
 
 const sha256 = (value: string) => crypto.createHash("sha256").update(value).digest("hex");
-const randomToken = () => crypto.randomBytes(32).toString("base64url"); // 256 bits, CSPRNG
+const randomToken = () => crypto.randomBytes(32).toString("base64url");
 
-/* ─── One-time login codes ──────────────────────────────────────────── */
+/*  One-time login codes  */
 
 export async function createLoginCode(userId: string, browserChallenge: string): Promise<string> {
   if (!/^[A-Za-z0-9_-]{43}$/.test(browserChallenge)) throw new Error("Missing browser login binding");
@@ -49,7 +45,7 @@ export async function consumeLoginCode(code: unknown, browserVerifier: unknown):
   return doc ? doc.userId.toString() : null;
 }
 
-/* ─── Sessions ──────────────────────────────────────────────────────── */
+/*  Sessions  */
 
 export interface IssuedSession {
   token: string;

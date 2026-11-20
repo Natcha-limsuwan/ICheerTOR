@@ -3,7 +3,7 @@ import type { ZodType } from "zod";
 import { logSecurityEvent } from "../utils/security-log.js";
 
 /**
- * Server-side request validation (threats T09, T10; ASVS V2.2.1, V2.2.2,
+ * Server-side request validation (threats T07, T08; ASVS V2.2.1, V2.2.2,
  * V15.3.3, V15.3.5).
  *
  * Every schema is an allowlist: only declared fields with the declared types,

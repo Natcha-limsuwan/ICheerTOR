@@ -27,7 +27,7 @@ const app = express();
 // clients cannot spoof their IP for rate limiting and logs (ASVS V4.1.3).
 app.set("trust proxy", env.TRUST_PROXY);
 
-// Security headers (threat T25; ASVS V3.4.x). This server only returns JSON,
+// Security headers (threat T22; ASVS V3.4.x). This server only returns JSON,
 // so the CSP denies everything, including framing.
 app.use(
   helmet({
@@ -72,9 +72,6 @@ app.use("/api", (_req, res, next) => {
 app.use("/api", apiLimiter);
 app.use(express.json({ limit: "100kb", strict: true }));
 app.use(passport.initialize());
-
-/* ─── Routes ──────────────────────────────────────────────────────── */
-
 app.use("/api/auth", authRoutes);
 app.use("/api/tor", torRoutes);
 app.use("/api/admin", adminRoutes);

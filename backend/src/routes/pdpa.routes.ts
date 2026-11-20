@@ -18,7 +18,7 @@ import { logSecurityEvent } from "../utils/security-log.js";
 const router = Router();
 router.use(authenticate, requireScope("pdpa:own"));
 
-// All personal-data operations act only on the session's own userId (threat T24).
+// All personal-data operations act only on the session's own userId (threat T21).
 
 /** GET /api/pdpa/consent — Get current consent status. */
 router.get("/consent", async (req: Request, res: Response) => {
@@ -64,11 +64,7 @@ router.post("/consent", validate({ body: consentBody }), async (req: Request, re
  * Requires a recent sign-in (a stolen long-lived session cannot delete the
  * account) and the account email typed again as confirmation.
  */
-router.post(
-  "/delete",
-  sensitiveLimiter,
-  requireRecentAuth(),
-  validate({ body: deleteAccountBody }),
+router.post("/delete", sensitiveLimiter,requireRecentAuth(),validate({ body: deleteAccountBody }),
   async (req: Request, res: Response) => {
     await connectDB();
 
@@ -97,8 +93,6 @@ router.post(
     await VendorProfile.deleteOne({ userId }, { session });
     await Bookmark.deleteMany({ userId }, { session });
     await Notification.deleteMany({ userId }, { session });
-
-    // Deletion ends every session immediately, including copies of the token elsewhere (ASVS V7.4.2).
     await revokeUserSessions(userId, "account_deleted", session);
     });
     logSecurityEvent("account_deletion", { userId });
@@ -111,7 +105,8 @@ router.post(
 );
 
 /** GET /api/pdpa/export — Export all personal data of the caller. */
-router.get("/export", sensitiveLimiter, validate({ query: exportQuery }), async (req: Request, res: Response) => {
+router.get("/export", sensitiveLimiter, validate({ query: exportQuery }), 
+  async (req: Request, res: Response) => {
   const data = await exportUserData(req.user!.id);
   logSecurityEvent("personal_data_export", { userId: req.user!.id });
 

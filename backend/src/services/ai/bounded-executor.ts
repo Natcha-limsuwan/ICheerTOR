@@ -14,7 +14,7 @@ export class BoundedExecutor {
     try { return await work(); }
     finally {
       const next = this.pending.shift();
-      if (next) next(); // Transfer this occupied slot, without exposing a free-slot race.
+      if (next) next();
       else this.active--;
     }
   }

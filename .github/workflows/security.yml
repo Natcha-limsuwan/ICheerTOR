@@ -17,6 +17,28 @@ permissions:
   contents: read
 
 jobs:
+  sbom:
+    name: CycloneDX SBOM (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate production dependency SBOM from lockfile
+        run: npm sbom --package-lock-only --omit=dev --sbom-format=cyclonedx --sbom-type=application > sbom.cyclonedx.json
+        working-directory: ${{ matrix.app }}
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.app }}
+          path: ${{ matrix.app }}/sbom.cyclonedx.json
+          if-no-files-found: error
+          retention-days: 30
+
   codeql:
     name: CodeQL (JavaScript/TypeScript)
     runs-on: ubuntu-latest

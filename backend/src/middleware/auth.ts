@@ -28,7 +28,7 @@ export function getBearerToken(req: Request): string | null {
  *    lifetime and not idle for longer than the inactivity timeout.
  * 3. Load the user's *current* role and status from MongoDB. Role and status
  *    are never trusted from the token, so suspension, bans and role changes
- *    apply on the very next request (threats T02, T08; ASVS V8.3.1).
+ *    apply on the very next request (threats T02, T06; ASVS V8.3.1).
  *
  * Populates req.user and req.authSessionId.
  */
@@ -163,7 +163,8 @@ export function requireScope(...required: Scope[]) {
     if (missing.length > 0) {
       logSecurityEvent(
         "authz_denied",
-        { userId: req.user.id, role: req.user.role, missingScopes: missing, method: req.method, path: req.originalUrl.split("?")[0] },
+        { userId: req.user.id, role: req.user.role, missingScopes: missing, method: req.method,
+           path: req.originalUrl.split("?")[0] },
         "warn",
       );
       res.status(403).json({

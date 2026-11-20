@@ -194,9 +194,34 @@ export default function TORDetailPage() {
       : "ยังไม่ประกาศวันที่";
 
   return <div className="mx-auto max-w-[1340px] animate-fade-in pb-10 text-slate-800">
-    <div className="mb-7 flex flex-wrap items-start justify-between gap-4"><p className="text-sm text-slate-500"><Link href="/procurement" className="no-underline text-slate-500 hover:text-[#0759be]">จัดซื้อจัดจ้าง</Link><span className="mx-3">›</span>รายละเอียดโครงการ</p><div className="flex flex-wrap justify-end gap-2"><button type="button" onClick={toggleBookmark} disabled={bookmarkLoading} className={bookmarkId ? "detail-action detail-action-primary disabled:cursor-wait disabled:opacity-60" : "detail-action detail-action-outline cursor-pointer disabled:cursor-wait disabled:opacity-60"}>{bookmarkId ? <BookmarkOutlinedIcon fontSize="small" /> : <BookmarkBorderOutlinedIcon fontSize="small" />}{bookmarkLoading ? "กำลังบันทึก..." : bookmarkId ? "บันทึกแล้ว" : "บันทึกไว้"}</button><button type="button" onClick={downloadDocument} disabled={documentLoading} className="detail-action detail-action-outline cursor-pointer disabled:cursor-wait disabled:opacity-60"><DownloadOutlinedIcon fontSize="small" />{documentLoading ? "กำลังเตรียมเอกสาร..." : "ดาวน์โหลดเอกสาร"}</button>{tor.officialPortalUrl && <a href={tor.officialPortalUrl} target="_blank" rel="noreferrer" className="detail-action detail-action-outline"><OpenInNewIcon fontSize="small" />ไปที่ประกาศต้นทาง</a>}</div></div>
+    <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
+      <p className="text-sm text-slate-500">
+        <Link href="/procurement" className="no-underline text-slate-500 hover:text-[#0759be]">
+          จัดซื้อจัดจ้าง
+        </Link>
+        <span className="mx-3">›</span>
+        รายละเอียดโครงการ
+      </p>
+      <div className="flex flex-wrap justify-end gap-2"><button type="button" onClick={toggleBookmark} disabled={bookmarkLoading} className={bookmarkId ? "detail-action detail-action-primary disabled:cursor-wait disabled:opacity-60" : "detail-action detail-action-outline cursor-pointer disabled:cursor-wait disabled:opacity-60"}>{bookmarkId ? <BookmarkOutlinedIcon fontSize="small" /> : <BookmarkBorderOutlinedIcon fontSize="small" />}{bookmarkLoading ? "กำลังบันทึก..." : bookmarkId ? "บันทึกแล้ว" : "บันทึกไว้"}</button><button type="button" onClick={downloadDocument} disabled={documentLoading} className="detail-action detail-action-outline cursor-pointer disabled:cursor-wait disabled:opacity-60"><DownloadOutlinedIcon fontSize="small" />{documentLoading ? "กำลังเตรียมเอกสาร..." : "ดาวน์โหลดเอกสาร"}</button>{tor.officialPortalUrl && <a href={tor.officialPortalUrl} target="_blank" rel="noreferrer" className="detail-action detail-action-outline"><OpenInNewIcon fontSize="small" />ไปที่ประกาศต้นทาง</a>}</div></div>
     {actionError && <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{actionError}</div>}
-    <div className="mb-7"><div className="mb-4 flex gap-2"><span className={`rounded-full px-4 py-1.5 text-sm font-semibold ${bidClosed ? "bg-slate-200 text-slate-700" : "bg-blue-100 text-[#1762be]"}`}>● {displayStatus}</span></div><h1 className="text-3xl font-bold md:text-4xl">{tor.title}</h1><p className="mt-4 flex items-center gap-2 text-lg text-slate-500"><ApartmentOutlinedIcon />{tor.agencyName}</p></div>
+    <div className="mb-7">
+      <div className="mb-4 flex gap-2">
+        <span className={`rounded-full px-4 py-1.5 text-sm font-semibold ${bidClosed 
+          ? "bg-slate-200 text-slate-700" 
+          : "bg-blue-100 text-[#1762be]"}`}
+        >
+          ● 
+          {displayStatus}
+        </span>
+      </div>
+      <h1 className="text-3xl font-bold md:text-4xl">
+        {tor.title}
+      </h1>
+      <p className="mt-4 flex items-center gap-2 text-lg text-slate-500">
+        <ApartmentOutlinedIcon />
+        {tor.agencyName}
+      </p>
+    </div>
     <DeadlineNotice label={deadlineKind} deadline={deadline} remainingDays={remainingDays} />
     <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Stat label={scheduleLabel} value={period} /><Stat label="งบประมาณที่จัดสรร" value={money(tor.budget ?? parsed?.medianPrice?.value)} /><Stat label="ราคากลาง" value={money(tor.medianPrice ?? parsed?.medianPrice?.value)} /><Stat label="ความเหมาะสมกับทีม" value={match?.matchScore != null ? `${Math.round(match.matchScore * 100)}%` : "กรอกโปรไฟล์เพื่อดูผล"} note={match?.matchScore != null ? `ข้อมูลที่ใช้ประเมิน ${Math.round(match.dataCoverage * 100)}%` : undefined} /></div>
     {match && <MatchSummary match={match} />}

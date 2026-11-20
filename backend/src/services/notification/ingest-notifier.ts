@@ -11,7 +11,7 @@ export interface IngestNotifyOptions {
   sourceLabel?: string;
   /**
    * @deprecated Ignored. New-TOR emails are optional marketing-style messages,
-   * so they always follow the user's notificationPrefs.email choice (threat T23).
+   * so they always follow the user's notificationPrefs.email choice (threat T20).
    */
   sendToAllUsers?: boolean;
   /** When true, logs what would be sent without creating notifications or sending emails. */

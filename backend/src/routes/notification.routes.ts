@@ -11,7 +11,7 @@ const router = Router();
 router.use(authenticate, requireScope("notifications:own"));
 router.param("id", objectIdParam);
 
-// Every query is scoped to the session's userId (object-level access control, threat T07).
+// Every query is scoped to the session's userId (object-level access control, threat T05).
 
 /** GET /api/notifications/prefs — Get current user's notification preferences. */
 router.get("/prefs", async (req: Request, res: Response) => {

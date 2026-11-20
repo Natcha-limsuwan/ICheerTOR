@@ -1,7 +1,7 @@
 import nodemailer, { Transporter } from "nodemailer";
 import { env } from "../../config/env.js";
 
-/* ─── Output encoding (threat T11; ASVS V1.2.1) ─────────────────────── */
+/* ─── Output encoding (threat T09; ASVS V1.2.1) ─────────────────────── */
 
 /**
  * Escape a value for an HTML text or double-quoted attribute context.

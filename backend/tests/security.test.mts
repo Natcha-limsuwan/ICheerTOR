@@ -110,7 +110,7 @@ const anna = await mkUser("anna", "admin");
 const dev = await mkUser("dev", "developer");
 const torId = (await TORRecord.collection.insertOne({ title: "ระบบทดสอบ", agencyName: "สำนักทดสอบ (กทม.)", phase: "bidding", extractionStatus: "completed", tags: [], createdAt: new Date() })).insertedId;
 
-/* ═══ 1. Security headers, CORS, errors (T22, T25) ═════════════════ */
+/* ═══ 1. Security headers, CORS, errors (T19, T22) ═════════════════ */
 group("Headers, CORS and error handling");
 const h = await call("/health");
 check("CSP frame-ancestors 'none'", (h.headers.get("content-security-policy") ?? "").includes("frame-ancestors 'none'"));
@@ -196,7 +196,7 @@ const t4b = await login(alice._id.toString());
 await call("/auth/logout-all", { method: "POST", token: t4a });
 check("logout-all ends other sessions", (await call("/auth/me", { token: t4b })).status === 401);
 
-/* ═══ 5. Authorization: roles + scopes (T08) ═══════════════════════ */
+/* ═══ 5. Authorization: roles + scopes (T06) ═══════════════════════ */
 group("Function-level authorization (roles, scopes, hierarchy)");
 const tokAlice = await login(alice._id.toString());
 const tokBob = await login(bob._id.toString());
@@ -225,7 +225,7 @@ check("stale administrative action leaves account active", (await User.findById(
 check("scope matrix: user lacks tor:review", !hasScope("user", "tor:review") && hasScope("admin", "tor:review"));
 check("hierarchy: developer manages admin", canManageAccount({ id: "a", role: "developer" }, { id: "b", role: "admin" }));
 
-/* ═══ 6. Object-level access control / IDOR (T07) ══════════════════ */
+/* ═══ 6. Object-level access control / IDOR (T05) ══════════════════ */
 group("Access to another user's data (IDOR)");
 const bm = await json(await call("/bookmarks", { method: "POST", token: tokAlice, json: { torRecordId: torId.toString() } }));
 const aliceBookmarkId = bm.data?._id;
@@ -243,7 +243,7 @@ check("export contains only the caller's data", bobExport.user?.email === "bob@e
 const dup = await call("/bookmarks", { method: "POST", token: tokAlice, json: { torRecordId: torId.toString() } });
 check("duplicate bookmark returns existing one (no duplicate)", dup.status === 200 && (await Bookmark.countDocuments({ userId: alice._id })) === 1);
 
-/* ═══ 7. Input validation, injection, mass assignment (T09, T10, T15) */
+/* ═══ 7. Input validation, injection, mass assignment (T07, T08, T12) */
 group("Input validation and injection");
 check("NoSQL operator in body field rejected", (await call("/bookmarks", { method: "POST", token: tokAlice, json: { torRecordId: { $ne: null } } })).status === 400);
 check("unknown body field rejected (strict schema)", (await call("/bookmarks", { method: "POST", token: tokAlice, json: { torRecordId: torId.toString(), userId: bob._id.toString() } })).status === 400);
@@ -325,7 +325,7 @@ try {
 } finally { UserCorrection.insertMany = originalInsert; }
 check("audit failure rolls back the TOR mutation", rolledBack && (await TORRecord.findById(reviewTor._id).lean())?.title === "Reviewed" && await UserCorrection.countDocuments({ torRecordId: reviewTor._id }) === 1);
 
-/* ═══ 8. Output encoding (T11) ═════════════════════════════════════ */
+/* ═══ 8. Output encoding (T09) ═════════════════════════════════════ */
 group("Email output encoding");
 check("HTML special characters escaped", escapeHtml(`<img src=x onerror="alert(1)">&'`) === "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;&amp;&#39;");
 check("internal link kept", safeAppUrl("/procurement/abc") === "http://localhost:3000/procurement/abc");
@@ -370,7 +370,7 @@ for (const match of adminSource.matchAll(/router\.(get|post|put|patch|delete)\(\
 check("rejected administrative writes leave no audit entries", await AdminActionLog.countDocuments() === auditBefore);
 check("rejected administrative writes leave target privileges intact", (await User.findById(matrixRegular._id).lean())?.role === "user");
 
-/* ═══ 9. Account status and deletion (T02, T24) ════════════════════ */
+/* ═══ 9. Account status and deletion (T02, T21) ════════════════════ */
 group("Suspension and account deletion");
 const tokBob2 = await login(bob._id.toString());
 check("admin suspends a user", (await call(`/admin/users/${bob._id}`, { method: "PATCH", token: tokAdam, json: { action: "suspend", reason: "test" } })).status === 200);
@@ -388,7 +388,7 @@ check("deleted account's token rejected", (await call("/auth/me", { token: tokAl
 check("personal data removed (profile, bookmarks, notifications)", !(await VendorProfile.exists({ userId: alice._id })) && (await Bookmark.countDocuments({ userId: alice._id })) === 0 && (await Notification.countDocuments({ userId: alice._id })) === 0);
 check("account anonymised", (await User.findById(alice._id).lean())?.email === `deleted-${alice._id}@icheertor.local`);
 
-/* ═══ 10. Abuse controls (T16) ═════════════════════════════════════ */
+/* ═══ 10. Abuse controls (T13) ═════════════════════════════════════ */
 group("Rate limiting and secrets");
 check("cron endpoint disabled without CRON_SECRET", (await call("/cron/scrape", { method: "POST", headers: { "x-cron-secret": "" } })).status === 401);
 let limited: Response | null = null;
