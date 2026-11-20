@@ -21,6 +21,7 @@ import Notification from "../../db/models/notification.js";
 import { matchQualifications, MatchResult } from "../matching/qualification-matcher.js";
 import { dispatchNotification } from "./dispatcher.js";
 import { sendMatchAlertEmail } from "./email-sender.js";
+import { deliverEmailOnce } from "./delivery.js";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 
@@ -44,6 +45,8 @@ export interface TorMatchAlertOptions {
   minFitScore?: number;
   /** Limit matching to a single user ID for testing. */
   targetUserId?: string | Types.ObjectId;
+  /** Test seam for a mocked SMTP provider. */
+  sendEmail?: typeof sendMatchAlertEmail;
 }
 
 export interface TorMatchAlertSummary {
@@ -67,7 +70,7 @@ export async function evaluateAndAlertForTor(
 ): Promise<TorMatchAlertSummary> {
   await connectDB();
 
-  const { dryRun = false, minFitScore = 0.5, targetUserId } = options;
+  const { dryRun = false, minFitScore = 0.5, targetUserId, sendEmail = sendMatchAlertEmail } = options;
 
   const tor = await TORRecord.findById(torRecordId);
   if (!tor) {
@@ -139,11 +142,13 @@ export async function evaluateAndAlertForTor(
     matchedUsersCount++;
     const prefs = user.notificationPrefs ?? { inApp: true, email: false };
 
-    // Prevent duplicate match notifications for the same TOR + User
+    // Match alerts created before dedupeKey existed. Newer ones are deduplicated
+    // atomically by dispatchNotification's unique (userId, dedupeKey) index.
     const existingNotif = await Notification.findOne({
       userId: user._id,
       torRecordId: tor._id,
       type: "new_match",
+      dedupeKey: { $exists: false },
     });
 
     if (existingNotif && !dryRun) {
@@ -188,7 +193,7 @@ export async function evaluateAndAlertForTor(
     const body = `หน่วยงาน: ${tor.agencyName}\nงบประมาณ: ${budgetText}\nคะแนนความเหมาะสม: ${scoreText}`;
     const linkUrl = `/procurement/${tor._id.toString()}`;
 
-    // 1. Dispatch in-app notification (skip generic email so we can send the rich match alert email below)
+    // 1. Dispatch in-app notification once per TOR + user (skip generic email so we can send the rich match alert email below)
     const dispatchResult = await dispatchNotification({
       userId: user._id,
       torRecordId: tor._id,
@@ -197,33 +202,47 @@ export async function evaluateAndAlertForTor(
       body,
       linkUrl,
       skipEmail: true,
+      dedupeKey: `new_match:${tor._id.toString()}`,
     });
 
-    notificationsCreated++;
+    if (!dispatchResult.duplicate) notificationsCreated++;
 
-    // 2. If user has email enabled, send dedicated rich match email
+    // 2. Rich match email, claimed atomically: a rerun retries only a failed delivery.
     let emailSentSuccess = false;
+    let emailAttempted = false;
     if (prefs.email) {
-      const emailRes = await sendMatchAlertEmail({
-        to: user.email,
-        recipientName: user.name,
-        projectTitle: tor.title,
-        agencyName: tor.agencyName,
-        budget: matchContext.budget,
-        matchScore: matchResult.matchScore,
+      const delivery = await deliverEmailOnce(dispatchResult.notificationId, user._id, () =>
+        sendEmail({
+          to: user.email,
+          recipientName: user.name,
+          projectTitle: tor.title,
+          agencyName: tor.agencyName,
+          budget: matchContext.budget,
+          matchScore: matchResult.matchScore,
+          fitScore,
+          eligibilityStatus: matchResult.eligibilityStatus,
+          submissionDeadline: tor.submissionDeadline ? tor.submissionDeadline.toISOString() : null,
+          torRecordId: tor._id.toString(),
+        }),
+      );
+      emailAttempted = delivery.status !== "skipped";
+      emailSentSuccess = delivery.status === "sent";
+    }
+
+    if (dispatchResult.duplicate && !emailAttempted) {
+      evaluations.push({
+        userId: user._id.toString(),
+        userEmail: user.email,
+        userName: user.name,
+        matched: true,
         fitScore,
+        matchScore: matchResult.matchScore,
         eligibilityStatus: matchResult.eligibilityStatus,
-        submissionDeadline: tor.submissionDeadline ? tor.submissionDeadline.toISOString() : null,
-        torRecordId: tor._id.toString(),
+        notificationDispatched: false,
+        emailSent: false,
+        reason: "Notification already sent previously",
       });
-      emailSentSuccess = emailRes.success;
-      await Notification.findByIdAndUpdate(dispatchResult.notificationId, {
-        $set: {
-          "channels.email.sent": emailRes.success,
-          "channels.email.sentAt": emailRes.success ? new Date() : undefined,
-          "channels.email.error": emailRes.error,
-        },
-      });
+      continue;
     }
 
     if (emailSentSuccess) {

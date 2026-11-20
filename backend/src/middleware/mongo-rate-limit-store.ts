@@ -3,8 +3,11 @@ import Counter from "../db/models/rate-limit-counter.js";
 /** Shared fixed-window counters. Expiry is part of the key, not dependent on TTL cleanup. */
 export class MongoRateLimitStore {
   localKeys = false;
+  /** express-rate-limit's double-count check identifies shared stores by class name plus
+   * this prefix. Without it, the api and auth limiters look like one store on /api/auth. */
+  readonly prefix: string;
   private windowMs = 60000;
-  constructor(private readonly namespace: string) {}
+  constructor(private readonly namespace: string) { this.prefix = `${namespace}:`; }
   init(options: { windowMs: number }): void { this.windowMs = options.windowMs; }
   private bucket(key: string) {
     const start = Math.floor(Date.now() / this.windowMs) * this.windowMs;

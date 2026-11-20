@@ -63,6 +63,10 @@ router.post("/consent", validate({ body: consentBody }), async (req: Request, re
  * POST /api/pdpa/delete — Delete the account.
  * Requires a recent sign-in (a stolen long-lived session cannot delete the
  * account) and the account email typed again as confirmation.
+ *
+ * This is partial pseudonymisation completed immediately, not complete erasure,
+ * and no later purge job exists. The response lists what is kept so it does not
+ * promise more than the system does.
  */
 router.post("/delete", sensitiveLimiter,requireRecentAuth(),validate({ body: deleteAccountBody }),
   async (req: Request, res: Response) => {
@@ -98,8 +102,13 @@ router.post("/delete", sensitiveLimiter,requireRecentAuth(),validate({ body: del
     logSecurityEvent("account_deletion", { userId });
 
     apiSuccess(res, {
-      scheduledAt: new Date().toISOString(),
-      completionBy: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      status: "pseudonymised",
+      completedAt: new Date().toISOString(),
+      removed: ["profile_name_email_avatar", "vendor_profile", "bookmarks", "notifications"],
+      revoked: ["sessions"],
+      // The Google account ID stays so the account cannot silently re-provision; ended
+      // sessions keep IP/user agent until their TTL (7 days after absolute expiry).
+      retained: ["google_account_id", "consent_records", "tor_corrections", "admin_audit_log", "ended_session_metadata"],
     });
   },
 );

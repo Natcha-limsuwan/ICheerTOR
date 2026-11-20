@@ -1,9 +1,10 @@
 import { Types } from "mongoose";
 import { connectDB } from "../../db/connection.js";
-import Notification, { INotification } from "../../db/models/notification.js";
+import { INotification } from "../../db/models/notification.js";
 import User from "../../db/models/user.js";
 import { sendNotificationEmail } from "./email-sender.js";
 import { processingAllowed } from "../pdpa/processing-permission.js";
+import { createNotificationOnce, deliverEmailOnce } from "./delivery.js";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 
@@ -14,12 +15,17 @@ export interface CreateNotificationInput {
   title: string;
   body: string;
   linkUrl?: string;
-  /** If true, creates the in-app notification without sending the generic email (e.g. when caller sends a custom rich email). */
+  /** If true, creates the in-app notification without sending the generic email (e.g. when caller sends a custom rich email
+   * through deliverEmailOnce). The email is still marked pending when the user has email enabled. */
   skipEmail?: boolean;
+  /** One logical event per user; a repeated or concurrent dispatch with the same key creates nothing new. */
+  dedupeKey?: string;
 }
 
 export interface DispatchResult {
   notificationId: string;
+  /** True when a notification with the same dedupeKey already existed. */
+  duplicate: boolean;
   channels: {
     inApp: boolean;
     email: { sent: boolean; error?: string };
@@ -49,54 +55,47 @@ export async function dispatchNotification(
 
   const prefs = user.notificationPrefs ?? { inApp: true, email: false };
 
-  // 2. Create notification record (inApp is always sent)
-  const notification = await Notification.create({
+  // 2. Create notification record once per dedupeKey (inApp is always recorded)
+  const { id: notificationId, created } = await createNotificationOnce({
     userId: input.userId,
     torRecordId: input.torRecordId,
     type: input.type,
     title: input.title,
     body: input.body,
     linkUrl: input.linkUrl,
+    dedupeKey: input.dedupeKey,
     channels: {
       inApp: { sent: prefs.inApp === true },
-      email: { sent: false },
+      email: { sent: false, ...(prefs.email ? { state: "pending" as const } : {}) },
     },
   });
 
   const result: DispatchResult = {
-    notificationId: notification._id.toString(),
+    notificationId,
+    duplicate: !created,
     channels: {
       inApp: prefs.inApp === true,
       email: { sent: false },
     },
   };
 
-  // 3. Email channel
+  // 3. Email channel: claimed atomically, so a retry sends only a failed delivery, never a sent or in-flight one.
   if (prefs.email && !input.skipEmail) {
-    const emailResult = await deliverEmail(user.email, {
-      type: input.type,
-      title: input.title,
-      body: input.body,
-      linkUrl: input.linkUrl,
-    });
-
-    // Update the notification doc with email status
-    await Notification.findByIdAndUpdate(notification._id, {
-      $set: {
-        "channels.email.sent": emailResult.success,
-        "channels.email.sentAt": emailResult.success ? new Date() : undefined,
-        "channels.email.error": emailResult.error,
-      },
-    });
-
-    result.channels.email = {
-      sent: emailResult.success,
-      error: emailResult.error,
-    };
+    const delivery = await deliverEmailOnce(notificationId, user._id, () =>
+      deliverEmail(user.email, {
+        type: input.type,
+        title: input.title,
+        body: input.body,
+        linkUrl: input.linkUrl,
+      }),
+    );
+    if (delivery.status !== "skipped") {
+      result.channels.email = { sent: delivery.result.success, error: delivery.result.error };
+    }
   }
 
   console.log(
-    `[DISPATCH] Notification ${notification._id} → inApp: ✅ | email: ${
+    `[DISPATCH] Notification ${notificationId}${created ? "" : " (duplicate)"} → inApp: ✅ | email: ${
       prefs.email ? (result.channels.email.sent ? "✅" : "❌") : "⏭️ disabled"
     }`,
   );

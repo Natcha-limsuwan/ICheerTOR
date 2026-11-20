@@ -121,6 +121,8 @@ export const EDITABLE_FIELDS: Array<keyof ReviewChanges> = [
 ];
 
 export class ReviewInputError extends Error {}
+/** The record changed after the admin loaded it; verifying now would approve content they did not see. */
+export class ReviewConflictError extends Error {}
 
 const isNum = (v: unknown) => typeof v === "number" && Number.isFinite(v) && v >= 0;
 const isStr = (v: unknown) => typeof v === "string" && v.trim().length > 0;
@@ -246,7 +248,7 @@ export async function applyChanges(
   id: string | Types.ObjectId,
   changes: ReviewChanges,
   admin: { id: string },
-  options: { note?: string | null; verify?: boolean; dryRun?: boolean } = {},
+  options: { note?: string | null; verify?: boolean; dryRun?: boolean; expectedUpdatedAt?: string | null } = {},
 ): Promise<ApplyResult | null> {
   if (options.dryRun) return applyChangesInSession(id, changes, admin, options);
   return mongoose.connection.transaction((session) => applyChangesInSession(id, changes, admin, options, session));
@@ -256,11 +258,15 @@ async function applyChangesInSession(
   id: string | Types.ObjectId,
   changes: ReviewChanges,
   admin: { id: string },
-  options: { note?: string | null; verify?: boolean; dryRun?: boolean },
+  options: { note?: string | null; verify?: boolean; dryRun?: boolean; expectedUpdatedAt?: string | null },
   session?: ClientSession,
 ): Promise<ApplyResult | null> {
   const doc = (await TORRecord.findById(id).session(session ?? null)) as TorDoc | null;
   if (!doc) return null;
+  // Optional optimistic check: only callers that send the updatedAt they reviewed are protected.
+  if (options.expectedUpdatedAt && doc.updatedAt?.toISOString() !== options.expectedUpdatedAt) {
+    throw new ReviewConflictError("TOR changed after it was loaded for review; reload before verifying");
+  }
 
   const log = setChanges(doc, changes);
   const changedFields = [...new Set(log.map(([path]) => path))];

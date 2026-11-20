@@ -16,8 +16,9 @@
     "test:extraction": "tsx scripts/test-extraction.ts",
     "test-email": "tsx scripts/test-email.ts",
     "alert:test": "tsx scripts/test-match-alert.ts",
-    "test:security": "tsx tests/security.test.mts && tsx tests/ingestion-security.test.mts && tsx tests/security-gaps.test.mts && npm run test:resilience",
-    "test:resilience": "tsx tests/resilience.test.mts"
+    "test:security": "tsx tests/security.test.mts && tsx tests/ingestion-security.test.mts && tsx tests/security-gaps.test.mts && npm run test:resilience && npm run test:integrity",
+    "test:resilience": "tsx tests/resilience.test.mts",
+    "test:integrity": "tsx tests/integrity.test.mts"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",

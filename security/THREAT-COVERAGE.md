@@ -60,13 +60,17 @@ not a claim that all ASVS requirements or all possible threats are resolved.
 - T21: related working data is deleted; Google ID, consent/audit records and
   backups still require an approved retention/pseudonymisation policy. Do not
   describe the operation as irreversible erasure of every personal-data copy.
+  The deletion response now reports `pseudonymised` and lists retained data
+  instead of a 30-day `completionBy` that no job enforced (HANDOFF-REVIEW-RESULTS.md).
 - T23/T24: configuration checks, Docker exclusions and CI scanning exist.
   Verify actual IAM, secrets, final images, dependency/SBOM provenance and live CI.
 - T25: bounded network calls, single recovery probes, per-process AI capacity and
   fenced extraction leases have synthetic fault/load/crashed-child tests. A fixture
   EJSON backup/restore round trip passes. Isolated parser workers, global job
-  concurrency, durable email deduplication/quotas and operational disaster recovery
-  remain open; no external service availability is guaranteed.
+  concurrency, email quotas and operational disaster recovery remain open; no
+  external service availability is guaranteed. Notification deduplication and an
+  atomic email claim were added on 20 November 2026 (not exactly-once; tests
+  written but not yet executed — see HANDOFF-REVIEW-RESULTS.md).
 
 ## Runtime and migration requirements
 

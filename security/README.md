@@ -24,6 +24,10 @@ boundary tests; older reports describe their own historical test counts.
 See [the additional review results](ACTIVE-ZAP-REVIEW.md) for the current active
 scans, including completion evidence, authenticated browser tests and remaining limits.
 
+See [HANDOFF-REVIEW-RESULTS.md](HANDOFF-REVIEW-RESULTS.md) for the 20 November
+source review and code changes (limiter, notification dedup, review integrity,
+deletion response); its new tests have not yet been executed.
+
 See [THREAT-COVERAGE.md](THREAT-COVERAGE.md) for the current implementation,
 the current T01–T25 register, residual risks and required replica-set migration.
 The regression suite now uses a temporary MongoDB replica set for atomic audit

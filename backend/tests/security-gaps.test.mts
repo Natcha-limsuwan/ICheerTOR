@@ -43,6 +43,17 @@ try {
   for (const value of ["javascript:alert(1)", " \tJaVaScRiPt:alert(1)", "data:text/html,<script>alert(1)</script>", "vbscript:msgbox(1)", "//evil.example.invalid", "https://frontend.example.invalid.evil.example.invalid"]) {
     check("internal router refuses " + value.split(":")[0].trim(), internalNavigationPath(value, navigationBase) === null);
   }
+  // Must be the first auth-limited request: express-rate-limit runs each validation once per limiter.
+  const limiterErrors: string[] = [];
+  const originalLimiterError = console.error;
+  try {
+    console.error = (...args) => limiterErrors.push(args.map(a => `${String(a)} ${(a as { code?: string })?.code ?? ""}`).join(" "));
+    const exchange = await fetch(base + "/api/auth/exchange", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: "a".repeat(43), browserVerifier: "b".repeat(43) }) });
+    check("auth request passes both api and auth limiters", exchange.status === 400);
+  } finally { console.error = originalLimiterError; }
+  check("api and auth limiters do not trigger ERR_ERL_DOUBLE_COUNT", !limiterErrors.some(line => line.includes("ERR_ERL_DOUBLE_COUNT")));
+  const counterIds = (await Counter.find({}).select("_id").lean()).map(c => String(c._id));
+  check("api and auth limiters keep separate shared counters", counterIds.some(id => id.startsWith("api:")) && counterIds.some(id => id.startsWith("auth:")));
   for (const method of ["TRACE", "PROPFIND"]) {
     // Fetch forbids TRACE, so use Node's HTTP client for protocol-level tests.
     const { request } = await import("node:http");

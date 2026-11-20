@@ -383,10 +383,15 @@ const lateDelete = await call("/pdpa/delete", { method: "POST", token: tokAlice2
 check("deletion with an old session needs re-auth", lateDelete.status === 403 && (await json(lateDelete)).error?.code === "REAUTH_REQUIRED");
 const tokAlice3 = await login(alice._id.toString());
 check("deletion with wrong confirmation rejected", (await call("/pdpa/delete", { method: "POST", token: tokAlice3, json: { confirmEmail: "bob@example.com" } })).status === 400);
-check("deletion with fresh sign-in succeeds", (await call("/pdpa/delete", { method: "POST", token: tokAlice3, json: { confirmEmail: "alice@example.com" } })).status === 200);
+const deletion = await call("/pdpa/delete", { method: "POST", token: tokAlice3, json: { confirmEmail: "alice@example.com" } });
+check("deletion with fresh sign-in succeeds", deletion.status === 200);
+const deletionBody = (await json(deletion)).data;
+check("deletion response reports pseudonymisation, not a scheduled purge", deletionBody?.status === "pseudonymised" && !("completionBy" in deletionBody) && !("scheduledAt" in deletionBody));
+check("deletion response discloses retained Google ID and consent records", deletionBody?.retained?.includes("google_account_id") && deletionBody.retained.includes("consent_records"));
 check("deleted account's token rejected", (await call("/auth/me", { token: tokAlice3 })).status === 401);
 check("personal data removed (profile, bookmarks, notifications)", !(await VendorProfile.exists({ userId: alice._id })) && (await Bookmark.countDocuments({ userId: alice._id })) === 0 && (await Notification.countDocuments({ userId: alice._id })) === 0);
 check("account anonymised", (await User.findById(alice._id).lean())?.email === `deleted-${alice._id}@icheertor.local`);
+check("retained Google ID matches the documented partial pseudonymisation", !!(await User.findById(alice._id).lean())?.googleId);
 
 /* ═══ 10. Abuse controls (T13) ═════════════════════════════════════ */
 group("Rate limiting and secrets");

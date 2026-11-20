@@ -190,6 +190,8 @@ export const torReviewBody = z
     note: text(1000).optional().nullable(),
     verify: z.boolean().optional(),
     dryRun: z.boolean().optional(),
+    /** record.updatedAt from GET /tor-review/:id; a mismatch returns 409 instead of verifying newer content. */
+    expectedUpdatedAt: z.iso.datetime().optional(),
   })
   .strict();
 

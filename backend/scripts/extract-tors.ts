@@ -43,7 +43,7 @@ import ExtractionLog from "../src/db/models/extraction-log";
 import { extractTor, prepareDocuments } from "../src/services/ai/tor-parser";
 import { activePrompt } from "../src/services/ai/prompts";
 import { getModelId } from "../src/services/ai/vertex-client";
-import { claimExtraction, updateOwnedExtraction } from "../src/services/extraction-lease";
+import { claimExtraction, commitOwnedExtraction, updateOwnedExtraction } from "../src/services/extraction-lease";
 import { fetchProjectArchive } from "../src/services/ingestion/egp-client";
 import { EgpMaintenanceError } from "../src/services/ingestion/egp-maintenance";
 import { bidWindow, computeDataChecks } from "../src/services/ingestion/data-checks";
@@ -172,7 +172,10 @@ async function extractOne(r: QueueRecord): Promise<RunResult> {
 
   if (outcome.status === "completed") {
     const { update, meta } = outcome;
-    await updateOwnedExtraction(r._id.toString(), r.leaseOwner!,
+    // An admin's corrections are overwritten by a fresh reading (the TOR
+    // changed); they stay in usercorrections, and the review is marked
+    // outdated in the same transaction.
+    await commitOwnedExtraction(r._id.toString(), r.leaseOwner!,
       {
         $set: {
           parsedData: update.parsedData,
@@ -196,17 +199,6 @@ async function extractOne(r: QueueRecord): Promise<RunResult> {
         $unset: {
           extractionError: 1,
           ...(update.submissionDeadline ? {} : { submissionDeadline: 1 }),
-        },
-      },
-    );
-    // An admin's corrections were just overwritten by a fresh reading (the
-    // TOR changed); they stay in usercorrections, and the review says so.
-    await TORRecord.updateOne(
-      { _id: r._id, "review.status": "verified" },
-      {
-        $set: {
-          "review.status": "outdated",
-          "review.note": "AI อ่าน TOR ใหม่หลังการตรวจ — ค่าที่แก้ไว้ถูกเขียนทับ ดูประวัติใน usercorrections",
         },
       },
     );

@@ -10,6 +10,7 @@ import {
   EDITABLE_FIELDS,
   needsReviewFilter,
   parseChanges,
+  ReviewConflictError,
   ReviewInputError,
   uncertainItems,
 } from "../services/tor-review.js";
@@ -360,6 +361,7 @@ router.put(
       note: typeof req.body?.note === "string" ? req.body.note.slice(0, 1000) : null,
       verify: req.body?.verify !== false,
       dryRun: req.body?.dryRun === true,
+      expectedUpdatedAt: req.body?.expectedUpdatedAt ?? null,
     });
     if (!result) {
       Errors.notFound(res, "TOR record not found");
@@ -367,6 +369,10 @@ router.put(
     }
     apiSuccess(res, { ...result, dryRun: req.body?.dryRun === true });
   } catch (error) {
+    if (error instanceof ReviewConflictError) {
+      Errors.conflict(res, error.message);
+      return;
+    }
     if (error instanceof ReviewInputError || (error as Error)?.name === "ValidationError") {
       Errors.badRequest(res, (error as Error).message);
       return;

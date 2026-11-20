@@ -2,9 +2,9 @@ import { Types } from "mongoose";
 import { connectDB } from "../../db/connection.js";
 import TORRecord from "../../db/models/tor-record.js";
 import User from "../../db/models/user.js";
-import Notification from "../../db/models/notification.js";
 import { sendNewTorIngestedEmail, NewTorItem } from "./email-sender.js";
 import { processingAllowed } from "../pdpa/processing-permission.js";
+import { batchDedupeKey, createNotificationOnce, deliverEmailOnce } from "./delivery.js";
 
 export interface IngestNotifyOptions {
   /** Label shown in email header, e.g. "BMA e-GP2" or "CGD e-GP RSS" */
@@ -16,6 +16,8 @@ export interface IngestNotifyOptions {
   sendToAllUsers?: boolean;
   /** When true, logs what would be sent without creating notifications or sending emails. */
   dryRun?: boolean;
+  /** Test seam for a mocked SMTP provider. */
+  sendEmail?: typeof sendNewTorIngestedEmail;
 }
 
 export interface IngestNotifyResult {
@@ -24,6 +26,8 @@ export interface IngestNotifyResult {
   notificationsCreated: number;
   emailsSent: number;
   emailsFailed: number;
+  /** Users who already had this batch (repeat or concurrent run): no second message. */
+  alreadyNotified?: number;
 }
 
 /**
@@ -34,7 +38,7 @@ export async function notifyUsersOfNewTors(
   torIds: Array<string | Types.ObjectId>,
   options: IngestNotifyOptions = {},
 ): Promise<IngestNotifyResult> {
-  const { sourceLabel, dryRun = false } = options;
+  const { sourceLabel, dryRun = false, sendEmail = sendNewTorIngestedEmail } = options;
 
   if (!torIds.length) {
     return {
@@ -107,6 +111,8 @@ export async function notifyUsersOfNewTors(
 
   const linkUrl = items.length === 1 ? `/procurement/${firstItem.id}` : "/procurement";
   const singleTorObjectId = items.length === 1 ? new Types.ObjectId(firstItem.id) : undefined;
+  // Same batch → same key, so rerunning a failed or interrupted ingest does not notify twice.
+  const dedupeKey = batchDedupeKey("new_tors", items.map((i) => i.id));
 
   if (dryRun) {
     console.log(
@@ -124,6 +130,7 @@ export async function notifyUsersOfNewTors(
   let notificationsCreated = 0;
   let emailsSent = 0;
   let emailsFailed = 0;
+  let alreadyNotified = 0;
 
   console.log(
     `[notify] กำลังส่งแจ้งเตือน TOR ใหม่ (${items.length} โครงการ) ให้ผู้ใช้ ${users.length} คน...`,
@@ -135,48 +142,42 @@ export async function notifyUsersOfNewTors(
     // Checked at send time against the stored preference; no option can override it.
     const shouldSendEmail = user.notificationPrefs?.email === true;
 
-    const notification = await Notification.create({
+    const { id: notificationId, created } = await createNotificationOnce({
       userId: user._id,
       ...(singleTorObjectId ? { torRecordId: singleTorObjectId } : {}),
       type: "system",
       title: notifTitle,
       body: notifBody,
       linkUrl,
+      dedupeKey,
       channels: {
         inApp: { sent: user.notificationPrefs?.inApp === true },
-        email: { sent: false },
+        email: { sent: false, ...(shouldSendEmail && user.email ? { state: "pending" as const } : {}) },
       },
     });
-    notificationsCreated++;
+    if (created) notificationsCreated++;
+    else alreadyNotified++;
 
+    // A repeated run can only retry a failed delivery; sent and in-flight emails are not claimable.
     if (shouldSendEmail && user.email) {
-      const emailRes = await sendNewTorIngestedEmail({
-        to: user.email,
-        recipientName: user.name,
-        sourceLabel,
-        totalNewCount: items.length,
-        items,
-      });
-
-      await Notification.findByIdAndUpdate(notification._id, {
-        $set: {
-          "channels.email.sent": emailRes.success,
-          "channels.email.sentAt": emailRes.success ? new Date() : undefined,
-          "channels.email.error": emailRes.error,
-        },
-      });
-
-      if (emailRes.success) {
-        emailsSent++;
-      } else {
-        emailsFailed++;
-      }
+      const delivery = await deliverEmailOnce(notificationId, user._id, () =>
+        sendEmail({
+          to: user.email,
+          recipientName: user.name,
+          sourceLabel,
+          totalNewCount: items.length,
+          items,
+        }),
+      );
+      if (delivery.status === "sent") emailsSent++;
+      else if (delivery.status === "failed") emailsFailed++;
     }
   }
 
   console.log(
     `[notify] เสร็จสิ้น — แจ้งเตือนในระบบ ${notificationsCreated} | ส่งอีเมลสำเร็จ ${emailsSent}/${users.length}` +
-      (emailsFailed ? ` (ล้มเหลว ${emailsFailed})` : ""),
+      (emailsFailed ? ` (ล้มเหลว ${emailsFailed})` : "") +
+      (alreadyNotified ? ` | เคยแจ้งแล้ว ${alreadyNotified}` : ""),
   );
 
   return {
@@ -185,6 +186,7 @@ export async function notifyUsersOfNewTors(
     notificationsCreated,
     emailsSent,
     emailsFailed,
+    alreadyNotified,
   };
 }
 
