@@ -1,0 +1,31 @@
+✔ DB-01: current DB role overrides stale developer claim (304.374125ms)
+✔ DB-02: consent absence blocks profile writes, explicit grant enables them (28.559083ms)
+✔ DB-03: user B cannot read A profile or delete A bookmark (5.298458ms)
+✔ DB-04: actual Mongo keyword expansion and inclusive price boundaries (7.189291ms)
+✔ DB-05: equal-day pagination neither repeats nor loses rows (5.096542ms)
+✔ DB-06: revoked consent immediately stops profile writes and matching (10.711917ms)
+✔ DB-07: export includes >100 notifications and excludes B data (17.85975ms)
+✔ DB-08: deletion erases linked data and old JWT becomes unusable (193.430792ms)
+✔ DB-09: ban/reinstate and role updates take effect for existing token (3.781083ms)
+✔ OAUTH-01: authorization redirect has Google host, configured callback and minimal scopes (186.070958ms)
+✔ OAUTH-02: user denying provider access returns to login without JWT (2.766917ms)
+✔ OAUTH-03: anonymous session cannot read /me (1.554709ms)
+✔ OAUTH-04: malformed JWT is rejected before database access (1.25475ms)
+✔ OAUTH-05: missing/wrong/cross-browser/replayed state never exchanges a code (9.456458ms)
+✔ INT-01 #140: default parsed scope excludes pending while all/new include it (331.476583ms)
+✔ INT-02 #140: literal agency, phase, technology, keyword and inclusive prices compose (3.812708ms)
+✔ INT-03 #140: explicit zero lower/upper bounds return a zero-price record (3.707916ms)
+✔ INT-04 #140: closed status and openOnly reflect deadlines and phase (7.188417ms)
+✔ INT-05 #140: ascending/descending price sort and pagination preserve result order (9.9725ms)
+✔ INT-06 #140: invalid prices, repeated query values and invalid scope are rejected (10.94025ms)
+✔ INT-08 #140: bracketed Mongo operators are not interpreted as query objects (1.953417ms)
+✔ INT-07 #140: no results and empty later page have valid metadata (3.555417ms)
+✔ INT-09 #140: ZIP -> reviewed payload -> simulated LLM -> validation -> MongoDB -> API (85.641458ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1880.28825

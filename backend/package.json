@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test": "node ../scripts/testing/run.mjs --unit",
+    "test:integration": "node ../scripts/testing/run.mjs --integration",
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",

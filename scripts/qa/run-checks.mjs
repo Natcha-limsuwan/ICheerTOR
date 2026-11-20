@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
-const output = path.join(root, "docs/qa/evidence");
+const output = path.resolve(process.env.QA_EVIDENCE_DIR ?? path.join(root, "docs/qa/evidence"));
 mkdirSync(output, { recursive: true });
 const checks = [
   ["backend-types", "backend", ["node_modules/typescript/bin/tsc", "--noEmit"]],

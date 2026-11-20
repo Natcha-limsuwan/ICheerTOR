@@ -1,0 +1,84 @@
+PASS chrome: procurement layout 1440px
+PASS chrome: profile layout 1440px
+PASS chrome: bookmarks layout 1440px
+PASS chrome: alerts layout 1440px
+PASS chrome: TOR detail layout 1440px
+PASS chrome: tour all six sections 1440px
+PASS chrome: procurement layout 768px
+PASS chrome: profile layout 768px
+PASS chrome: bookmarks layout 768px
+PASS chrome: alerts layout 768px
+PASS chrome: TOR detail layout 768px
+PASS chrome: tour all six sections 768px
+PASS chrome: procurement layout 390px
+PASS chrome: profile layout 390px
+PASS chrome: bookmarks layout 390px
+PASS chrome: alerts layout 390px
+PASS chrome: TOR detail layout 390px
+PASS chrome: mobile navigation
+PASS chrome: tour all six sections 390px
+PASS chrome: bilingual search and no-results recovery through UI
+PASS chrome: real database price boundaries through UI
+PASS chrome: bookmark persists on saved-projects page
+PASS chrome: per-field confidence and low-confidence warning
+PASS chrome: consent grant and profile persistence
+PASS chrome: personal-data export through UI
+PASS chrome: consent revoke through UI
+PASS chrome: account deletion through UI revokes old JWT
+PASS chrome: no uncaught browser exceptions
+PASS firefox: procurement layout 1440px
+PASS firefox: profile layout 1440px
+PASS firefox: bookmarks layout 1440px
+PASS firefox: alerts layout 1440px
+PASS firefox: TOR detail layout 1440px
+PASS firefox: tour all six sections 1440px
+PASS firefox: procurement layout 768px
+PASS firefox: profile layout 768px
+PASS firefox: bookmarks layout 768px
+PASS firefox: alerts layout 768px
+PASS firefox: TOR detail layout 768px
+PASS firefox: tour all six sections 768px
+PASS firefox: procurement layout 390px
+PASS firefox: profile layout 390px
+PASS firefox: bookmarks layout 390px
+PASS firefox: alerts layout 390px
+PASS firefox: TOR detail layout 390px
+PASS firefox: mobile navigation
+PASS firefox: tour all six sections 390px
+PASS firefox: bilingual search and no-results recovery through UI
+PASS firefox: real database price boundaries through UI
+PASS firefox: bookmark persists on saved-projects page
+PASS firefox: per-field confidence and low-confidence warning
+PASS firefox: consent grant and profile persistence
+PASS firefox: personal-data export through UI
+PASS firefox: consent revoke through UI
+PASS firefox: account deletion through UI revokes old JWT
+PASS firefox: no uncaught browser exceptions
+PASS webkit: procurement layout 1440px
+PASS webkit: profile layout 1440px
+PASS webkit: bookmarks layout 1440px
+PASS webkit: alerts layout 1440px
+PASS webkit: TOR detail layout 1440px
+PASS webkit: tour all six sections 1440px
+PASS webkit: procurement layout 768px
+PASS webkit: profile layout 768px
+PASS webkit: bookmarks layout 768px
+PASS webkit: alerts layout 768px
+PASS webkit: TOR detail layout 768px
+PASS webkit: tour all six sections 768px
+PASS webkit: procurement layout 390px
+PASS webkit: profile layout 390px
+PASS webkit: bookmarks layout 390px
+PASS webkit: alerts layout 390px
+PASS webkit: TOR detail layout 390px
+PASS webkit: mobile navigation
+PASS webkit: tour all six sections 390px
+PASS webkit: bilingual search and no-results recovery through UI
+PASS webkit: real database price boundaries through UI
+PASS webkit: bookmark persists on saved-projects page
+PASS webkit: per-field confidence and low-confidence warning
+PASS webkit: consent grant and profile persistence
+PASS webkit: personal-data export through UI
+PASS webkit: consent revoke through UI
+PASS webkit: account deletion through UI revokes old JWT
+PASS webkit: no uncaught browser exceptions

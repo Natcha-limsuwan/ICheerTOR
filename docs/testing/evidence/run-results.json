@@ -1,0 +1,105 @@
+{
+  "startedAt": "2026-11-08T09:48:07.820Z",
+  "finishedAt": "2026-11-08T09:50:43.429Z",
+  "node": "v22.18.0",
+  "commit": "6b057aa80532f2dea602d8d3a468add6415cd6c6",
+  "sourceState": "working tree; see source-manifest.json",
+  "requestedPhases": [
+    "unit",
+    "integration",
+    "load",
+    "e2e"
+  ],
+  "phases": {
+    "unit": {
+      "startedAt": "2026-11-08T09:48:07.820Z",
+      "status": "PASS",
+      "commit": "6b057aa80532f2dea602d8d3a468add6415cd6c6"
+    },
+    "integration": {
+      "startedAt": "2026-11-08T09:48:20.348Z",
+      "status": "PASS",
+      "commit": "6b057aa80532f2dea602d8d3a468add6415cd6c6"
+    },
+    "load": {
+      "startedAt": "2026-11-08T09:48:22.588Z",
+      "status": "PASS",
+      "commit": "6b057aa80532f2dea602d8d3a468add6415cd6c6"
+    },
+    "e2e": {
+      "startedAt": "2026-11-08T09:49:14.730Z",
+      "status": "PASS",
+      "commit": "6b057aa80532f2dea602d8d3a468add6415cd6c6"
+    }
+  },
+  "commands": [
+    {
+      "name": "unit",
+      "command": "node --import tsx --test --test-reporter=spec tests/unit/parser.test.ts tests/unit/scraper.test.ts tests/unit/search.test.ts",
+      "directory": "backend",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 191
+    },
+    {
+      "name": "test-types",
+      "command": "node node_modules/typescript/bin/tsc --noEmit --esModuleInterop --target ES2022 --module NodeNext --moduleResolution NodeNext --skipLibCheck tests/unit/scraper.test.ts tests/unit/parser.test.ts tests/unit/search.test.ts tests/integration/search.test.ts scripts/testing/load.ts scripts/qa/serve-ui.ts",
+      "directory": "backend",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 1667
+    },
+    {
+      "name": "frontend-typegen",
+      "command": "node node_modules/next/dist/bin/next typegen",
+      "directory": "frontend",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 253
+    },
+    {
+      "name": "regressions",
+      "command": "node scripts/qa/run-checks.mjs",
+      "directory": "",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 10416
+    },
+    {
+      "name": "integration",
+      "command": "node --import tsx --test --test-reporter=spec scripts/qa/integration.test.ts tests/integration/search.test.ts scripts/qa/oauth-boundary.test.ts",
+      "directory": "backend",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 1911
+    },
+    {
+      "name": "load",
+      "command": "node --import tsx scripts/testing/load.ts",
+      "directory": "backend",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 52142
+    },
+    {
+      "name": "e2e-build",
+      "command": "node node_modules/next/dist/bin/next build --webpack",
+      "directory": "frontend",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 10981
+    },
+    {
+      "name": "e2e",
+      "command": "node scripts/qa/cross-browser-check.mjs",
+      "directory": "",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 76687
+    }
+  ],
+  "status": "PASS",
+  "cleanup": "Owned child processes stopped and temporary data directory removed; scratch DB cleanup is performed by each suite.",
+  "pilot": "PREPARED_NOT_RUN; no participants yet",
+  "externalServices": "Google/Vertex/SMTP/government sources not exercised"
+}

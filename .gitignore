@@ -25,6 +25,9 @@ tsconfig.tsbuildinfo
 
 # QA screenshots stay local; attach relevant images to issues/PRs instead
 /docs/qa/evidence/**/*.png
+/docs/testing/evidence/**/*.png
+/docs/testing/evidence/**/*.webm
+/docs/testing/evidence/**/trace.zip
 
 # GCP service-account keys (Vertex AI) — never commit
 secrets/

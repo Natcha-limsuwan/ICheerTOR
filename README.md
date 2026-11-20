@@ -255,6 +255,17 @@ The current offline QA suite passes; see the retest report for remaining scope a
 
 New ingestion uses reviewed source origins (`SCRAPER_APPROVED_ORIGINS`) plus robots checks. New AI extraction requires an exact-payload privacy review (`AI_PRIVACY_REVIEW_MANIFEST`), including PDFs; requests stop when approval is missing. Existing stored results remain readable. See [configuration and review workflow](docs/qa/README.md#การตั้งค่าหลังเพิ่ม-source-controls-และ-ai-privacy-gate).
 
+## Testing
+
+Testing #131: [results](docs/testing/TESTING-131.md), [setup and commands](docs/testing/README.md), and [pilot test plan](docs/testing/PILOT-143.md).
+
+```bash
+npm test
+npm run test:all
+```
+
+Unit/regression tests run offline. Integration, load, and browser suites use synthetic data and a disposable local MongoDB; see the setup guide for prerequisites. Pilot testing is prepared and awaits participants.
+
 ## License
 
 See [LICENSE](./LICENSE).

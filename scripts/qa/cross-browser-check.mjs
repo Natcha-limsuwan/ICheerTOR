@@ -7,13 +7,14 @@ import { createRequire } from "node:module";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 const require = createRequire(import.meta.url);
 const { chromium, firefox, webkit } = require(process.env.QA_PLAYWRIGHT_PATH ?? "playwright");
-const { sessions, torId } = JSON.parse(await readFile("/tmp/icheertor-qa-ui-session.json", "utf8"));
-const output = "docs/qa/evidence";
+const { sessions, torId } = JSON.parse(await readFile(process.env.QA_SESSION_FILE ?? "/tmp/icheertor-qa-ui-session.json", "utf8"));
+const output = process.env.QA_EVIDENCE_DIR ?? "docs/qa/evidence";
 await mkdir(output, { recursive: true });
 const results = [];
 const origin = "http://127.0.0.1:3100";
 for (const [name, engine, options] of [
-  ["chrome", chromium, { executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" }],
+  ["chrome", chromium, process.env.QA_CHROME_EXECUTABLE ? { executablePath: process.env.QA_CHROME_EXECUTABLE }
+    : process.platform === "darwin" ? { executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" } : {}],
   ["firefox", firefox, {}], ["webkit", webkit, {}],
 ]) {
   let browser;
@@ -66,11 +67,35 @@ for (const [name, engine, options] of [
       pass(`tour all six sections ${width}px`);
       await page.screenshot({ path: `${output}/${name}-real-api-${width}.png` });
     }
+    const search = page.getByLabel("Smart Search TOR", { exact: true });
+    await search.fill("zzzz-no-project");
+    await page.getByText("พบ 0 รายการ", { exact: true }).waitFor();
+    await page.getByRole("button", { name: "ล้างคำค้นหา", exact: true }).click();
+    await page.getByText("พบ 3 รายการ", { exact: true }).waitFor();
+    const searched = page.waitForResponse(response => response.url().includes("/api/tor?") && response.url().includes("q=") && response.ok());
+    await search.fill("เว็บไซต์");
+    await searched;
+    await page.getByText("พบ 3 รายการ", { exact: true }).waitFor();
+    assert.equal(await page.getByRole("link", { name: "ดูรายละเอียด", exact: false }).count(), 3);
+    pass("bilingual search and no-results recovery through UI");
     await page.getByLabel("ราคาต่ำสุด", { exact: true }).fill("1000000");
     await page.getByText("พบ 2 รายการ", { exact: true }).waitFor();
     await page.getByLabel("ราคาสูงสุด", { exact: true }).fill("1000000");
     await page.getByText("พบ 1 รายการ", { exact: true }).waitFor();
     pass("real database price boundaries through UI");
+    await page.getByRole("button", { name: "ล้างคำค้นหา", exact: true }).click();
+    await page.getByLabel("ราคาต่ำสุด", { exact: true }).fill("");
+    await page.getByLabel("ราคาสูงสุด", { exact: true }).fill("");
+    await page.getByText("พบ 3 รายการ", { exact: true }).waitFor();
+    await page.getByRole("button", { name: "บันทึกโครงการ", exact: true }).first().click();
+    await page.getByText("บันทึกโครงการในรายการที่บันทึกไว้เรียบร้อยแล้ว", { exact: true }).waitFor();
+    await page.goto(`${origin}/bookmarks`);
+    await page.getByText("โครงการ website QA", { exact: false }).first().waitFor();
+    pass("bookmark persists on saved-projects page");
+    await page.goto(`${origin}/procurement/${torId}`);
+    for (const value of ["91%", "85%", "55%", "75%"]) await page.getByText(value, { exact: true }).first().waitFor();
+    await page.getByText("ความเชื่อมั่นต่ำ กรุณาตรวจต้นฉบับ", { exact: true }).waitFor();
+    pass("per-field confidence and low-confidence warning");
     await page.goto(`${origin}/profile`);
     await page.getByText("ยังไม่อนุญาตให้ใช้โปรไฟล์", { exact: false }).waitFor();
     const save = page.getByRole("button", { name: "บันทึกโปรไฟล์", exact: true });

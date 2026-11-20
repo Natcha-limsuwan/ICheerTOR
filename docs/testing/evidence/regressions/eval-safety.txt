@@ -1,0 +1,11 @@
+✔ EVAL-01: cached mode uses active v4, skips DB and fails honestly without outputs (269.1435ms)
+✔ EVAL-02: cached output from another prompt is rejected (289.070959ms)
+✔ EVAL-03: absent local archive fails without falling back to e-GP or DB (269.783208ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 916.942833

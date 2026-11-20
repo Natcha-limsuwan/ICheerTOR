@@ -1,0 +1,3 @@
+PASS 1 users: 2665 requests, p95 7.0 ms, 0 errors
+PASS 10 users: 8850 requests, p95 18.3 ms, 0 errors
+PASS 50 users: 25343 requests, p95 76.9 ms, 0 errors

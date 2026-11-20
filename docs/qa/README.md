@@ -149,10 +149,12 @@ NEXT_PUBLIC_API_URL=http://127.0.0.1:3101/api npm run build -- --webpack
 ใช้ standalone output ตาม config ของโปรเจกต์ โดยคัดลอก public/static assets ไปยัง build output แล้วเริ่ม server (คำสั่งเหล่านี้เปลี่ยนเฉพาะไฟล์ build ที่ ignore แล้ว):
 
 ```bash
-mkdir -p .next/standalone/.next/static
-cp -R .next/static/. .next/standalone/.next/static/
-if [ -d public ]; then mkdir -p .next/standalone/public; cp -R public/. .next/standalone/public/; fi
-PORT=3100 HOSTNAME=127.0.0.1 node .next/standalone/server.js
+qa_standalone=.next/standalone
+if [ -f .next/standalone/frontend/server.js ]; then qa_standalone=.next/standalone/frontend; fi
+mkdir -p "$qa_standalone/.next/static"
+cp -R .next/static/. "$qa_standalone/.next/static/"
+if [ -d public ]; then mkdir -p "$qa_standalone/public"; cp -R public/. "$qa_standalone/public/"; fi
+PORT=3100 HOSTNAME=127.0.0.1 node "$qa_standalone/server.js"
 ```
 
 ใช้ Playwright package ที่ติดตั้งไว้และ Firefox/WebKit test engines แล้วรันจาก repo root:

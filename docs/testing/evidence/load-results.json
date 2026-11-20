@@ -1,0 +1,85 @@
+{
+  "startedAt": "2026-11-08T09:48:22.776Z",
+  "node": "v22.18.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "cpuCount": 10,
+  "totalMemoryBytes": 17179869184,
+  "fixture": {
+    "registeredUsers": 1000,
+    "parsedTORs": 5000
+  },
+  "minimumRequestsPerUser": 20,
+  "maximumRequestsPerUser": 5000,
+  "routes": [
+    "list",
+    "bilingual search + price",
+    "detail",
+    "list + consent-aware matching"
+  ],
+  "acceptance": {
+    "p95Ms": 2000,
+    "allowedErrorRate": 0,
+    "concurrentUsers": 50,
+    "note": "p95 budget is a local demo criterion; SRS specifies 50 concurrent users, 1000 accounts and 5000 TORs without a numeric latency SLA."
+  },
+  "scenarios": [
+    {
+      "concurrency": 1,
+      "distinctActiveUsers": 1,
+      "requests": 2665,
+      "maxInFlight": 1,
+      "durationMs": 10001.029917,
+      "targetDurationMs": 10000,
+      "requestsPerSecond": 266.47255553850175,
+      "p50Ms": 3.72491699999955,
+      "p95Ms": 6.99645799999962,
+      "p99Ms": 7.4658339999996315,
+      "errors": {},
+      "errorCount": 0,
+      "errorRate": 0,
+      "rssBeforeBytes": 512147456,
+      "rssAfterBytes": 559448064,
+      "status": "PASS"
+    },
+    {
+      "concurrency": 10,
+      "distinctActiveUsers": 10,
+      "requests": 8850,
+      "maxInFlight": 10,
+      "durationMs": 10004.575250000002,
+      "targetDurationMs": 10000,
+      "requestsPerSecond": 884.5952755465554,
+      "p50Ms": 10.896915999999692,
+      "p95Ms": 18.252916000001278,
+      "p99Ms": 21.640792000000147,
+      "errors": {},
+      "errorCount": 0,
+      "errorRate": 0,
+      "rssBeforeBytes": 559448064,
+      "rssAfterBytes": 594673664,
+      "status": "PASS"
+    },
+    {
+      "concurrency": 50,
+      "distinctActiveUsers": 50,
+      "requests": 25343,
+      "maxInFlight": 50,
+      "durationMs": 30020.356249999997,
+      "targetDurationMs": 30000,
+      "requestsPerSecond": 844.1938459674343,
+      "p50Ms": 58.73658299999806,
+      "p95Ms": 76.89112499999464,
+      "p99Ms": 86.8796250000014,
+      "errors": {},
+      "errorCount": 0,
+      "errorRate": 0,
+      "rssBeforeBytes": 594673664,
+      "rssAfterBytes": 622723072,
+      "status": "PASS"
+    }
+  ],
+  "scratchDatabaseRemoved": true,
+  "status": "PASS",
+  "limitations": "Bounded closed-loop localhost run: 10s at 1/10 users, 30s at 50 users, capped at 5000 requests/user. Not a soak/capacity or distributed production test. Does not prove queue architecture or AI/provider throughput. Frontend is not part of measured HTTP latency."
+}

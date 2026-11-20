@@ -1,0 +1,17 @@
+{
+  "name": "icheertor-tests",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node scripts/testing/run.mjs",
+    "test:integration": "node scripts/testing/run.mjs --integration",
+    "test:e2e": "node scripts/testing/run.mjs --e2e",
+    "test:load": "node scripts/testing/run.mjs --load",
+    "test:all": "node scripts/testing/run.mjs --all"
+  },
+  "devDependencies": {
+    "playwright": "1.65.0"
+  }
+}

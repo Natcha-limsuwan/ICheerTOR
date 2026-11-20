@@ -1,0 +1,35 @@
+✔ PAR-01 #138: valid structured output retains scope, qualification, price and evaluation (0.92225ms)
+✔ PAR-02 #138: Thai amount words correct a digit misread and retain evidence (8.440583ms)
+✔ PAR-03 #138: license term is not invented as implementation duration (0.084416ms)
+✔ PAR-04 #138: null numeric requirement clears its unit instead of becoming zero (0.160834ms)
+✔ PAR-05 #138: low confidence creates a review issue rather than disappearing (0.061958ms)
+✔ PAR-06 #138: silence and equivalent wording are not document conflicts (0.145667ms)
+✔ PAR-07 #138: disagreement between official figures requires review, not silent overwrite (0.241625ms)
+✔ PAR-08 #138: final record preserves confidence per field and a separately computed deadline (0.450584ms)
+✔ SCR-01 #137: ZIP store and deflate preserve independent documents (1.187416ms)
+✔ SCR-02 #137: Unicode and legacy CP874 Thai filenames decode before picking (0.7055ms)
+✔ SCR-03 #137: truncated/HTML archives are refused (0.179084ms)
+✔ SCR-04 #137: unsupported compression and corrupt local header are refused (0.188209ms)
+✔ SCR-05 #137: contract/bond/BOQ-only archive never becomes TOR (0.212792ms)
+✔ SCR-06 #137: unknown agency attachment can accompany bidding document but publication copy is excluded (0.108625ms)
+✔ SCR-07 #137: RSS decodes entities/CDATA and rejects malformed project identifiers (0.28325ms)
+✔ SCR-08 #137: untrusted project/archive IDs stay within their query parameter (0.131709ms)
+✔ SCR-09 #137: actual generated text PDF yields readable text (48.992167ms)
+✔ SCR-10 #137: a blank/image-only PDF is never reported as readable text (2.790208ms)
+✔ SEA-01 #139: empty/whitespace search produces no restriction (0.631583ms)
+✔ SEA-02 #139: Thai-English synonyms work in either direction (0.375333ms)
+✔ SEA-03 #139: multiple terms use AND across title, summary and tags (0.256292ms)
+✔ SEA-04 #139: quoted phrases remain contiguous and do not expand aliases (0.099625ms)
+✔ SEA-05 #139: AI has word boundaries and cannot match maintenance (0.153833ms)
+✔ SEA-06 #139: regex metacharacters are always literal (0.140708ms)
+✔ SEA-07 #139: case, duplicate keywords and normalized Unicode are stable (0.122541ms)
+✔ SEA-08 #139: exact supported length/term boundaries accepted, excess rejected (0.158667ms)
+✔ SEA-09 #139: project number and parsed scope participate in matching (0.194834ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 166.714708

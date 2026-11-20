@@ -1,0 +1,44 @@
+▲ Next.js 16.3.2 (webpack)
+- Environments: .env.local
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /Users/natcha/Desktop/ICheerTOR/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /Users/natcha/Desktop/ICheerTOR/frontend/package-lock.json
+
+✓ Running next.config.ts took 11ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1888ms
+  Running TypeScript ...
+  Finished TypeScript in 873ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/14) ...
+  Generating static pages using 9 workers (3/14) 
+  Generating static pages using 9 workers (6/14) 
+  Generating static pages using 9 workers (10/14) 
+✓ Generating static pages using 9 workers (14/14) in 273ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /admin
+├ ○ /admin/logs
+├ ○ /admin/users
+├ ○ /alerts
+├ ○ /bookmarks
+├ ○ /callback
+├ ○ /compare
+├ ○ /login
+├ ○ /privacy
+├ ○ /procurement
+├ ƒ /procurement/[id]
+└ ○ /profile
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

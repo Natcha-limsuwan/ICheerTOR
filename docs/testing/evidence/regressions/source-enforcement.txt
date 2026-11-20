@@ -1,0 +1,16 @@
+✔ SRC-01: unapproved origin refused before requesting robots (0.555708ms)
+✔ SRC-02: Disallow / stops RSS even on an approved origin (8.872375ms)
+✔ SRC-03: longest rule, Allow tie, merged groups, wildcards and percent paths (0.432208ms)
+✔ SRC-04: missing/error/malformed robots denies access and is cached briefly (0.903917ms)
+✔ SRC-05: concurrent requests share robots and preserve crawl delay (0.763625ms)
+✔ SRC-06: 429 Retry-After applies to the next caller (0.73875ms)
+✔ SRC-07: content redirects blocked and never followed (0.2855ms)
+✔ SRC-08: network failure delays the next caller (0.284084ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 104.969709

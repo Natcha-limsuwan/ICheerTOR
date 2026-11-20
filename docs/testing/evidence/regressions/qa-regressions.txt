@@ -1,0 +1,40 @@
+✔ SEC-01: all private route families reject a missing token (2.51325ms)
+✔ SEC-02: invalid signature and expired token are rejected (1.707875ms)
+✔ SEC-03: current banned and suspended account statuses are rejected (2.001375ms)
+✔ SEC-04: ordinary user cannot access admin routes (0.707875ms)
+✔ SEC-05 / BUG-01: token issued before an account ban must stop working (0.739042ms)
+✔ SEC-06: profile reads are scoped to authenticated user (0.903583ms)
+✔ SEC-07: bookmark deletion includes owner filter (0.674958ms)
+✔ SEC-08: marking notification read includes owner filter (0.757209ms)
+✔ PD-01: deleting an account requires matching confirmation email (0.997333ms)
+✔ PD-02 / BUG-02: data collection requires consent under NFR-PD1 (0.931292ms)
+✔ PD-03 / BUG-03: consent status aggregates using ObjectId, matching stored userId (0.750833ms)
+✔ PD-04 / BUG-04: deletion must remove or schedule linked profile data (1.224333ms)
+✔ PD-05 / BUG-13: personal-data export must not silently truncate notifications (0.884084ms)
+✔ FR-B-01: persistence schema rejects out-of-range extraction confidence (6.77375ms)
+✔ SEC-09: removed account is rejected and current role overrides JWT (1.179042ms)
+✔ PD-06: outdated notice or revoked consent prevents profile updates (1.0885ms)
+✔ PD-07: grant requires the current notice version and a recognized purpose (1.505ms)
+✔ PD-08: partial deletion remains pending, retry worker completes it (0.823125ms)
+✔ PD-09: withdrawn consent prevents creating a match notification (0.288917ms)
+✔ FR-A-01: keyword, scope, phase, status and inclusive price range coexist (1.2415ms)
+✔ FR-A-02: lower-only, upper-only, zero and equal price bounds (1.709833ms)
+✔ FR-A-03: invalid price ranges rejected before querying records (3.130917ms)
+✔ FR-A-04: date, price and deadline sort directions plus pagination (2.221542ms)
+✔ FR-A-05: invalid query types, oversized search, scope and status are rejected (2.020125ms)
+✔ FR-A-06 / BUG-05: invalid pagination must not reach database as NaN (0.563541ms)
+✔ FR-A-07 / BUG-06: regex characters in agency names must be literal (0.633917ms)
+✔ FR-A-08 / BUG-07: malformed techStack arrays must return 400 instead of 500 (0.584625ms)
+✔ TH-01: Thai month names, abbreviations and BE numeric dates parse (0.211417ms)
+✔ TH-02: Thai Baht formatting and parsing of regular amounts (8.50525ms)
+✔ TH-03 / BUG-08: nonexistent Thai dates must not silently roll over (0.071458ms)
+✔ TH-04 / BUG-09: explicitly requesting Gregorian dates must use Gregorian year (1.869417ms)
+✔ TH-05 / BUG-10: Thai digits must be accepted by Thai date helper (0.074625ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 347.380625
