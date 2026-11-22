@@ -1,5 +1,4 @@
-/**
- * Read Thai number words — "สี่ล้านบาทถ้วน" → 4000000.
+/* Read Thai number words — "สี่ล้านบาทถ้วน" → 4000000.
  *
  * TORs often write an amount twice: "๔,๐๐๐,๐๐๐.- บาท (สี่ล้านบาทถ้วน)".
  * On a scan the digits ๔ ๕ ๘ are easy to confuse and the words are not, so
@@ -7,8 +6,7 @@
  *
  * Handles the forms that appear in procurement documents: units up to ล้าน
  * (and ล้าน repeated, "พันล้าน"), เอ็ด, ยี่, and สตางค์. Returns null for
- * anything it cannot read fully, rather than a partial number.
- */
+ * anything it cannot read fully, rather than a partial number. */
 
 const DIGITS: Record<string, number> = {
   ศูนย์: 0, หนึ่ง: 1, เอ็ด: 1, สอง: 2, ยี่: 2, สาม: 3, สี่: 4, ห้า: 5, หก: 6, เจ็ด: 7, แปด: 8, เก้า: 9,
@@ -30,7 +28,7 @@ function tokenize(s: string): string[] | null {
   return out;
 }
 
-/** Value of a run below one million, e.g. ["สาม","แสน","สอง","หมื่น"]. */
+/* Value of a run below one million, e.g. ["สาม","แสน","สอง","หมื่น"]. */
 function belowMillion(tokens: string[]): number | null {
   let total = 0;
   let pending: number | null = null;
@@ -47,7 +45,7 @@ function belowMillion(tokens: string[]): number | null {
   return total + (pending ?? 0);
 }
 
-/** Parse an integer in words, or null. */
+/* Parse an integer in words, or null. */
 function parseInteger(words: string): number | null {
   const tokens = tokenize(words);
   if (!tokens || tokens.length === 0) return null;
@@ -73,10 +71,8 @@ function parseInteger(words: string): number | null {
   return value;
 }
 
-/**
- * Parse an amount written in Thai words. Accepts the usual wrapping —
- * parentheses, "บาท", "ถ้วน", "สตางค์", spaces — and returns baht.
- */
+/* Parse an amount written in Thai words. Accepts the usual wrapping —
+ * parentheses, "บาท", "ถ้วน", "สตางค์", spaces — and returns baht. */
 export function parseThaiAmountWords(input: string): number | null {
   const s = input.replace(/[()\s.\-–]/g, "").replace(/ถ้วน$/, "");
   if (!s) return null;
@@ -90,7 +86,7 @@ export function parseThaiAmountWords(input: string): number | null {
   return satang === null ? null : baht + satang / 100;
 }
 
-/** "๔,๐๐๐,๐๐๐.๐๐" → 4000000. Null when there is no number. */
+/* "๔,๐๐๐,๐๐๐.๐๐" → 4000000. Null when there is no number. */
 export function parseThaiDigits(input: string): number | null {
   const ascii = input
     .replace(/[๐-๙]/g, (d) => String("๐๑๒๓๔๕๖๗๘๙".indexOf(d)))

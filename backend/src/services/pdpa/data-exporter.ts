@@ -6,9 +6,7 @@ import Notification from "../../db/models/notification";
 import UserCorrection from "../../db/models/user-correction";
 import ConsentRecord from "../../db/models/consent-record";
 
-/**
- * PDPA data exporter — aggregates all personal data for a user.
- */
+/* PDPA data exporter — aggregates all personal data for a user. */
 export async function exportUserData(userId: string) {
   await connectDB();
 

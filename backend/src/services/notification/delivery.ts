@@ -5,23 +5,16 @@ import User from "../../db/models/user.js";
 import { processingAllowed } from "../pdpa/processing-permission.js";
 import type { EmailResult } from "./email-sender.js";
 
-/**
- * Duplicate-delivery controls for notifications (threat T25).
- *
- * - One notification per (user, dedupeKey): a unique index turns a concurrent
- *   or repeated run into a no-op instead of a second message.
- * - The email is claimed atomically (pending/failed → sending) before SMTP is
- *   called, so two workers cannot both send it.
- * - A claim left in "sending" (worker died, or SMTP accepted the message but
- *   no acknowledgement was recorded) is never resent automatically. This
- *   prefers a possibly missed email to a duplicate; it is not exactly-once.
- */
+/* Prevent duplicate notification delivery (T25).
+ * A unique (user, dedupeKey) index deduplicates records. Workers atomically claim
+ * email before SMTP. A claim left in sending is not automatically resent: the
+ * provider may already have accepted it. This can miss mail; it is not exactly-once. */
 
 export const MAX_EMAIL_ATTEMPTS = 3;
 
 type Id = string | Types.ObjectId;
 
-/** Stable key for one batch of records, independent of their order. */
+/* Stable key for one batch of records, independent of their order. */
 export function batchDedupeKey(prefix: string, ids: Id[]): string {
   const sorted = ids.map(String).sort();
   return `${prefix}:${createHash("sha256").update(sorted.join(",")).digest("hex").slice(0, 32)}`;
@@ -35,7 +28,7 @@ export type NewNotification = Pick<INotification, "type" | "title" | "body"> & {
   channels: { inApp: { sent: boolean }; email: { sent: boolean; state?: "pending" } };
 };
 
-/** Create the notification, or return the existing one for the same user and dedupeKey. */
+/* Create the notification, or return the existing one for the same user and dedupeKey. */
 export async function createNotificationOnce(doc: NewNotification): Promise<{ id: string; created: boolean }> {
   try {
     const created = await Notification.create(doc);
@@ -48,7 +41,7 @@ export async function createNotificationOnce(doc: NewNotification): Promise<{ id
   }
 }
 
-/** Current account state, re-read at send time so a retry honours a later opt-out or withdrawal. */
+/* Current account state, re-read at send time so a retry honours a later opt-out or withdrawal. */
 export async function emailStillAllowed(userId: Id): Promise<boolean> {
   const user = await User.findById(userId).select("status deletedAt notificationPrefs").lean();
   if (!user || user.status !== "active" || user.deletedAt || user.notificationPrefs?.email !== true) return false;
@@ -59,10 +52,8 @@ export type EmailDeliveryOutcome =
   | { status: "sent" | "failed"; result: EmailResult }
   | { status: "skipped"; reason: "not_claimable" | "not_allowed" };
 
-/**
- * Send the email for one notification at most once per successful claim.
- * Only "pending" or "failed" deliveries below the attempt cap can be claimed.
- */
+/* Send the email for one notification at most once per successful claim.
+ * Only "pending" or "failed" deliveries below the attempt cap can be claimed. */
 export async function deliverEmailOnce(
   notificationId: Id,
   userId: Id,

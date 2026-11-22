@@ -1,25 +1,7 @@
-/**
- * Run TOR extraction for the records waiting in the queue, and save results.
- *
- * Vertex AI is only ever called from here — never inside an API request (a
- * TOR takes 20–95 s, and express mode has a small per-minute quota). The API
- * reads what this script stored.
- *
- * Queue: open projects whose extractionStatus is "pending", plus
- * "processing" ones whose lock expired (a crashed run). Public hearing first,
- * then projects still taking bids (soonest bid day first), and projects whose
- * bids already closed last — still extracted, for history, just not first.
- * Each record is claimed with a lock before the call, so two runs never pay
- * for the same TOR.
- *
- * --refresh-dates does not call the model. It reads the e-GP announcement of
- * every open project whose bid date is not confirmed yet — extracted or not —
- * so the queue order above knows which bids have closed before any token is
- * spent. If an extracted TOR's file changed, the record goes back to the queue.
- *
- * Every run ends by recomputing dataChecks (data-checks.ts) for all records:
- * where egp2 and the announcement disagree, and what an admin should check.
- * It reads the database only; --check runs just that step.
+/* Extract queued TORs and save the results. Records are claimed with expiring
+ * locks; expired work can be reclaimed. Hearing and open bidding records run first.
+ * --refresh-dates checks announcement dates without calling the model.
+ * --check recomputes dataChecks without calling the model.
  *
  * Usage (in container):
  *   docker compose --profile tools run --rm tools npm run extract -- --dry-run
@@ -30,8 +12,7 @@
  *   ... npm run extract -- --refresh-dates         # no model calls
  *   ... npm run extract -- --check                 # recompute dataChecks only
  *
- * Daily order: npm run ingest, then extract --refresh-dates, then extract --limit=N
- */
+ * Daily order: npm run ingest, then extract --refresh-dates, then extract --limit=N */
 
 import { config } from "dotenv";
 if (process.env.NODE_ENV !== "test") config({ path: ".env" });
@@ -54,20 +35,20 @@ const argv = process.argv.slice(2);
 const arg = (name: string) => argv.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
 const LIMIT = Number(arg("limit") ?? 10);
 const ONLY = arg("only");
-/** Seconds between model calls — express mode's quota is per minute. */
+/* Seconds between model calls — express mode's quota is per minute. */
 const DELAY_S = Number(arg("delay") ?? 20);
 const DRY_RUN = argv.includes("--dry-run");
 const RETRY_FAILED = argv.includes("--retry-failed");
 const REFRESH_DATES = argv.includes("--refresh-dates");
 const CHECK_ONLY = argv.includes("--check");
-/** The dates pass costs no tokens, so it has no reason to stop at 10. */
+/* The dates pass costs no tokens, so it has no reason to stop at 10. */
 const REFRESH_LIMIT = Number(arg("limit") ?? 500);
-/** With --only: ignore the lock of a run that was stopped (Ctrl+C) mid-call. */
+/* With --only: ignore the lock of a run that was stopped (Ctrl+C) mid-call. */
 const FORCE = argv.includes("--force") && Boolean(ONLY);
 
-/** Give up on a record after this many failed attempts. */
+/* Give up on a record after this many failed attempts. */
 const MAX_ATTEMPTS = 3;
-/** Longer than one call with all its retries (3 × 180 s + back-off). */
+/* Longer than one call with all its retries (3 × 180 s + back-off). */
 const LOCK_MS = 15 * 60 * 1000;
 const OPEN_PHASES = ["public_hearing", "bidding"] as const;
 
@@ -135,7 +116,7 @@ async function loadQueue(): Promise<QueueRecord[]> {
     .slice(0, LIMIT);
 }
 
-/** Take the record, or return null if another run already has it. */
+/* Take the record, or return null if another run already has it. */
 async function claim(r: QueueRecord): Promise<boolean> {
   const owner = await claimExtraction(r._id.toString(), r.extractionStatus, LOCK_MS, FORCE);
   if (!owner) return false;
@@ -365,7 +346,7 @@ async function refreshDates(): Promise<void> {
 
 /* ─── Data checks (database only) ───────────────────────────────────── */
 
-/** Recompute dataChecks for every record; keeps what an admin resolved. */
+/* Recompute dataChecks for every record; keeps what an admin resolved. */
 async function recheckAll(): Promise<void> {
   const now = new Date();
   const records = await TORRecord.find({})

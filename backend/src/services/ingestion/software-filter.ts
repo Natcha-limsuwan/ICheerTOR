@@ -1,5 +1,4 @@
-/**
- * Decide whether a procurement record is software work.
+/* Decide whether a procurement record is software work.
  *
  * The API has no software category, so classification is ours to make. It runs
  * on the title and project type — text we already have from the API — so it
@@ -24,8 +23,7 @@
  *
  * Pass the project title only, not the agency name: agency names contain
  * keywords too ("สำนักงานพัฒนาระบบสาธารณสุข" hits "พัฒนาระบบ"), which let
- * every purchase that agency made through as software.
- */
+ * every purchase that agency made through as software. */
 
 import keywords from "./keywords/software-keywords.json";
 
@@ -34,17 +32,17 @@ const WEAK_WEIGHT = 1;
 const EXCLUDE_WEIGHT = -5;
 const HARDWARE_WEIGHT = -4;
 
-/** At or above this, treat as software. */
+/* At or above this, treat as software. */
 export const SOFTWARE_THRESHOLD = 4;
-/** Between this and the threshold: keep, but flag for human review. */
+/* Between this and the threshold: keep, but flag for human review. */
 export const UNCERTAIN_THRESHOLD = 2;
 
 export interface FilterResult {
   isSoftware: boolean;
-  /** True when the score is positive but weak — worth a human look. */
+  /* True when the score is positive but weak — worth a human look. */
   isUncertain: boolean;
   score: number;
-  /** Strong and weak hits combined, for display. */
+  /* Strong and weak hits combined, for display. */
   matched: string[];
   strong: string[];
   weak: string[];

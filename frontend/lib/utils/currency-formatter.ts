@@ -1,11 +1,7 @@
-/**
- * Thai Baht (฿) currency formatting utilities.
- */
+/* Thai Baht (฿) currency formatting utilities. */
 
-/**
- * Format a number as Thai Baht currency.
- * @example formatThaiBaht(5000000) → "฿5,000,000.00"
- */
+/* Format a number as Thai Baht currency.
+ * @example formatThaiBaht(5000000) → "฿5,000,000.00" */
 export function formatThaiBaht(
   value: number,
   options?: { compact?: boolean; decimals?: number },
@@ -29,10 +25,8 @@ export function formatThaiBaht(
   }).format(value);
 }
 
-/**
- * Parse a Thai Baht string back to a number.
- * Handles formats like "฿5,000,000.00" or "5,000,000 บาท".
- */
+/* Parse a Thai Baht string back to a number.
+ * Handles formats like "฿5,000,000.00" or "5,000,000 บาท". */
 export function parseThaiBaht(str: string): number | null {
   if (!str) return null;
   const cleaned = str.replace(/[฿,บาท\s]/g, "").trim();

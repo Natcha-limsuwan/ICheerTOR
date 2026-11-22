@@ -15,16 +15,16 @@ export interface CreateNotificationInput {
   title: string;
   body: string;
   linkUrl?: string;
-  /** If true, creates the in-app notification without sending the generic email (e.g. when caller sends a custom rich email
+  /* If true, creates the in-app notification without sending the generic email (e.g. when caller sends a custom rich email
    * through deliverEmailOnce). The email is still marked pending when the user has email enabled. */
   skipEmail?: boolean;
-  /** One logical event per user; a repeated or concurrent dispatch with the same key creates nothing new. */
+  /* One logical event per user; a repeated or concurrent dispatch with the same key creates nothing new. */
   dedupeKey?: string;
 }
 
 export interface DispatchResult {
   notificationId: string;
-  /** True when a notification with the same dedupeKey already existed. */
+  /* True when a notification with the same dedupeKey already existed. */
   duplicate: boolean;
   channels: {
     inApp: boolean;
@@ -34,13 +34,11 @@ export interface DispatchResult {
 
 /* ─── Dispatcher ────────────────────────────────────────────────────── */
 
-/**
- * Create a notification and dispatch to all channels the user has enabled.
+/* Create a notification and dispatch to all channels the user has enabled.
  *
  * 1. Look up user prefs
  * 2. Create Notification doc with inApp = true (always)
- * 3. If email pref is on → send email, update doc
- */
+ * 3. If email pref is on → send email, update doc */
 export async function dispatchNotification(
   input: CreateNotificationInput,
   deliverEmail: typeof sendNotificationEmail = sendNotificationEmail,

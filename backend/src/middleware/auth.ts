@@ -12,7 +12,7 @@ export type { AuthUser, UserRole };
 
 /* ─── Session Auth Middleware ──────────────────────────────────────── */
 
-/** Extract a bearer token from the Authorization header, if any. */
+/* Extract a bearer token from the Authorization header, if any. */
 export function getBearerToken(req: Request): string | null {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) return null;
@@ -20,18 +20,9 @@ export function getBearerToken(req: Request): string | null {
   return token.length > 0 && token.length <= 2048 ? token : null;
 }
 
-/**
- * Authenticate the request (complete mediation).
- *
- * 1. Verify the JWT (signature, HS256 only, issuer, audience, exp/nbf).
- * 2. Check the server-side session: not revoked, within its absolute
- *    lifetime and not idle for longer than the inactivity timeout.
- * 3. Load the user's *current* role and status from MongoDB. Role and status
- *    are never trusted from the token, so suspension, bans and role changes
- *    apply on the very next request (threats T02, T06; ASVS V8.3.1).
- *
- * Populates req.user and req.authSessionId.
- */
+/* Validate the token/session, then load the current account role and status.
+ * This makes suspension and role changes apply on the next request
+ * (T02, T06; ASVS V8.3.1). Sets req.user and req.authSessionId. */
 export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
   const token = getBearerToken(req);
   if (!token) {
@@ -91,12 +82,10 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
   next();
 }
 
-/**
- * Step-up check for sensitive actions (threats T19, T24; ASVS V7.5.3):
+/* Step-up check for sensitive actions (threats T19, T24; ASVS V7.5.3):
  * the session must come from a Google sign-in within the last `maxAgeMinutes`.
  * Returns 403 REAUTH_REQUIRED (not 401) so the client keeps the session and
- * can ask the user to sign in again.
- */
+ * can ask the user to sign in again. */
 export function requireRecentAuth(maxAgeMinutes = 15) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const at = req.authenticatedAt?.getTime() ?? 0;
@@ -118,9 +107,7 @@ export function requireRecentAuth(maxAgeMinutes = 15) {
   };
 }
 
-/**
- * Require one of the given roles.
- */
+/* Require one of the given roles. */
 export function requireRole(...roles: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
@@ -146,10 +133,8 @@ export function requireRole(...roles: UserRole[]) {
   };
 }
 
-/**
- * Require every listed scope (see auth/permissions.ts). Scopes come from the
- * user's current role loaded by authenticate(), never from the client.
- */
+/* Require every listed scope (see auth/permissions.ts). Scopes come from the
+ * user's current role loaded by authenticate(), never from the client. */
 export function requireScope(...required: Scope[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
@@ -177,17 +162,15 @@ export function requireScope(...required: Scope[]) {
   };
 }
 
-/** Shorthand: require admin or developer. */
+/* Shorthand: require admin or developer. */
 export const requireAdmin = requireRole("admin", "developer");
 
-/** Shorthand: require developer only. */
+/* Shorthand: require developer only. */
 export const requireDeveloper = requireRole("developer");
 
 /* ─── PDPA consent check ────────────────────────────────────────────── */
 
-/**
- * Verify that the user has active consent for data processing.
- */
+/* Verify that the user has active consent for data processing. */
 export function requireConsent(purpose: string = "data_processing") {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     if (!req.user) {

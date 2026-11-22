@@ -53,10 +53,8 @@ function CallbackContent() {
   );
 }
 
-/**
- * OAuth callback page.
- * Wrapped in Suspense as required by Next.js for useSearchParams().
- */
+/* OAuth callback page.
+ * Wrapped in Suspense as required by Next.js for useSearchParams(). */
 export default function AuthCallbackPage() {
   return (
     <Suspense

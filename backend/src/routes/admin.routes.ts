@@ -42,12 +42,10 @@ router.use(authenticate);
 router.use(requireRole("admin", "developer"));
 router.param("id", objectIdParam);
 
-/** Fields an admin needs about an account; googleId and preferences are never returned (T19). */
+/* Fields an admin needs about an account; googleId and preferences are never returned (T19). */
 const ADMIN_USER_FIELDS = "name email avatarUrl role status isVerified lastLoginAt createdAt deletedAt";
 
-/**
- * GET /api/admin/users — List all users.
- */
+/* GET /api/admin/users — List all users. */
 router.get("/users", requireScope("users:read"), validate({ query: adminUsersQuery }), 
   async (req: Request, res: Response) => {
   await connectDB();
@@ -83,9 +81,7 @@ router.get("/users", requireScope("users:read"), validate({ query: adminUsersQue
   apiSuccess(res, users, { total, page, limit });
 });
 
-/**
- * PATCH /api/admin/users/:id — Perform admin action on a user.
- */
+/* PATCH /api/admin/users/:id — Perform admin action on a user. */
 router.patch(
   "/users/:id",
   requireScope("users:manage"),
@@ -163,9 +159,7 @@ router.patch(
   },
 );
 
-/**
- * PATCH /api/admin/users/:id/role — Change a user's role.
- */
+/* PATCH /api/admin/users/:id/role — Change a user's role. */
 router.patch(
   "/users/:id/role",
   // README policy: only developers change roles. Sensitive, so it needs a recent sign-in (T19).
@@ -227,9 +221,7 @@ router.patch(
   },
 );
 
-/**
- * GET /api/admin/logs — List admin action logs.
- */
+/* GET /api/admin/logs — List admin action logs. */
 router.get("/logs", requireScope("audit:read"), validate({ query: adminLogsQuery }), async (req: Request, res: Response) => {
   await connectDB();
 
@@ -263,11 +255,9 @@ router.get("/logs", requireScope("audit:read"), validate({ query: adminLogsQuery
   apiSuccess(res, logs, { total, page, limit });
 });
 
-/**
- * GET /api/admin/pipeline/health — Is ingestion and extraction running?
+/* GET /api/admin/pipeline/health — Is ingestion and extraction running?
  * status ok | warning | error, the problems in plain Thai, and the numbers
- * behind them (RSS polls, last egp2 ingest, extraction queue, Vertex 7 days).
- */
+ * behind them (RSS polls, last egp2 ingest, extraction queue, Vertex 7 days). */
 router.get("/pipeline/health", requireScope("pipeline:read"), async (_req: Request, res: Response) => {
   await connectDB();
   try {
@@ -278,11 +268,9 @@ router.get("/pipeline/health", requireScope("pipeline:read"), async (_req: Reque
   }
 });
 
-/**
- * GET /api/admin/tor-review — TORs where the model was unsure and no admin
+/* GET /api/admin/tor-review — TORs where the model was unsure and no admin
  * has verified them yet, each with the uncertain fields to check.
- * ?status=pending (default) | verified | outdated | all
- */
+ * ?status=pending (default) | verified | outdated | all */
 router.get("/tor-review", requireScope("tor:review"), validate({ query: torReviewQuery }), async (req: Request, res: Response) => {
   await connectDB();
 
@@ -324,10 +312,8 @@ router.get("/tor-review", requireScope("tor:review"), validate({ query: torRevie
   );
 });
 
-/**
- * GET /api/admin/tor-review/:id — The full record to edit, its uncertain
- * fields, and the field names PUT accepts.
- */
+/* GET /api/admin/tor-review/:id — The full record to edit, its uncertain
+ * fields, and the field names PUT accepts. */
 router.get("/tor-review/:id", requireScope("tor:review"), async (req: Request, res: Response) => {
   await connectDB();
   const record = await TORRecord.findById(req.params.id).lean();
@@ -342,12 +328,10 @@ router.get("/tor-review/:id", requireScope("tor:review"), async (req: Request, r
   });
 });
 
-/**
- * PUT /api/admin/tor-review/:id — Correct fields and mark the record verified.
+/* PUT /api/admin/tor-review/:id — Correct fields and mark the record verified.
  * Body: { changes: { <editable field>: value, … }, note?, verify? (default true), dryRun? }
  * Each change is logged to usercorrections; red flags and data checks are
- * recomputed. dryRun validates and returns the result without saving.
- */
+ * recomputed. dryRun validates and returns the result without saving. */
 router.put(
   "/tor-review/:id",
   requireScope("tor:review"),
@@ -383,10 +367,8 @@ router.put(
   },
 );
 
-/**
- * GET /api/admin/tor-checks — Projects whose sources disagree in a way a
- * person should look at (dataChecks.needsCheck), newest first.
- */
+/* GET /api/admin/tor-checks — Projects whose sources disagree in a way a
+ * person should look at (dataChecks.needsCheck), newest first. */
 router.get("/tor-checks", requireScope("tor:review"), validate({ query: paginationQuery }), async (req: Request, res: Response) => {
   await connectDB();
 
@@ -407,11 +389,9 @@ router.get("/tor-checks", requireScope("tor:review"), validate({ query: paginati
   apiSuccess(res, records, { total, page, limit });
 });
 
-/**
- * PATCH /api/admin/tor-checks/:id — Mark the current conflicts as checked.
+/* PATCH /api/admin/tor-checks/:id — Mark the current conflicts as checked.
  * Only the codes present now are resolved: a new kind of conflict raises
- * needsCheck again on the next daily run.
- */
+ * needsCheck again on the next daily run. */
 router.patch(
   "/tor-checks/:id",
   requireScope("tor:review"),

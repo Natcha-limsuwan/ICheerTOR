@@ -1,5 +1,4 @@
-/**
- * Trim the e-GP bidding document (doc_*.pdf) to the sections worth sending
+/* Trim the e-GP bidding document (doc_*.pdf) to the sections worth sending
  * to the model.
  *
  * The document is the e-GP standard template: about 16 pages and 34k Thai
@@ -14,23 +13,22 @@
  *   ๑๐. การรับประกันความชำรุดบกพร่อง     warranty period
  *
  * Section numbers shift between templates (a service contract has no
- * warranty section), so headings are found by name, not by number.
- */
+ * warranty section), so headings are found by name, not by number. */
 
-/** Every top-level heading of the template, so a kept section knows where it ends. */
+/* Every top-level heading of the template, so a kept section knows where it ends. */
 const HEADING =
   /^[๐-๙0-9]{1,2}\.\s*(เอกสารแนบท้าย|คุณสมบัติของผู้ยื่นข้อเสนอ|หลักฐานการยื่นข้อเสนอ|การเสนอราคา|การยื่นข้อเสนอ|หลักประกันการเสนอราคา|หลักเกณฑ์และสิทธิ|การทำสัญญา|ค่าจ้างและการจ่ายเงิน|ค่าสิ่งของและการจ่ายเงิน|การจ่ายเงิน|อัตราค่าปรับ|การรับประกันความชำรุดบกพร่อง|ข้อสงวนสิทธิ|การปฏิบัติตามกฎหมาย|การประเมินผลการปฏิบัติงาน|มาตรฐานฝีมือช่าง)/;
 
 const KEEP = /คุณสมบัติของผู้ยื่นข้อเสนอ|หลักเกณฑ์และสิทธิ|การจ่ายเงิน|อัตราค่าปรับ|การรับประกันความชำรุดบกพร่อง/;
 
-/** The cover lines name the project and the procurement method. */
+/* The cover lines name the project and the procurement method. */
 const COVER_LINES = 12;
 
 export interface SlicedBiddingDoc {
   text: string;
-  /** Headings that were kept, for logs and eval output. */
+  /* Headings that were kept, for logs and eval output. */
   sections: string[];
-  /** True when no known heading was found and the full text was used. */
+  /* True when no known heading was found and the full text was used. */
   fallback: boolean;
   originalChars: number;
 }

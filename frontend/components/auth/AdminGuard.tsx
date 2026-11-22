@@ -7,10 +7,8 @@ import CircularProgress from "@mui/material/CircularProgress";
 
 const STAFF_ROLES = ["admin", "developer"];
 
-/**
- * Client-side admin guard.
- * Redirects non-staff users (admin/developer) to procurement search.
- */
+/* Client-side admin guard.
+ * Redirects non-staff users (admin/developer) to procurement search. */
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();

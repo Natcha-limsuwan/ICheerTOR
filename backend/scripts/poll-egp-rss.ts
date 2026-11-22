@@ -1,5 +1,4 @@
-/**
- * Poll the CGD e-GP RSS feed for new announcements nationwide.
+/* Poll the CGD e-GP RSS feed for new announcements nationwide.
  *
  * Each poll fetches the draft-for-hearing (B0) and invitation (D0) feeds,
  * finds project numbers not seen in the previous window, and keeps only those
@@ -18,8 +17,7 @@
  *   docker compose --profile tools run --rm tools npm run rss -- --watch --ingest   # every 15 min, Mon–Fri 08:30–17:00
  *   docker compose --profile tools run --rm tools npm run rss -- --report       # what has been seen and kept
  *
- * Options: --types=B0,D0  --interval=15 (minutes)  --hours=08:30-17:00  --all-days
- */
+ * Options: --types=B0,D0  --interval=15 (minutes)  --hours=08:30-17:00  --all-days */
 
 import { config } from "dotenv";
 config({ path: ".env" });
@@ -61,7 +59,7 @@ const minutes = (hhmm: string) => {
   return h * 60 + (m || 0);
 };
 
-/** Office hours in Bangkok, Mon–Fri unless --all-days. */
+/* Office hours in Bangkok, Mon–Fri unless --all-days. */
 function inWindow(now = new Date()): boolean {
   const bkk = new Date(now.getTime() + 7 * 3600_000);
   const day = bkk.getUTCDay();

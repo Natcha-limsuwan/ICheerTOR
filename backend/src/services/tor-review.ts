@@ -1,15 +1,6 @@
-/**
- * Admin review of what the model read: find the uncertain parts, let a
- * person correct them like filling in a form, and keep a record of every
- * change.
- *
- *   uncertainItems   which fields need a look, with the reason and TOR page
- *   parseChanges     the edit body → validated changes (only editable fields)
- *   applyChanges     write them, log each to usercorrections, recompute the
- *                    derived fields (red flags, data checks), mark verified
- *
- * Edited values get confidence 1: a person checked them against the TOR.
- */
+/* Prepare uncertain fields for admin review, validate edits and record changes.
+ * After editing, recompute derived checks and mark the reviewed content verified.
+ * Human-reviewed values receive confidence 1. */
 
 import mongoose, { type ClientSession, type HydratedDocument, type Types } from "mongoose";
 import TORRecord, {
@@ -26,12 +17,12 @@ import { computeDataChecks } from "./ingestion/data-checks";
 /* ─── What needs a look ─────────────────────────────────────────────── */
 
 export interface UncertainItem {
-  /** Path in the record, e.g. "parsedData.qualifications.3". */
+  /* Path in the record, e.g. "parsedData.qualifications.3". */
   field: string;
   label: string;
   value: unknown;
   confidence: number | null;
-  /** TOR page to check, when known. */
+  /* TOR page to check, when known. */
   sourcePage?: number | null;
   reason: string;
 }
@@ -71,7 +62,7 @@ export function uncertainItems(r: Readable, threshold: number): UncertainItem[] 
   return items;
 }
 
-/** Records with something uncertain that no admin has verified yet. */
+/* Records with something uncertain that no admin has verified yet. */
 export function needsReviewFilter(threshold: number): Record<string, unknown> {
   return {
     extractionStatus: "completed",
@@ -87,11 +78,9 @@ export function needsReviewFilter(threshold: number): Record<string, unknown> {
 
 /* ─── What may be edited ────────────────────────────────────────────── */
 
-/**
- * The editable fields, by the name used in the request body. Everything else
+/* The editable fields, by the name used in the request body. Everything else
  * — egp2 metadata, extraction bookkeeping, red flags, data checks — is either
- * owned by ingest or recomputed here, so it cannot be set directly.
- */
+ * owned by ingest or recomputed here, so it cannot be set directly. */
 export interface ReviewChanges {
   title?: string;
   agencyName?: string;
@@ -100,7 +89,7 @@ export interface ReviewChanges {
   workType?: (typeof WORK_TYPES)[number];
   scopeOfWork?: string;
   summary?: { overview?: string; keyPoints?: string[]; deliverables?: string[] };
-  /** Replaces the whole list — send every item, corrected. */
+  /* Replaces the whole list — send every item, corrected. */
   qualifications?: IQualification[];
   evaluationCriteria?: {
     method?: "lowest_price" | "price_performance" | "other" | null;
@@ -109,7 +98,7 @@ export interface ReviewChanges {
   };
   warrantyMonths?: number | null;
   contractDurationDays?: number | null;
-  /** Bid day and window, Bangkok time; null clears it back to "not announced". */
+  /* Bid day and window, Bangkok time; null clears it back to "not announced". */
   submissionDate?: { date: string; startTime: string; endTime: string } | null;
   documentConflicts?: IDocumentConflict[];
 }
@@ -121,14 +110,14 @@ export const EDITABLE_FIELDS: Array<keyof ReviewChanges> = [
 ];
 
 export class ReviewInputError extends Error {}
-/** The record changed after the admin loaded it; verifying now would approve content they did not see. */
+/* The record changed after the admin loaded it; verifying now would approve content they did not see. */
 export class ReviewConflictError extends Error {}
 
 const isNum = (v: unknown) => typeof v === "number" && Number.isFinite(v) && v >= 0;
 const isStr = (v: unknown) => typeof v === "string" && v.trim().length > 0;
 const isStrArray = (v: unknown) => Array.isArray(v) && v.every((s) => typeof s === "string");
 
-/** Validate the body's `changes`. Throws ReviewInputError with a Thai message. */
+/* Validate the body's `changes`. Throws ReviewInputError with a Thai message. */
 export function parseChanges(body: unknown): ReviewChanges {
   if (!body || typeof body !== "object" || Array.isArray(body)) throw new ReviewInputError("changes ต้องเป็น object");
   const c = body as Record<string, unknown>;
@@ -190,7 +179,7 @@ export function parseChanges(body: unknown): ReviewChanges {
 
 type TorDoc = HydratedDocument<ITORRecord>;
 
-/** Apply changes to the document in memory; returns [path, before, after] per change. */
+/* Apply changes to the document in memory; returns [path, before, after] per change. */
 function setChanges(doc: TorDoc, c: ReviewChanges): Array<[string, unknown, unknown]> {
   const log: Array<[string, unknown, unknown]> = [];
   const set = (path: string, value: unknown) => {
@@ -240,10 +229,8 @@ export interface ApplyResult {
   record: ITORRecord;
 }
 
-/**
- * Apply an admin's corrections. `verify` (default true) marks the record
- * verified even with no changes — "checked, it was right".
- */
+/* Apply an admin's corrections. `verify` (default true) marks the record
+ * verified even with no changes — "checked, it was right". */
 export async function applyChanges(
   id: string | Types.ObjectId,
   changes: ReviewChanges,

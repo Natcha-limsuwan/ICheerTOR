@@ -1,5 +1,4 @@
-/**
- * Offline checks for the deterministic half of TOR extraction — everything
+/* Offline checks for the deterministic half of TOR extraction — everything
  * that decides or corrects what the model returns, without calling it:
  *
  *   1. archive-facts          submission date / duration from e-GP forms
@@ -8,8 +7,7 @@
  *   4. qualification-matcher  boilerplate skipped, alternative groups
  *
  * Usage (in container):
- *   docker compose --profile tools run --rm tools npm run test:extraction
- */
+ *   docker compose --profile tools run --rm tools npm run test:extraction */
 
 import { isDraftAnnouncement, readAgencyName, readArchiveFacts, readDeptCode, readSubmissionDate } from "../src/services/ingestion/archive-facts";
 import { parseRss } from "../src/services/ingestion/egp-rss-client";

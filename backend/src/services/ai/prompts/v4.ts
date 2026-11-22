@@ -1,5 +1,4 @@
-/**
- * V4 extraction prompt — v3 with fixes from scoring v3 against the checked
+/* V4 extraction prompt — v3 with fixes from scoring v3 against the checked
  * gold set.
  *
  * - Budget and reference price are separate fields. v3 had one medianPrice
@@ -20,8 +19,7 @@
  *   still gives as a fallback must quote its evidence.
  * - documentConflicts only when both documents state the same thing
  *   differently, with the warranty and repair-time cases as examples — v3
- *   missed the warranty conflict in two of three TORs.
- */
+ *   missed the warranty conflict in two of three TORs. */
 
 import { Type, type Schema } from "@google/genai";
 import type { ExtractionPrompt } from "./index";
@@ -30,7 +28,7 @@ import { promptV3, type QualificationV3, type TorExtractionV3 } from "./v3";
 /* ─── Output type ───────────────────────────────────────────────────── */
 
 export interface QualificationV4 extends QualificationV3 {
-  /** Clause number as printed, e.g. "3.12.1" — null when unnumbered. */
+  /* Clause number as printed, e.g. "3.12.1" — null when unnumbered. */
   clauseNumber: string | null;
 }
 
@@ -44,15 +42,15 @@ export interface PriceFieldV4 {
 export interface TorExtractionV4
   extends Omit<TorExtractionV3, "qualifications" | "medianPrice" | "scopeOfWork" | "keyDates"> {
   scopeOfWork: TorExtractionV3["scopeOfWork"] & {
-    /** Verbatim evidence for contractDurationDays. */
+    /* Verbatim evidence for contractDurationDays. */
     contractDurationText: string | null;
   };
-  /** The submission date is read in code (archive-facts.ts), not by the model. */
+  /* The submission date is read in code (archive-facts.ts), not by the model. */
   keyDates: Pick<TorExtractionV3["keyDates"], "warrantyMonths">;
   qualifications: QualificationV4[];
-  /** วงเงินงบประมาณ as the documents state it. */
+  /* วงเงินงบประมาณ as the documents state it. */
   budget: PriceFieldV4;
-  /** ราคากลาง as the documents state it. */
+  /* ราคากลาง as the documents state it. */
   medianPrice: PriceFieldV4;
 }
 
@@ -178,7 +176,7 @@ schema.properties.documentConflicts = {
 
 /* ─── Instructions ──────────────────────────────────────────────────── */
 
-/** v4 edits v3's text in place; fail loudly if v3 changes under it. */
+/* v4 edits v3's text in place; fail loudly if v3 changes under it. */
 function mustReplace(text: string, from: string, to: string): string {
   if (!text.includes(from)) throw new Error(`prompt v4: ไม่พบข้อความใน v3 — "${from.slice(0, 40)}"`);
   return text.replace(from, to);

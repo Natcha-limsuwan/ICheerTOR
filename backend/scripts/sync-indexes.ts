@@ -1,5 +1,4 @@
-/**
- * Bring MongoDB indexes in line with the Mongoose schemas.
+/* Bring MongoDB indexes in line with the Mongoose schemas.
  *
  * Needed after any index change in src/db/models — in particular the
  * TORRecord text index: a collection may hold only one text index, so
@@ -11,8 +10,7 @@
  *   # show what would change, without touching the DB
  *   docker compose --profile tools run --rm tools npx tsx scripts/sync-indexes.ts --dry-run
  *   # apply
- *   docker compose --profile tools run --rm tools npx tsx scripts/sync-indexes.ts
- */
+ *   docker compose --profile tools run --rm tools npx tsx scripts/sync-indexes.ts */
 
 import { config } from "dotenv";
 config({ path: ".env" });

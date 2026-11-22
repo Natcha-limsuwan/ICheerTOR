@@ -1,18 +1,9 @@
 import { z } from "zod";
 
-/**
- * Request schemas: the documented input-validation rules of the API
- * (ASVS V2.1.1). One schema per endpoint that takes input; see
- * middleware/validate.ts for how they are applied.
- *
- * Conventions
- * - Query values are strings (Express 5 "simple" parser; no nested objects).
- *   A repeated key arrives as an array and is rejected.
- * - Small JSON bodies are .strict(): an unknown field is a 400.
- * - The vendor profile body strips unknown fields instead, because the form
- *   sends back the object it loaded (with _id, userId, timestamps); stripping
- *   still guarantees those fields are never written (mass assignment).
- */
+/* API input rules (ASVS V2.1.1), applied by middleware/validate.ts.
+ * Query values must be strings; repeated keys arrive as arrays and are rejected.
+ * Small bodies use strict schemas. Profile updates strip extra fields because
+ * the form also sends read-only fields such as _id, userId and timestamps. */
 
 /* ─── Building blocks ───────────────────────────────────────────────── */
 
@@ -20,7 +11,7 @@ export const objectId = z.string().regex(/^[a-f0-9]{24}$/i, "must be a valid id"
 const text = (max: number) => z.string().trim().max(max).refine((value) => !value.includes("\0"), "must not contain null bytes");
 const requiredText = (max: number) => z.string().trim().min(1).max(max).refine((value) => !value.includes("\0"), "must not contain null bytes");
 const page = z.string().regex(/^[1-9]\d{0,5}$/, "must be a positive integer").optional();
-/** limit=0 would mean "no limit" to MongoDB, so it must start at 1. */
+/* limit=0 would mean "no limit" to MongoDB, so it must start at 1. */
 const limit = z.string().regex(/^[1-9]\d{0,2}$/, "must be 1-999").optional();
 const boolFlag = z.enum(["true", "false"]).optional();
 const nonNegativeAmount = z
@@ -63,7 +54,7 @@ export const torListQuery = z.object({
   limit,
 });
 
-/** Dotted path into a TOR record; prototype keys can never be traversed. */
+/* Dotted path into a TOR record; prototype keys can never be traversed. */
 const fieldPath = z
   .string()
   .max(200)
@@ -141,7 +132,7 @@ const profileFields = {
   personnel: z.array(personnel).max(100),
 };
 
-/** Unknown keys (userId, _id, maxContractValue, timestamps…) are stripped, never written. */
+/* Unknown keys (userId, _id, maxContractValue, timestamps…) are stripped, never written. */
 export const profileCreateBody = z.object({
   ...profileFields,
   pastContracts: profileFields.pastContracts.default([]),
@@ -183,14 +174,14 @@ export const torReviewQuery = z.object({
   limit,
 });
 
-/** `changes` is checked field by field by services/tor-review.ts parseChanges(). */
+/* `changes` is checked field by field by services/tor-review.ts parseChanges(). */
 export const torReviewBody = z
   .object({
     changes: z.record(z.string().max(100), z.unknown()).default({}),
     note: text(1000).optional().nullable(),
     verify: z.boolean().optional(),
     dryRun: z.boolean().optional(),
-    /** record.updatedAt from GET /tor-review/:id; a mismatch returns 409 instead of verifying newer content. */
+    /* record.updatedAt from GET /tor-review/:id; a mismatch returns 409 instead of verifying newer content. */
     expectedUpdatedAt: z.iso.datetime().optional(),
   })
   .strict();

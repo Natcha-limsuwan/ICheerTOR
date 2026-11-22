@@ -1,7 +1,6 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
-/**
- * One call to Vertex AI for one TOR — successful or not.
+/* One call to Vertex AI for one TOR — successful or not.
  *
  * TORRecord keeps only the latest result; this keeps every attempt, which is
  * what is needed to compare prompt versions, track token spend and debug a
@@ -9,8 +8,7 @@ import mongoose, { Schema, Document, Model, Types } from "mongoose";
  *
  * PDPA: rawResponse is the model's verbatim output and can quote names of
  * officials or committee members from the PDF. It is kept for debugging
- * only and expires with the whole log entry after LOG_TTL_DAYS.
- */
+ * only and expires with the whole log entry after LOG_TTL_DAYS. */
 export interface IExtractionLog extends Document {
   torRecordId: Types.ObjectId;
   jobId?: Types.ObjectId;
@@ -18,7 +16,7 @@ export interface IExtractionLog extends Document {
   modelVersion: string;
   success: boolean;
   error?: string;
-  /** e.g. "timeout", "rate_limited", "invalid_json", "schema_mismatch". */
+  /* e.g. "timeout", "rate_limited", "invalid_json", "schema_mismatch". */
   errorCode?: string;
   durationMs: number;
   usage?: {

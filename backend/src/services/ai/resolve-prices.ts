@@ -1,5 +1,4 @@
-/**
- * Decide the budget and reference price shown to users, from three sources.
+/* Decide the budget and reference price shown to users, from three sources.
  *
  *   egp2 API          primary — official, and on every record from ingest
  *   e-GP announcement exact text with the amount in words ("ราคากลางของงาน…
@@ -12,8 +11,7 @@
  * and corrects. Any other disagreement keeps egp2 and asks a person to check.
  *
  * Note: BMA TORs often call the reference price "วงเงินงบประมาณ"; the budget
- * proper is egp2's projectBudget, which e-GP bases the bid bond on.
- */
+ * proper is egp2's projectBudget, which e-GP bases the bid bond on. */
 
 import type { IMedianPrice } from "../../db/models/tor-record";
 import type { ArchiveFacts } from "../ingestion/archive-facts";
@@ -23,30 +21,28 @@ export interface PriceSources {
   egp2Budget?: number | null;
   egp2MedianPrice?: number | null;
   facts: Pick<ArchiveFacts, "medianPrice" | "bidBond">;
-  /** Figures the model read from the TOR, whatever the TOR called them. */
+  /* Figures the model read from the TOR, whatever the TOR called them. */
   documentFigures?: Array<number | null | undefined>;
 }
 
 export interface ResolvedPrices {
   medianPrice: IMedianPrice;
-  /** Budget for the rules (¼-of-budget, past-work share): egp2's. */
+  /* Budget for the rules (¼-of-budget, past-work share): egp2's. */
   budget: number | null;
   issues: ValidationIssue[];
 }
 
 const fmt = (n: number) => n.toLocaleString("th-TH");
-/** e-GP's bid bond is 5 % of the budget. */
+/* e-GP's bid bond is 5 % of the budget. */
 const BID_BOND_SHARE = 0.05;
 
-/**
- * egp2's ราคากลาง is normally close to the budget. One far off it is a typo
- * in the source. True when there is no budget to compare with.
- */
+/* egp2's ราคากลาง is normally close to the budget. One far off it is a typo
+ * in the source. True when there is no budget to compare with. */
 export function isPlausibleMedianPrice(median: number, budget: number | null | undefined): boolean {
   return !budget || (median >= budget * 0.3 && median <= budget * 1.5);
 }
 
-/** "3398000" is "23398000" with digits missing. */
+/* "3398000" is "23398000" with digits missing. */
 export function hasDroppedDigits(short: number, full: number): boolean {
   const a = String(Math.round(short));
   const b = String(Math.round(full));

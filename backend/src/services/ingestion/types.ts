@@ -1,10 +1,8 @@
-/**
- * Shared types for the data.go.th ingestion layer.
+/* Shared types for the data.go.th ingestion layer.
  *
  * PDPA: ข้อมูลที่ดึงมาจาก API อาจมีข้อมูลส่วนบุคคลของเจ้าหน้าที่ติดมาด้วย
  * (ชื่อ-นามสกุลผู้ติดต่อ เบอร์โทร อีเมล) — ห้ามบันทึกลง DB จริงโดยตรง
- * ต้องผ่าน field filtering ก่อนเสมอ ดู src/services/ingestion/pdpa-filter.ts (ยังไม่ได้สร้าง)
- */
+ * ต้องผ่าน field filtering ก่อนเสมอ ดู src/services/ingestion/pdpa-filter.ts (ยังไม่ได้สร้าง) */
 
 /* ─── CKAN discovery (data.go.th) ───────────────────────────────────── */
 
@@ -26,26 +24,26 @@ export interface CkanResource {
 
 /* ─── Datastore rows (opend.data.go.th) ─────────────────────────────── */
 
-/** A row as returned by datastore_search — field names are unknown until probed. */
+/* A row as returned by datastore_search — field names are unknown until probed. */
 export type DatastoreRecord = Record<string, unknown>;
 
 export interface FetchResourceOptions {
-  /** Rows per request. CKAN caps this; 1000 is the practical maximum. */
+  /* Rows per request. CKAN caps this; 1000 is the practical maximum. */
   limit?: number;
-  /** Starting offset for pagination. */
+  /* Starting offset for pagination. */
   offset?: number;
-  /** Full-text filter applied server-side. Thai tokenisation is unreliable —
+  /* Full-text filter applied server-side. Thai tokenisation is unreliable —
    *  treat this as a volume reducer only, never as the authoritative filter. */
   q?: string;
-  /** Stop after this many rows in total. Guards against multi-million-row sets. */
+  /* Stop after this many rows in total. Guards against multi-million-row sets. */
   maxRecords?: number;
 }
 
 export interface FetchResourceResult {
   records: DatastoreRecord[];
-  /** Total reported by CKAN, when available. */
+  /* Total reported by CKAN, when available. */
   total: number | null;
-  /** Field metadata reported by CKAN, when available. */
+  /* Field metadata reported by CKAN, when available. */
   fields: Array<{ id: string; type: string }>;
   truncated: boolean;
 }

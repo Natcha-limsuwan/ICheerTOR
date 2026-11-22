@@ -1,47 +1,28 @@
-/**
- * Client for the BMA's own procurement disclosure system.
- *
- *   https://egp2.bangkok.go.th/appapi/api
- *
- * This is a plain JSON API with no authentication, no api-key and — unlike the
- * announcement search on process5.gprocurement.go.th — no Cloudflare Turnstile.
- * The site is a Next.js app whose bundle ships a Zodios contract, so the routes
- * and their query parameters below are taken from that contract rather than
- * guessed.
- *
- * Why this matters: the govspending egp-contract API only exposes step 5
- * (signed contracts), so everything it returns is already awarded. This API
- * exposes procurement *plans* and the draft/invitation announcement stages,
- * which is what the product actually needs in order to alert users before a
- * deadline.
- *
- * Scope note: this service only covers กรุงเทพมหานคร, which matches the SRS.
- *
- * Gotcha: `masterBudgetYearId` takes the Buddhist-era year as a plain number
- * (2569), NOT the GUID returned by /MasterBudgetYears. Passing the GUID
- * silently returns zero rows instead of an error.
- */
+/* Client for BMA procurement data at https://egp2.bangkok.go.th/appapi/api.
+ * Routes and query parameters follow the site's Zodios contract. This source
+ * includes plans, drafts and invitations, unlike govspending's awarded contracts.
+ * masterBudgetYearId expects a Buddhist-era year such as 2569, not a GUID. */
 
 import { procurementFetch } from "./safe-fetch.js";
 
 const BASE = "https://egp2.bangkok.go.th/appapi/api";
 const DEFAULT_DELAY_MS = 300;
 
-/** Announce-type ids from /MasterAnnounceTypes. */
+/* Announce-type ids from /MasterAnnounceTypes. */
 export const ANNOUNCE_TYPE = {
-  /** แผนการจัดซื้อจัดจ้าง */
+  /* แผนการจัดซื้อจัดจ้าง */
   PLAN: "c88c8d7c-0a07-4194-ab14-cea4c6695f40",
-  /** ประกาศราคากลาง */
+  /* ประกาศราคากลาง */
   MEDIAN_PRICE: "9863983d-44e1-4eee-b38a-bb0b495762c5",
-  /** ร่างเอกสารประกวดราคา (e-Bidding) — still open for comment */
+  /* ร่างเอกสารประกวดราคา (e-Bidding) — still open for comment */
   DRAFT_BIDDING: "417bddc2-c971-465f-b419-23847e27bcba",
-  /** ประกาศเชิญชวน — open for bids */
+  /* ประกาศเชิญชวน — open for bids */
   INVITATION: "705f1ffb-82e2-4beb-bdd2-2746f0783bf0",
-  /** ประกาศรายชื่อผู้ชนะ — already awarded */
+  /* ประกาศรายชื่อผู้ชนะ — already awarded */
   WINNER: "8a879a96-9fcc-48a0-aa06-8a39450d02bb",
 } as const;
 
-/** The stages a bidder can still act on. */
+/* The stages a bidder can still act on. */
 export const OPEN_ANNOUNCE_TYPES = [
   ANNOUNCE_TYPE.DRAFT_BIDDING,
   ANNOUNCE_TYPE.INVITATION,
@@ -58,7 +39,7 @@ export interface Paged<T> {
 export interface Egp2ProjectRow {
   no: number;
   projectId: string;
-  /** e-GP project number — the join key to govspending and process5. */
+  /* e-GP project number — the join key to govspending and process5. */
   projectNumber: string;
   projectName: string;
   masterOrgGroupName?: string | null;
@@ -76,7 +57,7 @@ export interface Egp2PlanRow {
   planProjectId: string;
   planProjectPlanProjectName: string;
   planProjectPlanProjectsCode: string;
-  /** "MM/YYYY" in Buddhist era — when the agency expects to announce. */
+  /* "MM/YYYY" in Buddhist era — when the agency expects to announce. */
   planProjectExpectedAnnounce?: string | null;
   planProjectAnnounceDate?: string | null;
   masterOrgGroupName?: string | null;
@@ -89,7 +70,7 @@ export interface ProjectFilter {
   pageNo?: number;
   pageSize?: number;
   projectSearchText?: string;
-  /** Buddhist-era year as a number, e.g. 2569. */
+  /* Buddhist-era year as a number, e.g. 2569. */
   budgetYear?: number;
   masterAnnounceTypeId?: string;
   masterOrgGroupId?: string;
@@ -121,7 +102,7 @@ async function getJson<T>(path: string, params: Record<string, string | number |
   return JSON.parse(body) as T;
 }
 
-/** One page of projects. Callers that need every page use `fetchAllProjects`. */
+/* One page of projects. Callers that need every page use `fetchAllProjects`. */
 export function fetchProjects(filter: ProjectFilter = {}): Promise<Paged<Egp2ProjectRow>> {
   return getJson<Paged<Egp2ProjectRow>>("/Projects/GetProjectFromFilter", {
     pageNo: filter.pageNo ?? 1,
@@ -138,7 +119,7 @@ export function fetchProjects(filter: ProjectFilter = {}): Promise<Paged<Egp2Pro
   });
 }
 
-/** One page of procurement plans — these precede any announcement. */
+/* One page of procurement plans — these precede any announcement. */
 export function fetchPlans(filter: ProjectFilter = {}): Promise<Paged<Egp2PlanRow>> {
   return getJson<Paged<Egp2PlanRow>>("/PlanProjects/GetPlanProjectFromFilter", {
     pageNo: filter.pageNo ?? 1,
@@ -151,12 +132,10 @@ export function fetchPlans(filter: ProjectFilter = {}): Promise<Paged<Egp2PlanRo
   });
 }
 
-/**
- * Follow pagination for a project filter.
+/* Follow pagination for a project filter.
  *
  * An unfiltered call scans the whole table and times out server-side, so
- * callers should always narrow by year, announce type or keyword.
- */
+ * callers should always narrow by year, announce type or keyword. */
 export async function fetchAllProjects(
   filter: ProjectFilter,
   options: { maxRecords?: number; delayMs?: number; onPage?: (fetched: number, total: number) => void } = {},
@@ -176,7 +155,7 @@ export async function fetchAllProjects(
   return out.slice(0, max);
 }
 
-/** Announcement rows carry `projectAnnouncementPath` — the published PDF name. */
+/* Announcement rows carry `projectAnnouncementPath` — the published PDF name. */
 export function fetchAnnouncements(projectId: string) {
   return getJson<Paged<Record<string, unknown>>>(
     "/ProjectAnnouncements/GetAnnouncementDetailInProject",
@@ -192,23 +171,21 @@ export interface Egp2TorRow {
   no: number;
   projectId: string;
   projectTorTitle?: string | null;
-  /** Public-hearing window — the only deadline either API exposes. */
+  /* Public-hearing window — the only deadline either API exposes. */
   projectTorHearingStartDate?: string | null;
   projectTorHearingEndDate?: string | null;
-  /** File name only; egp2's own file base path is not published, so the
+  /* File name only; egp2's own file base path is not published, so the
    *  downloadable copy comes from the process5 archive instead. */
   projectTorPath?: string | null;
   id?: string;
 }
 
-/**
- * TOR records attached to a project.
+/* TOR records attached to a project.
  *
  * Only projects that went through a public hearing have one, so an empty
  * result is normal rather than an error — a direct-award purchase never has a
  * hearing. This is the one place either API exposes a real deadline, which the
- * alerting features need.
- */
+ * alerting features need. */
 export function fetchTors(projectId: string): Promise<Paged<Egp2TorRow>> {
   return getJson<Paged<Egp2TorRow>>("/ProjectTors/GetTorInProject", {
     projectId,
@@ -225,7 +202,7 @@ export interface Egp2ProjectDetail {
   masterOrgGroupName?: string | null;
   masterOrgDepartmentName?: string | null;
   projectBudget?: number | null;
-  /** The agency's reference price (ราคากลาง). */
+  /* The agency's reference price (ราคากลาง). */
   projectAverageBudget?: number | null;
   masterTypeIdName?: string | null;
   masterGoodsIdName?: string | null;

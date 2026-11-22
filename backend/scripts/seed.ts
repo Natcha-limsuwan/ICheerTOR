@@ -1,8 +1,6 @@
-/**
- * Seed script — populate MongoDB with demo data for development.
+/* Seed script — populate MongoDB with demo data for development.
  *
- * Usage: npx tsx scripts/seed.ts
- */
+ * Usage: npx tsx scripts/seed.ts */
 
 import mongoose from "mongoose";
 import { config } from "dotenv";

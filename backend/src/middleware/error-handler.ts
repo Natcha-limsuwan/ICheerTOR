@@ -1,10 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 
-/**
- * Generic, client-safe messages per status (threat T19; ASVS V16.5.1).
+/* Generic, client-safe messages per status (threat T19; ASVS V16.5.1).
  * The original error message never reaches the client: body-parser and
- * library messages can reveal parser internals, queries or file paths.
- */
+ * library messages can reveal parser internals, queries or file paths. */
 const SAFE_ERRORS: Record<number, { code: string; message: string }> = {
   400: { code: "BAD_REQUEST", message: "Malformed request" },
   401: { code: "UNAUTHORIZED", message: "Authentication required" },
@@ -19,15 +17,13 @@ const SAFE_ERRORS: Record<number, { code: string; message: string }> = {
 
 const INTERNAL = { code: "INTERNAL_ERROR", message: "Internal server error" };
 
-/** JSON 404 for unknown API routes (instead of Express's HTML page). */
+/* JSON 404 for unknown API routes (instead of Express's HTML page). */
 export function notFoundHandler(_req: Request, res: Response): void {
   res.status(404).json({ error: SAFE_ERRORS[404] });
 }
 
-/**
- * Global ("last resort") error handler. Must be registered after all routes.
- * Details go to the server log only; the client gets a generic message.
- */
+/* Global ("last resort") error handler. Must be registered after all routes.
+ * Details go to the server log only; the client gets a generic message. */
 export function errorHandler(err: unknown, req: Request, res: Response, next: NextFunction): void {
   const e = (err ?? {}) as { status?: unknown; statusCode?: unknown; message?: unknown; stack?: unknown; type?: unknown };
   const rawStatus = Number(e.status ?? e.statusCode);

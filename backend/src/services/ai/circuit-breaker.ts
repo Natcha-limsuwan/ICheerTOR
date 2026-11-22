@@ -1,8 +1,6 @@
-/**
- * Circuit breaker for Vertex AI requests.
+/* Circuit breaker for Vertex AI requests.
  *
- * States: CLOSED → OPEN (after failureThreshold failures) → HALF_OPEN (after cooldown) → CLOSED (on success)
- */
+ * States: CLOSED → OPEN (after failureThreshold failures) → HALF_OPEN (after cooldown) → CLOSED (on success) */
 
 type CircuitState = "CLOSED" | "OPEN" | "HALF_OPEN";
 
@@ -24,7 +22,7 @@ export class CircuitBreaker {
     };
   }
 
-  /** Check if requests are allowed. */
+  /* Check if requests are allowed. */
   isOpen(): boolean {
     if (this.state === "CLOSED") return false;
     if (this.state === "OPEN") {
@@ -38,13 +36,13 @@ export class CircuitBreaker {
     return true; // The request that transitioned OPEN -> HALF_OPEN owns the probe.
   }
 
-  /** Record a successful request. */
+  /* Record a successful request. */
   onSuccess(): void {
     this.failureCount = 0;
     this.state = "CLOSED";
   }
 
-  /** Record a failed request. */
+  /* Record a failed request. */
   onFailure(): void {
     this.failureCount++;
     this.lastFailureTime = Date.now();
@@ -53,7 +51,7 @@ export class CircuitBreaker {
     }
   }
 
-  /** Get current state for monitoring. */
+  /* Get current state for monitoring. */
   getState(): { state: CircuitState; failureCount: number } {
     return { state: this.state, failureCount: this.failureCount };
   }

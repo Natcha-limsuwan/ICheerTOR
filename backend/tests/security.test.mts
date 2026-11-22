@@ -1,13 +1,11 @@
-/**
- * Security regression tests (project document §6 "Security test process").
+/* Security regression tests (project document §6 "Security test process").
  *
  *   cd backend && npm run test:security
  *
  * Starts the real Express app against a throwaway in-memory MongoDB and
  * attacks it over HTTP. Google OAuth itself cannot run offline, so a login is
  * simulated by issuing a one-time login code exactly like the OAuth callback
- * does, then exchanging it through the real /api/auth/exchange endpoint.
- */
+ * does, then exchanging it through the real /api/auth/exchange endpoint. */
 import { MongoMemoryReplSet } from "mongodb-memory-server";
 import jwt from "jsonwebtoken";
 import crypto from "node:crypto";
@@ -90,11 +88,9 @@ const call = (path: string, init: CallInit = {}) =>
   });
 const json = async (r: Response) => r.json().catch(() => ({}));
 
-/**
- * Simulated sign-in. Most tests start the session through the service so they
+/* Simulated sign-in. Most tests start the session through the service so they
  * do not use up the login rate limit; the HTTP exchange flow itself is tested
- * explicitly in section 3.
- */
+ * explicitly in section 3. */
 async function login(userId: string): Promise<string> {
   return (await startSession(userId, { ip: "127.0.0.1", userAgent: "security-test" })).token;
 }

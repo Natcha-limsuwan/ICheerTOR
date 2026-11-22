@@ -1,5 +1,4 @@
-/**
- * Choose which document inside an e-GP archive is worth sending to the LLM.
+/* Choose which document inside an e-GP archive is worth sending to the LLM.
  *
  * An archive holds anywhere from 3 to 17 files. Only one of them carries the
  * scope and qualifications; the rest are bonds, price tables and forms. Real
@@ -10,13 +9,12 @@
  * signed contract and its bonds. That last case is normal, not an error.
  *
  * Zip entry names are CP874-encoded when Thai, so names are decoded before
- * matching rather than compared as raw bytes.
- */
+ * matching rather than compared as raw bytes. */
 
 export interface ArchiveEntry {
-  /** Name as decoded for display/matching. */
+  /* Name as decoded for display/matching. */
   name: string;
-  /** Original entry name, for reading the file back out of the archive. */
+  /* Original entry name, for reading the file back out of the archive. */
   rawName: string;
   size: number;
 }
@@ -31,7 +29,7 @@ export type DocumentKind =
 
 export interface PickedDocument extends ArchiveEntry {
   kind: DocumentKind;
-  /** Lower sorts first. */
+  /* Lower sorts first. */
   rank: number;
   reason: string;
 }
@@ -43,10 +41,8 @@ interface Rule {
   reason: string;
 }
 
-/**
- * Order matters: the first matching rule wins, so the TOR patterns are
- * checked before the broader document ones.
- */
+/* Order matters: the first matching rule wins, so the TOR patterns are
+ * checked before the broader document ones. */
 const RULES: Rule[] = [
   {
     kind: "tor",
@@ -96,36 +92,29 @@ function classify(entry: ArchiveEntry): PickedDocument {
 }
 
 export interface PickResult {
-  /** The document to parse, or null when the archive holds no usable one. */
+  /* The document to parse, or null when the archive holds no usable one. */
   best: PickedDocument | null;
-  /**
-   * The TOR itself (scope + agency-specific requirements), when present.
+  /* The TOR itself (scope + agency-specific requirements), when present.
    * Usually a scan. May be an unconventionally named agency attachment —
-   * see pickDocument.
-   */
+   * see pickDocument. */
   tor: PickedDocument | null;
-  /**
-   * The e-GP bidding document (doc_*.pdf). Generated as text, so its numbers
+  /* The e-GP bidding document (doc_*.pdf). Generated as text, so its numbers
    * are exact; read together with the TOR rather than instead of it, since it
-   * has no scope and sometimes lacks requirements the TOR adds.
-   */
+   * has no scope and sometimes lacks requirements the TOR adds. */
   biddingDoc: PickedDocument | null;
-  /** Every PDF, classified and ranked — useful for logging and audit. */
+  /* Every PDF, classified and ranked — useful for logging and audit. */
   ranked: PickedDocument[];
-  /** True when a genuine TOR was found (as opposed to a fallback). */
+  /* True when a genuine TOR was found (as opposed to a fallback). */
   hasTor: boolean;
-  /** Set when best is null, explaining why. */
+  /* Set when best is null, explaining why. */
   skipReason?: string;
 }
 
-/**
- * Agency attachments that are not the TOR even though they are "other":
- * a public-hearing copy duplicates the TOR, and these are e-GP system files.
- */
+/* Agency attachments that are not the TOR even though they are "other":
+ * a public-hearing copy duplicates the TOR, and these are e-GP system files. */
 const NOT_A_TOR_CANDIDATE = /^annoudoc|^doc_\d|_pub_\d|^attach_pub/i;
 
-/**
- * Pick the document to parse. Falls back to the bidding document or the
+/* Pick the document to parse. Falls back to the bidding document or the
  * announcement when no TOR is present, since those still carry some of the
  * fields we extract — but never to contracts, which post-date the bid.
  *
@@ -133,8 +122,7 @@ const NOT_A_TOR_CANDIDATE = /^annoudoc|^doc_\d|_pub_\d|^attach_pub/i;
  * no file is named like a TOR but the archive also has a bidding document —
  * i.e. an open e-bidding project, which always has a TOR attached — the
  * largest unclassified agency attachment is taken as the TOR. The model's
- * documentCheck confirms or rejects that guess.
- */
+ * documentCheck confirms or rejects that guess. */
 export function pickDocument(entries: ArchiveEntry[]): PickResult {
   const pdfs = entries.filter((e) => PDF_RE.test(e.name) && e.size > 0);
 

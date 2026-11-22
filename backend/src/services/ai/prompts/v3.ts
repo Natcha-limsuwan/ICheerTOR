@@ -1,5 +1,4 @@
-/**
- * V3 extraction prompt — the scanned TOR plus the e-GP bidding document text.
+/* V3 extraction prompt — the scanned TOR plus the e-GP bidding document text.
  *
  * Why: every TOR sampled so far was a scan, and v2 misread amounts on scans
  * (๘ ล้าน read as ๕, ๔ ล้าน as ๕). The e-GP bidding document (doc_*.pdf) is
@@ -25,8 +24,7 @@
  * - Explicit list of things that are not risks; v2 flagged six of them.
  * - HIGH media resolution for scans.
  *
- * The schema is v2's with these fields patched in, so the diff stays readable.
- */
+ * The schema is v2's with these fields patched in, so the diff stays readable. */
 
 import { MediaResolution, ThinkingLevel, Type, type Schema } from "@google/genai";
 import type { ExtractionContext, ExtractionPrompt } from "./index";

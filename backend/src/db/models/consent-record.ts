@@ -1,10 +1,8 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
-/**
- * Append-only consent record for PDPA compliance.
+/* Append-only consent record for PDPA compliance.
  * Revocation creates a new record with `granted: false`.
- * Latest record per purpose determines current consent state.
- */
+ * Latest record per purpose determines current consent state. */
 export interface IConsentRecord extends Document {
   userId: Types.ObjectId;
   purpose: string;

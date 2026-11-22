@@ -1,5 +1,4 @@
-/**
- * Minimal ZIP reader built on Node's zlib.
+/* Minimal ZIP reader built on Node's zlib.
  *
  * e-GP archives use only store (0) and deflate (8), which the central
  * directory plus inflateRaw covers completely — so this avoids pulling in a
@@ -7,15 +6,14 @@
  *
  * Entry names holding Thai text are CP874, not UTF-8, unless the entry sets
  * the language-encoding flag (bit 11). Decoding by that flag keeps names
- * readable instead of turning them into mojibake.
- */
+ * readable instead of turning them into mojibake. */
 
 import { inflateRawSync } from "zlib";
 
 export interface ZipEntry {
-  /** Decoded name, safe to display and match against. */
+  /* Decoded name, safe to display and match against. */
   name: string;
-  /** Raw bytes of the name, used as the lookup key. */
+  /* Raw bytes of the name, used as the lookup key. */
   rawName: string;
   size: number;
   compressedSize: number;
@@ -34,7 +32,7 @@ function bounds(buf: Buffer, offset: number, size: number): void {
   }
 }
 
-/** Names are UTF-8 only when the entry says so; otherwise Thai CP874. */
+/* Names are UTF-8 only when the entry says so; otherwise Thai CP874. */
 function decodeName(buf: Buffer, utf8Flag: boolean): string {
   if (utf8Flag) return buf.toString("utf-8");
   try {
@@ -115,7 +113,7 @@ export function listEntries(zip: Buffer): ZipEntry[] {
   return entries;
 }
 
-/** Read one entry's bytes, decompressing when needed. */
+/* Read one entry's bytes, decompressing when needed. */
 export function readEntry(zip: Buffer, entry: ZipEntry): Buffer {
   if (!listEntries(zip).some((e) => e.offset === entry.offset && e.size === entry.size &&
     e.compressedSize === entry.compressedSize && e.method === entry.method && e.rawName === entry.rawName)) {
@@ -141,7 +139,7 @@ export function readEntry(zip: Buffer, entry: ZipEntry): Buffer {
 
 }
 
-/** Find an entry by its decoded name and return its bytes. */
+/* Find an entry by its decoded name and return its bytes. */
 export function extractByName(zip: Buffer, name: string): Buffer | null {
   const entry = listEntries(zip).find((e) => e.name === name);
   return entry ? readEntry(zip, entry) : null;

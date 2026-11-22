@@ -13,14 +13,14 @@ router.param("id", objectIdParam);
 
 // Every query is scoped to the session's userId (object-level access control, threat T05).
 
-/** GET /api/notifications/prefs — Get current user's notification preferences. */
+/* GET /api/notifications/prefs — Get current user's notification preferences. */
 router.get("/prefs", async (req: Request, res: Response) => {
   await connectDB();
   const user = await User.findById(req.user!.id).select("notificationPrefs").lean();
   apiSuccess(res, user?.notificationPrefs ?? { inApp: true, email: false });
 });
 
-/** GET /api/notifications/unread-count — Get count of unread notifications. */
+/* GET /api/notifications/unread-count — Get count of unread notifications. */
 router.get("/unread-count", async (req: Request, res: Response) => {
   await connectDB();
   const unreadCount = await Notification.countDocuments({
@@ -31,7 +31,7 @@ router.get("/unread-count", async (req: Request, res: Response) => {
   apiSuccess(res, { unreadCount });
 });
 
-/** GET /api/notifications — List current user's notifications. */
+/* GET /api/notifications — List current user's notifications. */
 router.get("/", validate({ query: notificationListQuery }), async (req: Request, res: Response) => {
   await connectDB();
 
@@ -56,11 +56,9 @@ router.get("/", validate({ query: notificationListQuery }), async (req: Request,
   apiSuccess(res, notifications, { total, page, limit });
 });
 
-/**
- * PUT /api/notifications — Update notification channel preferences.
+/* PUT /api/notifications — Update notification channel preferences.
  * Body: { inApp?: boolean, email?: boolean }. Only these two fields can be
- * written; previously the whole request body was $set (mass assignment).
- */
+ * written; previously the whole request body was $set (mass assignment). */
 router.put("/", validate({ body: notificationPrefsBody }), async (req: Request, res: Response) => {
   await connectDB();
   const { inApp, email } = req.body as { inApp?: boolean; email?: boolean };
@@ -76,7 +74,7 @@ router.put("/", validate({ body: notificationPrefsBody }), async (req: Request, 
   apiSuccess(res, user?.notificationPrefs);
 });
 
-/** PATCH /api/notifications/read-all — Mark all notifications as read. */
+/* PATCH /api/notifications/read-all — Mark all notifications as read. */
 router.patch("/read-all", async (req: Request, res: Response) => {
   await connectDB();
 
@@ -88,7 +86,7 @@ router.patch("/read-all", async (req: Request, res: Response) => {
   apiSuccess(res, { success: true });
 });
 
-/** PATCH /api/notifications/:id/read — Mark single notification as read. */
+/* PATCH /api/notifications/:id/read — Mark single notification as read. */
 router.patch("/:id/read", async (req: Request, res: Response) => {
   await connectDB();
 

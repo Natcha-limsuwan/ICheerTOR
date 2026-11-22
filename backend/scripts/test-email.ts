@@ -1,12 +1,10 @@
-/**
- * Test Email Script — verify email sending works end-to-end.
+/* Test Email Script — verify email sending works end-to-end.
  *
  * Usage:
  *   npx tsx scripts/test-email.ts                        # verify SMTP connection only
  *   npx tsx scripts/test-email.ts send <email>           # send a test email
  *   npx tsx scripts/test-email.ts dispatch <userId>      # dispatch a notification (needs MongoDB)
- *   npx tsx scripts/test-email.ts ingest-notify          # test sending new TOR ingestion email to all users
- */
+ *   npx tsx scripts/test-email.ts ingest-notify          # test sending new TOR ingestion email to all users */
 
 import { config } from "dotenv";
 config({ path: ".env" });

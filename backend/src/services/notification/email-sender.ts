@@ -3,11 +3,9 @@ import { env } from "../../config/env.js";
 
 /* ─── Output encoding (threat T09; ASVS V1.2.1) ─────────────────────── */
 
-/**
- * Escape a value for an HTML text or double-quoted attribute context.
+/* Escape a value for an HTML text or double-quoted attribute context.
  * TOR titles, agency names and user names come from e-GP or users and must
- * never be interpreted as markup in an email.
- */
+ * never be interpreted as markup in an email. */
 export function escapeHtml(value: unknown): string {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -17,11 +15,9 @@ export function escapeHtml(value: unknown): string {
     .replace(/'/g, "&#39;");
 }
 
-/**
- * Build an absolute link into this app from an internal path. Anything that is
+/* Build an absolute link into this app from an internal path. Anything that is
  * not a plain same-app path ("//evil.com", "javascript:", full URLs) falls back
- * to the home page, so a notification cannot carry a phishing link.
- */
+ * to the home page, so a notification cannot carry a phishing link. */
 export function safeAppUrl(path: string | undefined): string {
   const ok = typeof path === "string" && /^\/(?!\/)[A-Za-z0-9\-._~/?=&%]*$/.test(path);
   return `${env.FRONTEND_URL}${ok ? path : "/"}`;
@@ -66,10 +62,8 @@ function getTransporter(): Transporter {
 
 /* ─── Public API ────────────────────────────────────────────────────── */
 
-/**
- * Verify the SMTP connection is configured and reachable.
- * Returns { ok, error? }.
- */
+/* Verify the SMTP connection is configured and reachable.
+ * Returns { ok, error? }. */
 export async function verifyEmailConnection(): Promise<{
   ok: boolean;
   error?: string;
@@ -92,9 +86,7 @@ export async function verifyEmailConnection(): Promise<{
   }
 }
 
-/**
- * Send a raw email.
- */
+/* Send a raw email. */
 export async function sendEmail(payload: EmailPayload, transport?: Pick<Transporter, "sendMail">): Promise<EmailResult> {
   try {
     const info = await (transport ?? getTransporter()).sendMail({
@@ -124,9 +116,7 @@ const typeLabels: Record<string, string> = {
   system: "ℹ️ แจ้งเตือนระบบ",
 };
 
-/**
- * Send a formatted notification email.
- */
+/* Send a formatted notification email. */
 export async function sendNotificationEmail(
   to: string,
   notification: {
@@ -213,9 +203,7 @@ export interface MatchAlertEmailData {
   torRecordId: string;
 }
 
-/**
- * Send a rich match alert email when a newly pulled TOR matches a user's vendor profile.
- */
+/* Send a rich match alert email when a newly pulled TOR matches a user's vendor profile. */
 export async function sendMatchAlertEmail(data: MatchAlertEmailData): Promise<EmailResult> {
   const budgetStr = data.budget != null ? `฿${data.budget.toLocaleString("th-TH")}` : "ไม่ระบุงบประมาณ";
   const scorePercent = data.fitScore != null ? Math.round(data.fitScore * 100) : data.matchScore != null ? Math.round(data.matchScore * 100) : null;
@@ -348,9 +336,7 @@ const phaseLabels: Record<string, string> = {
   awarded: "🏆 ประกาศผู้ชนะ",
 };
 
-/**
- * Send an email notifying a user that new TOR projects have been ingested into iCheerTOR.
- */
+/* Send an email notifying a user that new TOR projects have been ingested into iCheerTOR. */
 export async function sendNewTorIngestedEmail(
   data: NewTorIngestedEmailData,
 ): Promise<EmailResult> {

@@ -1,5 +1,4 @@
-/**
- * Facts read straight from the e-GP generated documents, without the model.
+/* Facts read straight from the e-GP generated documents, without the model.
  *
  * The announcement (annoudoc_*.pdf) and the bidding document (doc_*.pdf) are
  * e-GP forms with a text layer, so the fields the agency fills in can be read
@@ -18,25 +17,24 @@
  * submission date is that day plus the window. Until the agency fixes the
  * date the form reads "ในวันที่ ระหว่างเวลา น. ถึง น." — that is "pending",
  * not missing: the record should be re-read once e-GP publishes the final
- * announcement. Checking again is cheap because no model call is involved.
- */
+ * announcement. Checking again is cheap because no model call is involved. */
 
 import { parseThaiAmountWords } from "../ai/thai-number";
 
 export type SubmissionDateStatus = "confirmed" | "pending";
 
 export interface SubmissionDate {
-  /** ISO date, e.g. "2026-03-16". Null while the announcement leaves it blank. */
+  /* ISO date, e.g. "2026-03-16". Null while the announcement leaves it blank. */
   date: string | null;
-  /** "09:00" — bids are accepted only inside this window, Bangkok time. */
+  /* "09:00" — bids are accepted only inside this window, Bangkok time. */
   startTime: string | null;
   endTime: string | null;
-  /** End of the window as an instant — the effective deadline. */
+  /* End of the window as an instant — the effective deadline. */
   closesAt: Date | null;
   status: SubmissionDateStatus;
-  /** The sentence the date was read from, for checking by hand. */
+  /* The sentence the date was read from, for checking by hand. */
   rawText: string | null;
-  /** File the date came from. */
+  /* File the date came from. */
   source: string | null;
 }
 
@@ -47,17 +45,17 @@ export interface ContractDuration {
 }
 
 export interface StatedAmount {
-  /** Baht. */
+  /* Baht. */
   value: number;
   rawText: string;
   source: string;
 }
 
-/** "final" = the invitation as announced, "draft" = the public-hearing draft. */
+/* "final" = the invitation as announced, "draft" = the public-hearing draft. */
 export type DocumentStage = "final" | "draft";
 
 export interface DatePeriod {
-  /** ISO dates. */
+  /* ISO dates. */
   from: string;
   to: string;
   rawText: string;
@@ -65,47 +63,39 @@ export interface DatePeriod {
 }
 
 export interface DatedSentence {
-  /** ISO date. */
+  /* ISO date. */
   date: string;
-  /** The sentence around the date, so a person can tell what it is. */
+  /* The sentence around the date, so a person can tell what it is. */
   rawText: string;
   source: string;
 }
 
 export interface ArchiveFacts {
-  /** Which archive the documents came from. Null when unknown. */
+  /* Which archive the documents came from. Null when unknown. */
   documentStage: DocumentStage | null;
-  /**
-   * The procuring agency, from the announcement's heading "ประกาศ<agency>"
+  /* The procuring agency, from the announcement's heading "ประกาศ<agency>"
    * — e.g. "กรุงเทพมหานคร", "กรมตรวจบัญชีสหกรณ์". The only place a project
-   * from the RSS feed names its agency.
-   */
+   * from the RSS feed names its agency. */
   agencyName: string | null;
-  /**
-   * Leading digits of the e-GP department code in the bidding document's file
+  /* Leading digits of the e-GP department code in the bidding document's file
    * name (doc_<code>_<project>.pdf): "3100…" is BMA, "0700…" the Ministry of
-   * Agriculture's departments. Full code kept; callers take the prefix.
-   */
+   * Agriculture's departments. Full code kept; callers take the prefix. */
   deptCode: string | null;
   submissionDate: SubmissionDate;
   contractDuration: ContractDuration | null;
-  /** "ประกาศ ณ วันที่ / ลงวันที่ ..." of the announcement, when filled in. ISO date. */
+  /* "ประกาศ ณ วันที่ / ลงวันที่ ..." of the announcement, when filled in. ISO date. */
   announcedDate: string | null;
-  /**
-   * "ผู้ยื่นข้อเสนอต้องชำระเงินค่าซื้อเอกสาร… ตั้งแต่วันที่ … ถึงวันที่ …".
+  /* "ผู้ยื่นข้อเสนอต้องชำระเงินค่าซื้อเอกสาร… ตั้งแต่วันที่ … ถึงวันที่ …".
    * In BMA announcements it falls after the bid day — bidders pay for the
-   * documents afterwards — so it is a second deadline, not part of preparing.
-   */
+   * documents afterwards — so it is a second deadline, not part of preparing. */
   documentFeePeriod: DatePeriod | null;
-  /** Every dated sentence in the announcement, named or not — nothing dropped. */
+  /* Every dated sentence in the announcement, named or not — nothing dropped. */
   announcementDates: DatedSentence[];
-  /**
-   * "ราคากลางของงาน... เป็นเงินทั้งสิ้น X บาท (words)" in the announcement.
+  /* "ราคากลางของงาน... เป็นเงินทั้งสิ้น X บาท (words)" in the announcement.
    * Checks egp2's figure — which has dropped digits (3,398,000 for 23,398,000).
-   * TORs often call this same figure "วงเงินงบประมาณ".
-   */
+   * TORs often call this same figure "วงเงินงบประมาณ". */
   medianPrice: StatedAmount | null;
-  /** Bid bond in the bidding document — e-GP sets it at 5 % of the budget. */
+  /* Bid bond in the bidding document — e-GP sets it at 5 % of the budget. */
   bidBond: StatedAmount | null;
 }
 
@@ -133,14 +123,14 @@ const MONTH = Object.keys(MONTHS)
   .map((m) => m.replace(/\./g, "\\."))
   .join("|");
 
-/** Thai digits to ASCII, and every run of whitespace (line breaks too) to one space. */
+/* Thai digits to ASCII, and every run of whitespace (line breaks too) to one space. */
 function normalise(text: string): string {
   return text
     .replace(/[๐-๙]/g, (d) => String("๐๑๒๓๔๕๖๗๘๙".indexOf(d)))
     .replace(/\s+/g, " ");
 }
 
-/** Buddhist-era day/month/year to ISO; null when the date does not exist. */
+/* Buddhist-era day/month/year to ISO; null when the date does not exist. */
 function isoDate(day: string, month: string, beYear: string): string | null {
   const y = Number(beYear) - 543;
   const m = MONTHS[month];
@@ -157,12 +147,12 @@ const SUBMISSION =
     `(เสนอราคา.{0,120}?ในวันที่\\s*(\\d{1,2})\\s*(${MONTH})\\s*(?:พ\\.ศ\\.\\s*)?(\\d{4})\\s*` +
       `ระหว่างเวลา\\s*(\\d{1,2})[.:](\\d{2})\\s*น\\.?\\s*ถึง\\s*(\\d{1,2})[.:](\\d{2})\\s*น\\.?)`,
   );
-/** The same sentence with the date still blank on the form. */
+/* The same sentence with the date still blank on the form. */
 const SUBMISSION_BLANK = /(เสนอราคา.{0,120}?ในวันที่\s*ระหว่างเวลา)/;
 
-/** A full Thai date, "10 มิถุนายน พ.ศ. 2569" after normalise. Groups: day, month, year. */
+/* A full Thai date, "10 มิถุนายน พ.ศ. 2569" after normalise. Groups: day, month, year. */
 const DATE = `(\\d{1,2})\\s*(${MONTH})\\s*(?:พ\\.ศ\\.\\s*)?(\\d{4})`;
-/** "ประกาศ ณ วันที่" is the announcement's own date; "ลงวันที่" is the fallback. */
+/* "ประกาศ ณ วันที่" is the announcement's own date; "ลงวันที่" is the fallback. */
 const ANNOUNCED = [new RegExp(`ประกาศ ณ วันที่\\s*${DATE}`), new RegExp(`ลงวันที่\\s*${DATE}`)];
 const DOCUMENT_FEE = new RegExp(`(ค่าซื้อเอกสาร.{0,160}?ตั้งแต่วันที่\\s*${DATE}\\s*ถึงวันที่\\s*${DATE})`);
 const ANY_DATE = new RegExp(DATE, "g");
@@ -236,12 +226,10 @@ export function readDocumentFeePeriod(docs: TextDocument[]): DatePeriod | null {
   return null;
 }
 
-/**
- * PDPA: the announcement ends in signature blocks naming officials. A date's
+/* PDPA: the announcement ends in signature blocks naming officials. A date's
  * context is therefore the words BEFORE it only, cut back to where its
  * sentence starts, with titled names masked — and the "ประกาศขึ้นเว็บ" stamp,
- * which sits inside a signature block, is skipped (it repeats announcedDate).
- */
+ * which sits inside a signature block, is skipped (it repeats announcedDate). */
 const SENTENCE_START = /(?:^|\s)(?:\d{1,2}\.\s|ประกาศ ณ|ผู้)/g;
 // A title only at a word start — "มิถุนายน" contains "นาย".
 const TITLED_NAME = /(?<=^|[\s(])(?:นางสาว|นาง|นาย|ว่าที่\s*ร(?:้อย)?\s*\.?\s*ต(?:รี)?\.?|ดร\.)\s*[ก-๙]+(?:\s+[ก-๙]+)?/g;
@@ -255,7 +243,7 @@ function dateContext(text: string, index: number, match: string): string | null 
   return (before.slice(from) + match).replace(TITLED_NAME, "[ชื่อ]").trim();
 }
 
-/** Every full date in the announcement, with the words before it. */
+/* Every full date in the announcement, with the words before it. */
 export function readAnnouncementDates(docs: TextDocument[]): DatedSentence[] {
   const out: DatedSentence[] = [];
   const seen = new Set<string>();
@@ -279,11 +267,9 @@ const AMOUNT = "(\\d{1,3}(?:,\\d{3})+(?:\\.\\d{1,2})?)\\s*บาท\\s*(\\([^)]{
 const MEDIAN_PRICE = new RegExp(`(ราคากลางของงาน.{0,80}?เป็นเงินทั้งสิ้น\\s*${AMOUNT})`);
 const BID_BOND = new RegExp(`(หลักประกัน.{0,160}?จำนวน\\s*${AMOUNT})`);
 
-/**
- * First amount matching `pattern`. Digits in a text layer are exact, but the
+/* First amount matching `pattern`. Digits in a text layer are exact, but the
  * words in brackets are checked too: an amount whose words disagree is
- * skipped rather than trusted.
- */
+ * skipped rather than trusted. */
 function readAmount(docs: TextDocument[], pattern: RegExp): StatedAmount | null {
   for (const doc of docs) {
     const m = pattern.exec(normalise(doc.text));
@@ -296,12 +282,10 @@ function readAmount(docs: TextDocument[], pattern: RegExp): StatedAmount | null 
   return null;
 }
 
-/**
- * Read every fact from the documents that have a text layer. Pass the
+/* Read every fact from the documents that have a text layer. Pass the
  * announcement first: it is the official source for the submission date and
- * the reference price, and the bidding document only repeats them.
- */
-/** "(สำเนา) / ประกาศกรมพัฒนาที่ดิน / เรื่อง …" → "กรมพัฒนาที่ดิน". */
+ * the reference price, and the bidding document only repeats them. */
+/* "(สำเนา) / ประกาศกรมพัฒนาที่ดิน / เรื่อง …" → "กรมพัฒนาที่ดิน". */
 export function readAgencyName(docs: TextDocument[]): string | null {
   for (const doc of docs.filter((d) => ANNOUNCEMENT_FILE.test(d.fileName))) {
     for (const line of doc.text.split("\n").slice(0, 6)) {
@@ -312,7 +296,7 @@ export function readAgencyName(docs: TextDocument[]): string | null {
   return null;
 }
 
-/** "doc_310000110000062_69049037828.pdf" → "310000110000062". */
+/* "doc_310000110000062_69049037828.pdf" → "310000110000062". */
 export function readDeptCode(docs: TextDocument[]): string | null {
   for (const doc of docs) {
     const m = /^doc_(\d{4,20})_\d+/i.exec(doc.fileName);
@@ -321,11 +305,9 @@ export function readDeptCode(docs: TextDocument[]): string | null {
   return null;
 }
 
-/**
- * A draft announcement is stamped "ร่าง" above its heading. During the public
+/* A draft announcement is stamped "ร่าง" above its heading. During the public
  * hearing both e-GP archive endpoints serve this same draft, so the stamp —
- * not the endpoint the archive came from — says whether it is a draft.
- */
+ * not the endpoint the archive came from — says whether it is a draft. */
 export function isDraftAnnouncement(docs: TextDocument[]): boolean {
   return docs
     .filter((d) => ANNOUNCEMENT_FILE.test(d.fileName))

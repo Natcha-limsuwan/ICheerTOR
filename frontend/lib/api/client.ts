@@ -1,9 +1,4 @@
-/**
- * API client for making authenticated requests to the backend.
- *
- * The backend URL is configured via NEXT_PUBLIC_API_URL.
- * Authentication is handled via JWT tokens stored in localStorage.
- */
+/* Backend API client using NEXT_PUBLIC_API_URL and bearer tokens in localStorage. */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 
@@ -103,7 +98,7 @@ export const api = {
 
 /* ─── Auth helpers ─────────────────────────────────────────────────── */
 
-/** Start Google OAuth by redirecting to the backend. */
+/* Start Google OAuth by redirecting to the backend. */
 export async function loginWithGoogle(): Promise<void> {
   // This proof stays in the initiating tab. A login code copied to another
   // browser cannot be exchanged, even if it came from a valid Google login.
@@ -115,10 +110,8 @@ export async function loginWithGoogle(): Promise<void> {
   window.location.href = `${API_BASE_URL}/auth/google?browserChallenge=${encodeURIComponent(challenge)}`;
 }
 
-/**
- * Exchange the one-time login code from the OAuth callback for a session
- * token. The code arrives in the URL fragment and is single use.
- */
+/* Exchange the one-time login code from the OAuth callback for a session
+ * token. The code arrives in the URL fragment and is single use. */
 export async function exchangeLoginCode(code: string): Promise<void> {
   const browserVerifier = sessionStorage.getItem("icheertor_login_verifier");
   if (!browserVerifier) throw new Error("login_binding_missing");
@@ -135,7 +128,7 @@ export async function exchangeLoginCode(code: string): Promise<void> {
   setToken(body.data.token);
 }
 
-/** End the session on the server, then clear local state. */
+/* End the session on the server, then clear local state. */
 export async function logout(redirectTo = "/"): Promise<void> {
   const token = getToken();
   if (token) {
@@ -149,15 +142,8 @@ export async function logout(redirectTo = "/"): Promise<void> {
   window.location.href = redirectTo;
 }
 
-/**
- * Watch every fetch to the backend: when a request that carried a session
- * token gets 401, the session has ended on the server (logout elsewhere,
- * idle timeout, absolute lifetime, suspension). Clear the stale token and
- * send the user to sign in again.
- *
- * Pages call fetch() directly in many places, so this wraps window.fetch
- * once instead of relying on every call site to handle 401.
- */
+/* Clear the token and return to login when an authenticated API request gets 401.
+ * Wrap window.fetch once because some pages call it without this API client. */
 let authGuardInstalled = false;
 export function installSessionExpiryGuard(): void {
   if (typeof window === "undefined" || authGuardInstalled) return;
@@ -181,7 +167,7 @@ export function installSessionExpiryGuard(): void {
   };
 }
 
-/** Get current user info (role and status come from the server's database). */
+/* Get current user info (role and status come from the server's database). */
 export async function getCurrentUser() {
   try {
     const result = await api.get<{

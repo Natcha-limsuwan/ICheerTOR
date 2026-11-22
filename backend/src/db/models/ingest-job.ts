@@ -1,20 +1,18 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
-/**
- * One run of a background job — pulling projects from egp2 ("ingest") or
+/* One run of a background job — pulling projects from egp2 ("ingest") or
  * sending queued TORs to Vertex AI ("extract").
  *
  * Hearing windows last only 3–5 days, so a silently failed daily run means
  * users miss them. This record is what the admin panel reads to show whether
- * the last run happened and how it went.
- */
+ * the last run happened and how it went. */
 export interface IIngestJob extends Document {
   type: "ingest" | "extract";
   trigger: "cron" | "manual" | "admin";
-  /** Admin who started it, when trigger is "admin". */
+  /* Admin who started it, when trigger is "admin". */
   triggeredBy?: Types.ObjectId;
   status: "running" | "completed" | "failed";
-  /** Run options, e.g. { year: 2569, limit: 10 } — kept for reproducing a run. */
+  /* Run options, e.g. { year: 2569, limit: 10 } — kept for reproducing a run. */
   params?: Record<string, unknown>;
   counts: {
     fetched: number;
@@ -24,7 +22,7 @@ export interface IIngestJob extends Document {
     skipped: number;
     failed: number;
   };
-  /** Per-item failures, capped so one bad run cannot bloat the document. */
+  /* Per-item failures, capped so one bad run cannot bloat the document. */
   failures: Array<{ ref?: string; message: string }>;
   startedAt: Date;
   finishedAt?: Date;

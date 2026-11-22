@@ -1,25 +1,23 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-/**
- * One document per RSS announcement type (B0, D0): what the last poll saw.
+/* One document per RSS announcement type (B0, D0): what the last poll saw.
  *
  * The feed only shows the newest 20 items, so the previous window is all that
  * is needed to tell new items from old — and to notice a gap: if none of this
  * poll's 20 were in the last poll's 20, items may have scrolled past unseen
- * and the interval is too long.
- */
+ * and the interval is too long. */
 export interface IRssPollState extends Document {
   announceType: string;
-  /** Project numbers of the last successful poll, newest first. */
+  /* Project numbers of the last successful poll, newest first. */
   lastWindow: string[];
   lastPolledAt?: Date;
   lastSuccessAt?: Date;
   lastCountByDay?: number | null;
   lastError?: string | null;
-  /** e-GP's planned downtime seen on the last poll — not a failure. */
+  /* e-GP's planned downtime seen on the last poll — not a failure. */
   lastMaintenanceAt?: Date | null;
   lastMaintenanceNotice?: string | null;
-  /** Running counters since the state was created. */
+  /* Running counters since the state was created. */
   stats: {
     polls: number;
     failures: number;

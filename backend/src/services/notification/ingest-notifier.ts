@@ -7,16 +7,14 @@ import { processingAllowed } from "../pdpa/processing-permission.js";
 import { batchDedupeKey, createNotificationOnce, deliverEmailOnce } from "./delivery.js";
 
 export interface IngestNotifyOptions {
-  /** Label shown in email header, e.g. "BMA e-GP2" or "CGD e-GP RSS" */
+  /* Label shown in email header, e.g. "BMA e-GP2" or "CGD e-GP RSS" */
   sourceLabel?: string;
-  /**
-   * @deprecated Ignored. New-TOR emails are optional marketing-style messages,
-   * so they always follow the user's notificationPrefs.email choice (threat T20).
-   */
+  /* @deprecated Ignored. New-TOR emails are optional marketing-style messages,
+   * so they always follow the user's notificationPrefs.email choice (threat T20). */
   sendToAllUsers?: boolean;
-  /** When true, logs what would be sent without creating notifications or sending emails. */
+  /* When true, logs what would be sent without creating notifications or sending emails. */
   dryRun?: boolean;
-  /** Test seam for a mocked SMTP provider. */
+  /* Test seam for a mocked SMTP provider. */
   sendEmail?: typeof sendNewTorIngestedEmail;
 }
 
@@ -26,14 +24,12 @@ export interface IngestNotifyResult {
   notificationsCreated: number;
   emailsSent: number;
   emailsFailed: number;
-  /** Users who already had this batch (repeat or concurrent run): no second message. */
+  /* Users who already had this batch (repeat or concurrent run): no second message. */
   alreadyNotified?: number;
 }
 
-/**
- * Notify all active users (in-app + email) when new TOR records have been added
- * during an ingestion run.
- */
+/* Notify all active users (in-app + email) when new TOR records have been added
+ * during an ingestion run. */
 export async function notifyUsersOfNewTors(
   torIds: Array<string | Types.ObjectId>,
   options: IngestNotifyOptions = {},

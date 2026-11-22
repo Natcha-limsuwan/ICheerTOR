@@ -1,23 +1,10 @@
-/**
- * Re-run the software filter over records already in MongoDB.
- *
- * Ingest only ever upserts, so tightening the filter does nothing to records
- * that got in under the old rules. This finds them. Needed after the filter
- * stopped scoring agency names: "สำนักงานพัฒนาระบบสาธารณสุข" had matched the
- * strong keyword "พัฒนาระบบ" and pulled in that agency's medical purchases.
- *
- * Default is a dry run that only prints what would change.
- *
- *   --apply   delete records that no longer pass, and refresh filter score /
- *             reason / "uncertain-classification" tag on the ones that stay.
- *             A record someone has bookmarked is never deleted — it is tagged
- *             "not-software" instead and listed, so the user's list does not
- *             silently lose an item.
+/* Recheck stored records after changes to the software filter.
+ * The default is a dry run. --apply removes records that no longer match and
+ * updates scores/tags. Bookmarked records are tagged rather than deleted.
  *
  * Usage (in container):
  *   docker compose --profile tools run --rm tools npx tsx scripts/rescore-software.ts
- *   docker compose --profile tools run --rm tools npx tsx scripts/rescore-software.ts --apply
- */
+ *   docker compose --profile tools run --rm tools npx tsx scripts/rescore-software.ts --apply */
 
 import { config } from "dotenv";
 config({ path: ".env" });

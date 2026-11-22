@@ -21,12 +21,10 @@ const router = Router();
 router.use(authenticate, requireScope("tor:read"));
 router.param("id", objectIdParam);
 
-/**
- * Fields a procurement-list row needs: the egp2 data plus the few extraction
+/* Fields a procurement-list row needs: the egp2 data plus the few extraction
  * results that help decide whether to open a project. Qualifications, scope
  * text, conflicts and risk evidence are 10–20 KB per record and only come
- * with GET /api/tor/:id.
- */
+ * with GET /api/tor/:id. */
 const LIST_FIELDS = [
   "title",
   "agencyName",
@@ -63,8 +61,7 @@ const LIST_FIELDS = [
   "updatedAt",
 ].join(" ");
 
-/**
- * Which records a list shows. The default is what the product is built on —
+/* Which records a list shows. The default is what the product is built on —
  * TORs the AI has read; the others are opt-in, so the response shape never
  * changes, only how many rows come back.
  *
@@ -72,8 +69,7 @@ const LIST_FIELDS = [
  *   new               parsed + still-open projects not read yet (just
  *                     ingested, or failed) — so a project in public hearing
  *                     is not hidden while it waits for the model
- *   all               every record (admin, history)
- */
+ *   all               every record (admin, history) */
 export type ListScope = "parsed" | "new" | "all";
 
 export function scopeFilter(scope: ListScope, now = new Date()): Record<string, unknown> {
@@ -94,7 +90,7 @@ export function scopeFilter(scope: ListScope, now = new Date()): Record<string, 
 
 const LIST_SCOPES: ListScope[] = ["parsed", "new", "all"];
 
-/** Projects a bidder can still act on. A confirmed submission deadline takes
+/* Projects a bidder can still act on. A confirmed submission deadline takes
  * precedence; otherwise public hearings use their own closing date. */
 function openOpportunityFilter(now = new Date()): Record<string, unknown> {
   const noSubmissionDeadline = {
@@ -118,10 +114,8 @@ function openOpportunityFilter(now = new Date()): Record<string, unknown> {
   };
 }
 
-/**
- * GET /api/tor — Search and list TOR records with filtering.
- * ?scope=parsed|new|all (default parsed) — see scopeFilter.
- */
+/* GET /api/tor — Search and list TOR records with filtering.
+ * ?scope=parsed|new|all (default parsed) — see scopeFilter. */
 router.get("/", validate({ query: torListQuery }), async (req: Request, res: Response) => {
   await connectDB();
 
@@ -155,7 +149,7 @@ router.get("/", validate({ query: torListQuery }), async (req: Request, res: Res
   const openOnly = req.query.openOnly === "true";
   const needsCheck = req.query.needsCheck === "true";
   const techStack = req.query.techStack as string | undefined;
-  /** Attach the authenticated user's qualification result to each list row. */
+  /* Attach the authenticated user's qualification result to each list row. */
   const includeMatch = req.query.includeMatch === "true";
   if (includeMatch && !(await processingAllowed(req.user!.id))) {
     Errors.forbidden(res, "Matching is disabled after withdrawal of data processing consent");
@@ -271,11 +265,9 @@ router.get("/", validate({ query: torListQuery }), async (req: Request, res: Res
   }
 });
 
-/**
- * GET /api/tor/:id — Get full TOR detail, including every extraction result.
+/* GET /api/tor/:id — Get full TOR detail, including every extraction result.
  * Never calls Vertex AI: extraction runs in the background (extract-tors.ts);
- * until it has, extractionStatus is "pending" and parsedData is empty.
- */
+ * until it has, extractionStatus is "pending" and parsedData is empty. */
 router.get("/:id", async (req: Request, res: Response) => {
   await connectDB();
 
@@ -305,9 +297,7 @@ router.get("/:id", async (req: Request, res: Response) => {
   }
 });
 
-/**
- * POST /api/tor/:id/corrections — Submit a field correction.
- */
+/* POST /api/tor/:id/corrections — Submit a field correction. */
 router.post(
   "/:id/corrections",
   requireScope("tor:correct"),
@@ -346,9 +336,7 @@ router.post(
   },
 );
 
-/**
- * GET /api/tor/:id/document — Resolve the e-GP document archive URL.
- */
+/* GET /api/tor/:id/document — Resolve the e-GP document archive URL. */
 router.get("/:id/document", sensitiveLimiter, async (req: Request, res: Response) => {
   await connectDB();
 
@@ -394,9 +382,7 @@ router.get("/:id/document", sensitiveLimiter, async (req: Request, res: Response
   }
 });
 
-/**
- * GET /api/tor/:id/match — Qualification match analysis for current user.
- */
+/* GET /api/tor/:id/match — Qualification match analysis for current user. */
 router.get("/:id/match", async (req: Request, res: Response) => {
   await connectDB();
   if (!(await processingAllowed(req.user!.id))) {

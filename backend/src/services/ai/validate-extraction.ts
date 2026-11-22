@@ -1,5 +1,4 @@
-/**
- * Check an extraction against what the numbers must be, and fix what can be
+/* Check an extraction against what the numbers must be, and fix what can be
  * fixed without guessing.
  *
  * The model reads scans; scans turn ๘ into ๕. Several thresholds in a BMA
@@ -14,8 +13,7 @@
  *   net worth "must be positive"      0 — filled
  *   past-work value > 50% of budget   flag for review
  *
- * Nothing here calls the model; it is deterministic and cheap to re-run.
- */
+ * Nothing here calls the model; it is deterministic and cheap to re-run. */
 
 import { env } from "../../config/env";
 import { parseThaiAmountWords } from "./thai-number";
@@ -28,14 +26,14 @@ export interface ValidationIssue {
   severity: IssueSeverity;
   field: string;
   message: string;
-  /** Value the model returned. */
+  /* Value the model returned. */
   from?: unknown;
-  /** Value after correction, or the expected value for "review". */
+  /* Value after correction, or the expected value for "review". */
   to?: unknown;
 }
 
 export interface ValidationContext {
-  /** วงเงินงบประมาณ from egp2 — the figure e-GP bases bid bonds on. */
+  /* วงเงินงบประมาณ from egp2 — the figure e-GP bases bid bonds on. */
   budget?: number | null;
   medianPriceFromSource?: number | null;
 }
@@ -46,11 +44,9 @@ export interface ValidationResult<T> {
   needsReview: boolean;
 }
 
-/**
- * Minimum paid-up registered capital by project budget, per the
+/* Minimum paid-up registered capital by project budget, per the
  * Comptroller General's Department circular ว 124 (2023).
- * [upper bound of budget (inclusive), minimum capital]
- */
+ * [upper bound of budget (inclusive), minimum capital] */
 const CAPITAL_TIERS: Array<[number, number]> = [
   [1_000_000, 0],
   [5_000_000, 1_000_000],
@@ -69,16 +65,16 @@ export function requiredRegisteredCapital(budget: number): number {
 
 const QUARTER_OF_BUDGET = /1\s*ใน\s*4|๑\s*ใน\s*๔|หนึ่งในสี่|ร้อยละ\s*(25|๒๕)\s*ของ(มูลค่า)?(วงเงิน)?งบประมาณ/;
 const MUST_BE_POSITIVE = /(แสดง)?ค่าเป็นบวก/;
-/** A duration quote must name a period of work or delivery with a number. */
+/* A duration quote must name a period of work or delivery with a number. */
 const DURATION_EVIDENCE = /(ดำเนินการ|แล้วเสร็จ|ส่งมอบ|ปฏิบัติงาน|ระยะเวลา).*[\d๐-๙]+\s*(วัน|เดือน|ปี)/;
-/** Licence terms and warranties — not how long the work takes. */
+/* Licence terms and warranties — not how long the work takes. */
 const NOT_A_DURATION = /subscription|(อายุ|ระยะเวลา)(การใช้งาน|ใช้สิทธิ|สิทธิ|ลิขสิทธิ์|license)|รับประกัน/i;
-/** Past-work requirements above this share of the budget are unusual. */
+/* Past-work requirements above this share of the budget are unusual. */
 const MAX_WORK_SHARE = 0.5;
 
 const fmt = (n: number) => n.toLocaleString("th-TH");
 
-/** v4 splits the document's figures into budget and medianPrice, each with words. */
+/* v4 splits the document's figures into budget and medianPrice, each with words. */
 const isV4 = (o: TorExtractionV3 | TorExtractionV4): o is TorExtractionV4 => "budget" in o;
 
 export function validateExtraction<T extends TorExtractionV3 | TorExtractionV4>(
@@ -249,7 +245,7 @@ export function validateExtraction<T extends TorExtractionV3 | TorExtractionV4>(
   return { output, issues, needsReview: issues.some((i) => i.severity === "review") };
 }
 
-/** Words beat digits for the document's own price figures too. */
+/* Words beat digits for the document's own price figures too. */
 function checkWords(p: PriceFieldV4, field: string, issues: ValidationIssue[]): PriceFieldV4 {
   if (!p.amountWords || p.value == null) return p;
   const fromWords = parseThaiAmountWords(p.amountWords);

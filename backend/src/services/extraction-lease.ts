@@ -26,12 +26,9 @@ export async function updateOwnedExtraction(id: string, owner: string, update: U
 
 export const OUTDATED_REVIEW_NOTE = "AI อ่าน TOR ใหม่หลังการตรวจ — ค่าที่แก้ไว้ถูกเขียนทับ ดูประวัติใน usercorrections";
 
-/**
- * Commit a fresh model reading. A prior admin verification no longer describes
- * the stored content, so it becomes "outdated" in the same transaction: there
- * is no moment (or crash window) where new AI output is labelled verified.
- * A lost lease aborts both writes.
- */
+/* Save new AI content and invalidate the previous review in one transaction.
+ * Losing the lease rolls back both writes, so new content cannot keep an old
+ * verified status after a partial update. */
 export async function commitOwnedExtraction(id: string, owner: string, update: UpdateQuery<ITORRecord>): Promise<void> {
   await mongoose.connection.transaction(async (session) => {
     await TORRecord.updateOne(

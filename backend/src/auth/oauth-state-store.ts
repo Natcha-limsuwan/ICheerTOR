@@ -2,23 +2,10 @@ import crypto from "node:crypto";
 import type { Request } from "express";
 import { env } from "../config/env.js";
 
-/**
- * OAuth 2.0 `state` + PKCE store backed by a short-lived HttpOnly cookie.
- *
- * passport-oauth2's built-in stores need express-session; this API is
- * otherwise stateless, so the per-transaction values live in a cookie that
- * only the backend's /api/auth/google paths can see:
- *
- *  - `state` binds the Google callback to the browser that started the login,
- *    so an attacker cannot make a victim's browser accept the attacker's
- *    authorization code (login CSRF, threat T04, ASVS V10.1.2 / V10.2.1).
- *  - The PKCE `code_verifier` never leaves the backend except in this
- *    HttpOnly cookie, so an intercepted authorization code is useless.
- *
- * The cookie is single use: it is cleared as soon as the callback is checked.
- * SameSite=Lax is required because Google's redirect back is a top-level
- * cross-site GET navigation.
- */
+/* OAuth state and PKCE data live in a signed, short-lived HttpOnly cookie.
+ * State binds the callback to the browser that started login; PKCE binds the
+ * authorization code to its verifier (T04; ASVS V10.1.2 / V10.2.1).
+ * Clear the cookie on callback. SameSite=Lax allows Google's top-level redirect. */
 
 const COOKIE_NAME = "icheertor_oauth_tx";
 const COOKIE_PATH = "/api/auth/google";

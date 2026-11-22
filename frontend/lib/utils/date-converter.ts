@@ -1,27 +1,23 @@
-/**
- * Buddhist Era (B.E.) ↔ Gregorian date conversion utilities.
+/* Buddhist Era (B.E.) ↔ Gregorian date conversion utilities.
  *
  * Thai government documents use the Buddhist Era calendar where
- * B.E. year = Gregorian year + 543.
- */
+ * B.E. year = Gregorian year + 543. */
 
 const BE_OFFSET = 543;
 
-/** Convert a Gregorian year to Buddhist Era. */
+/* Convert a Gregorian year to Buddhist Era. */
 export function toBuddhistYear(gregorianYear: number): number {
   return gregorianYear + BE_OFFSET;
 }
 
-/** Convert a Buddhist Era year to Gregorian. */
+/* Convert a Buddhist Era year to Gregorian. */
 export function toGregorianYear(buddhistYear: number): number {
   return buddhistYear - BE_OFFSET;
 }
 
-/**
- * Parse a Thai-formatted date string that may use B.E. years.
+/* Parse a Thai-formatted date string that may use B.E. years.
  * Supports formats like "15 สิงหาคม 2569" or "15/08/2569".
- * Returns a Gregorian Date object for internal storage.
- */
+ * Returns a Gregorian Date object for internal storage. */
 const THAI_MONTHS: Record<string, number> = {
   มกราคม: 0,
   กุมภาพันธ์: 1,
@@ -52,10 +48,8 @@ const THAI_MONTH_ABBR: Record<string, number> = {
   "ธ.ค.": 11,
 };
 
-/**
- * Attempt to parse a Thai date string containing a B.E. year.
- * Returns `null` if parsing fails.
- */
+/* Attempt to parse a Thai date string containing a B.E. year.
+ * Returns `null` if parsing fails. */
 export function parseThaiDate(dateStr: string): Date | null {
   if (!dateStr) return null;
 
@@ -88,10 +82,8 @@ export function parseThaiDate(dateStr: string): Date | null {
   return null;
 }
 
-/**
- * Format a Date as a Thai-locale string.
- * @param useBE If true, display the year in Buddhist Era.
- */
+/* Format a Date as a Thai-locale string.
+ * @param useBE If true, display the year in Buddhist Era. */
 export function formatThaiDate(
   date: Date,
   useBE: boolean = true,

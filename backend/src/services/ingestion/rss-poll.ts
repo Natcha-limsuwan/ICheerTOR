@@ -1,10 +1,8 @@
-/**
- * One poll of the e-GP RSS feed: find announcements not seen before, keep
+/* One poll of the e-GP RSS feed: find announcements not seen before, keep
  * the ones whose title is confidently software work, remember the window.
  *
  * Nothing here downloads documents or calls the model — rss-ingest.ts turns
- * kept candidates into TORRecords.
- */
+ * kept candidates into TORRecords. */
 
 import RssCandidate from "../../db/models/rss-candidate";
 import RssPollState from "../../db/models/rss-poll-state";
@@ -13,15 +11,13 @@ import { EgpMaintenanceError } from "./egp-maintenance";
 import { scoreSoftware } from "./software-filter";
 import { promoteToBidding } from "./rss-ingest";
 
-/** The feed never returns more than this many items. */
+/* The feed never returns more than this many items. */
 export const RSS_WINDOW = 20;
 
 export interface WindowDiff {
   fresh: RssItem[];
-  /**
-   * None of a full window was in the previous one: items may have scrolled
-   * past between polls. Only meaningful when there was a previous window.
-   */
+  /* None of a full window was in the previous one: items may have scrolled
+   * past between polls. Only meaningful when there was a previous window. */
   gap: boolean;
 }
 
@@ -34,7 +30,7 @@ export function diffWindow(previous: string[], items: RssItem[]): WindowDiff {
 
 export type TitleVerdict = "kept" | "uncertain" | "rejected";
 
-/** Kept = the software filter is sure. Uncertain titles are counted, not stored. */
+/* Kept = the software filter is sure. Uncertain titles are counted, not stored. */
 export function classifyTitle(title: string): { verdict: TitleVerdict; score: number; reason: string } {
   const r = scoreSoftware(title);
   return {
@@ -48,7 +44,7 @@ export interface TypePollResult {
   announceType: RssAnnounceType;
   ok: boolean;
   error?: string;
-  /** e-GP is down for planned maintenance; the notice says until when. */
+  /* e-GP is down for planned maintenance; the notice says until when. */
   maintenance?: string;
   countByDay: number | null;
   items: number;
@@ -57,12 +53,12 @@ export interface TypePollResult {
   uncertain: number;
   gap: boolean;
   keptItems: Array<{ projectNumber: string; title: string; score: number }>;
-  /** Records moved from public hearing to bidding because they appeared in D0. */
+  /* Records moved from public hearing to bidding because they appeared in D0. */
   promoted: string[];
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-/** Between feed requests in one poll — the feed answers 429 to bursts. */
+/* Between feed requests in one poll — the feed answers 429 to bursts. */
 const BETWEEN_REQUESTS_MS = 5_000;
 
 export async function pollOnce(

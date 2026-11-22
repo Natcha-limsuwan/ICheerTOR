@@ -1,5 +1,4 @@
-/**
- * Where the sources disagree about a project, and what the bid window is now.
+/* Where the sources disagree about a project, and what the bid window is now.
  *
  * egp2's status lags reality: a project stays "ระหว่างดำเนินการ" (our
  * "bidding") until the contract is signed, often months after bids closed.
@@ -8,8 +7,7 @@
  * it matters, flagged for an admin — never silently resolved.
  *
  * bidWindow is computed on every request (it changes with the clock); the
- * conflicts are stored by the daily jobs so an admin can list them.
- */
+ * conflicts are stored by the daily jobs so an admin can list them. */
 
 import type { ITORRecord } from "../../db/models/tor-record";
 
@@ -18,17 +16,15 @@ export type BidWindowState = "upcoming" | "today" | "closed" | "unknown";
 export interface BidWindow {
   state: BidWindowState;
   closesAt: Date | null;
-  /** Whole Bangkok calendar days until the bid day; 0 on the day. */
+  /* Whole Bangkok calendar days until the bid day; 0 on the day. */
   daysUntil: number | null;
-  /** Whole days since bids closed. */
+  /* Whole days since bids closed. */
   closedDaysAgo: number | null;
 }
 
-/**
- * Status safe to show to bidders. e-GP leaves many projects in `bidding`
+/* Status safe to show to bidders. e-GP leaves many projects in `bidding`
  * while the agency evaluates bids, so the submitted closing time wins for
- * display. The stored phase remains untouched for audit and source context.
- */
+ * display. The stored phase remains untouched for audit and source context. */
 export type DisplayPhase = "public_hearing" | "bidding" | "closed" | "awarded" | "cancelled";
 
 export function displayPhase(
@@ -49,24 +45,24 @@ export interface DataConflict {
     | "awarded_before_bid_day"
     | "price_mismatch"
     | "extraction_review";
-  /** info = shown to users; check = also queued for an admin. */
+  /* info = shown to users; check = also queued for an admin. */
   severity: ConflictSeverity;
   message: string;
 }
 
 export interface DataChecks {
   conflicts: DataConflict[];
-  /** An unresolved "check" conflict is present — the admin queue filter. */
+  /* An unresolved "check" conflict is present — the admin queue filter. */
   needsCheck: boolean;
   checkedAt: Date;
-  /** Codes an admin has looked at; they stop raising needsCheck. */
+  /* Codes an admin has looked at; they stop raising needsCheck. */
   resolvedCodes: string[];
   resolvedBy?: string | null;
   resolvedAt?: Date | null;
   resolvedNote?: string | null;
 }
 
-/** Past this, "bids closed but egp2 still open" is unusual enough to check. */
+/* Past this, "bids closed but egp2 still open" is unusual enough to check. */
 export const STALE_AFTER_DAYS = 60;
 
 const DAY_MS = 24 * 60 * 60 * 1000;

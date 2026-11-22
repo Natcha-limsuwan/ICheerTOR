@@ -1,5 +1,4 @@
-/**
- * Turn RSS candidates into TORRecords.
+/* Turn RSS candidates into TORRecords.
  *
  * The feed gives only a project number and title, so the record is built
  * from the e-GP documents, read in code (no model call):
@@ -10,8 +9,7 @@
  * The record then waits in the extraction queue like any other.
  *
  * Projects egp2 already brought in (BMA) are left as they are — both
- * sources key a project by the same hash, so there is one record either way.
- */
+ * sources key a project by the same hash, so there is one record either way. */
 
 import RssCandidate, { type IRssCandidate } from "../../db/models/rss-candidate";
 import TORRecord, { type IParsedData, type ITORRecord } from "../../db/models/tor-record";
@@ -21,14 +19,14 @@ import { buildAnnouncementSearchUrl } from "./egp-document-url";
 import { torDedupeHash } from "./dedupe";
 import { bidWindow } from "./data-checks";
 
-/** Give up on a candidate whose documents are not published after this many tries. */
+/* Give up on a candidate whose documents are not published after this many tries. */
 export const MAX_INGEST_ATTEMPTS = 5;
-/** e-GP sets the bid bond at 5 % of the budget. */
+/* e-GP sets the bid bond at 5 % of the budget. */
 const BID_BOND_SHARE = 0.05;
 
 export type IngestResult = "created" | "exists" | "retry" | "skipped" | "failed";
 
-/** Thai fiscal year (B.E.) of a date: October starts the next year. */
+/* Thai fiscal year (B.E.) of a date: October starts the next year. */
 export function thaiFiscalYear(isoDate: string): number {
   const d = new Date(`${isoDate.slice(0, 10)}T00:00:00+07:00`);
   const be = d.getUTCFullYear() + 543;
@@ -143,13 +141,11 @@ export async function ingestCandidate(
   };
 }
 
-/**
- * A project that shows up in the invitation feed (D0) has left its public
+/* A project that shows up in the invitation feed (D0) has left its public
  * hearing. Draft announcements carry no hearing-close date, so for projects
  * egp2 does not cover this sighting is the only signal. The bid date is
  * filled by the next `extract --refresh-dates`, which also re-queues the TOR
- * for the model if the final version changed.
- */
+ * for the model if the final version changed. */
 export async function promoteToBidding(projectNumbers: string[]): Promise<string[]> {
   if (!projectNumbers.length) return [];
   const records = await TORRecord.find({

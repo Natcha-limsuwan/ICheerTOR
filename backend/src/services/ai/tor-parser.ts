@@ -1,5 +1,4 @@
-/**
- * Read one project's e-GP documents and turn them into a TORRecord update.
+/* Read one project's e-GP documents and turn them into a TORRecord update.
  *
  *   archive ─┬─ TOR (usually a scan) ──────────────┐
  *            ├─ doc_ bidding document (text) ─ slice ─┤→ Gemini (prompt v4) → validate ┐
@@ -13,8 +12,7 @@
  *
  * Nothing here writes to the database or stores a PDF; the caller saves the
  * returned update. prepareDocuments and callModel are also what
- * scripts/eval-prompt.ts runs, so eval scores the production path.
- */
+ * scripts/eval-prompt.ts runs, so eval scores the production path. */
 
 import { createHash } from "crypto";
 import type { Part } from "@google/genai";
@@ -49,9 +47,9 @@ import { analyzeRedFlags } from "./red-flag-analyzer";
 /* ─── Preparing the documents ───────────────────────────────────────── */
 
 export interface PreparedDocuments {
-  /** PDF sent to the model as an attachment — the TOR. */
+  /* PDF sent to the model as an attachment — the TOR. */
   pdf: { entry: ZipEntry; bytes: Buffer } | null;
-  /** Sliced text of the bidding document, sent alongside the PDF. */
+  /* Sliced text of the bidding document, sent alongside the PDF. */
   biddingDoc: {
     fileName: string;
     text: string;
@@ -59,21 +57,21 @@ export interface PreparedDocuments {
     originalChars: number;
     sections: string[];
   } | null;
-  /** What the e-GP forms state, read in code. */
+  /* What the e-GP forms state, read in code. */
   facts: ArchiveFacts;
-  /** Every file read, for the record — hashes only, never the bytes. */
+  /* Every file read, for the record — hashes only, never the bytes. */
   sourceDocuments: ISourceDocument[];
-  /** Set when there is nothing to send to the model. */
+  /* Set when there is nothing to send to the model. */
   skipReason?: string;
 }
 
 export interface PrepareOptions {
-  /** Force this file as the PDF (eval: the file the labeller read). */
+  /* Force this file as the PDF (eval: the file the labeller read). */
   pdfFileName?: string;
-  /** Send the bidding document as text (prompt v3+). Default true. */
+  /* Send the bidding document as text (prompt v3+). Default true. */
   withBiddingDoc?: boolean;
   zipFileName?: string | null;
-  /** Which archive this is — "draft" means the bid date cannot be known yet. */
+  /* Which archive this is — "draft" means the bid date cannot be known yet. */
   stage?: DocumentStage;
 }
 
@@ -152,7 +150,7 @@ export interface ModelCall<T> {
 }
 
 const MAX_ATTEMPTS = 3;
-/** Quota, server-side and network errors are worth waiting out; others are not. */
+/* Quota, server-side and network errors are worth waiting out; others are not. */
 // "aborted" is our own timeout (AbortSignal.timeout) firing on a slow reply.
 const RETRYABLE =
   /\b(429|500|502|503|504)\b|RESOURCE_EXHAUSTED|UNAVAILABLE|fetch failed|ECONNRESET|ETIMEDOUT|aborted/i;
@@ -165,7 +163,7 @@ export class CircuitOpenError extends Error {
   }
 }
 
-/** Short code for ExtractionLog, so failures can be counted by cause. */
+/* Short code for ExtractionLog, so failures can be counted by cause. */
 export function errorCode(e: unknown): string {
   const text = String(e);
   if (e instanceof EgpMaintenanceError) return "maintenance";
@@ -276,17 +274,17 @@ export interface TorRecordUpdate {
   parsedData: IParsedData;
   summary: ISummary;
   redFlags: IRedFlag[];
-  /** End of the submission window; null while the announcement leaves it blank. */
+  /* End of the submission window; null while the announcement leaves it blank. */
   submissionDeadline: Date | null;
   sourceDocuments: ISourceDocument[];
 }
 
 export interface RecordContext {
   phase: "public_hearing" | "bidding" | "awarded" | "cancelled";
-  /** egp2 figures — authoritative for medianPrice, the base for ¼-of-budget. */
+  /* egp2 figures — authoritative for medianPrice, the base for ¼-of-budget. */
   budget?: number | null;
   medianPriceFromSource?: number | null;
-  /** The reference price decided by resolvePrices; egp2's when omitted. */
+  /* The reference price decided by resolvePrices; egp2's when omitted. */
   medianPrice?: IMedianPrice;
 }
 
@@ -317,7 +315,7 @@ function toQualification(q: QualificationV4): IQualification {
   };
 }
 
-/** Validated v4 output + facts read in code → the fields to $set on TORRecord. */
+/* Validated v4 output + facts read in code → the fields to $set on TORRecord. */
 export function toRecordUpdate(
   out: TorExtractionV4,
   facts: ArchiveFacts,
@@ -403,18 +401,16 @@ export type ExtractionOutcome =
       meta: Pick<IExtractionMeta, "promptVersion" | "modelVersion" | "durationMs" | "inputTokens" | "outputTokens" | "needsReview"> & {
         issues: ValidationIssue[];
       };
-      /** The model's reply before validation, for ExtractionLog. */
+      /* The model's reply before validation, for ExtractionLog. */
       rawResponse: string;
-      /** The TOR PDF that was sent, for ExtractionLog. */
+      /* The TOR PDF that was sent, for ExtractionLog. */
       pdf: ISourceDocument | null;
     }
   | { status: "skipped"; skipReason: string; sourceDocuments: ISourceDocument[] }
   | { status: "failed"; error: string; errorCode: string; retryable: boolean };
 
-/**
- * @param onProgress  step-by-step messages — a call can take minutes with
- *                    quota back-off, and silence looks like a hang.
- */
+/* @param onProgress  step-by-step messages — a call can take minutes with
+ *                    quota back-off, and silence looks like a hang. */
 export async function extractTor(
   input: ExtractionInput,
   onProgress: (message: string) => void = () => {},

@@ -1,5 +1,4 @@
-/**
- * The Comptroller General's Department e-GP announcement RSS feed — the
+/* The Comptroller General's Department e-GP announcement RSS feed — the
  * nationwide source of new announcements, published the same day as
  * process5 and not behind Cloudflare (unlike process5's search page and its
  * Turnstile-gated JSON API, which we do not touch).
@@ -17,25 +16,24 @@
  *     <description> "<projectNumber>, <method>, <announcement type>",
  *     <pubDate> YYYY-MM-DD
  *   - HTTP 429 after ~12 rapid requests; it has also dropped connections
- *     for a day at a time — so: one request at a time, back off, retry later
- */
+ *     for a day at a time — so: one request at a time, back off, retry later */
 
 import { assertNotMaintenance, EgpMaintenanceError } from "./egp-maintenance";
 import { procurementFetch } from "./safe-fetch.js";
 
 export const RSS_URL = "https://process.gprocurement.go.th/EPROCRssFeedWeb/egpannouncerss.xml";
 
-/** Announcement types the feed accepts. Only B0 and D0 are polled today. */
+/* Announcement types the feed accepts. Only B0 and D0 are polled today. */
 export const RSS_TYPES = {
-  /** Draft bid document for public hearing — ร่างเอกสารประกวดราคา (รับฟังความคิดเห็น). */
+  /* Draft bid document for public hearing — ร่างเอกสารประกวดราคา (รับฟังความคิดเห็น). */
   B0: "draft_bidding",
-  /** Invitation to bid — ประกาศเชิญชวน. */
+  /* Invitation to bid — ประกาศเชิญชวน. */
   D0: "invitation",
-  /** Procurement plan. */
+  /* Procurement plan. */
   P0: "plan",
-  /** Winner announcement. */
+  /* Winner announcement. */
   W0: "winner",
-  /** Reference price. */
+  /* Reference price. */
   "15": "median_price",
 } as const;
 export type RssAnnounceType = keyof typeof RSS_TYPES;
@@ -43,14 +41,14 @@ export type RssAnnounceType = keyof typeof RSS_TYPES;
 export interface RssItem {
   projectNumber: string;
   title: string;
-  /** e.g. "ประกวดราคาอิเล็กทรอนิกส์ (e-bidding)". */
+  /* e.g. "ประกวดราคาอิเล็กทรอนิกส์ (e-bidding)". */
   method: string;
-  /** The feed's own label, e.g. "ประกาศเชิญชวน". */
+  /* The feed's own label, e.g. "ประกาศเชิญชวน". */
   announceLabel: string;
   announceType: RssAnnounceType;
-  /** ISO date. */
+  /* ISO date. */
   pubDate: string | null;
-  /** The announcement PDF on process5. */
+  /* The announcement PDF on process5. */
   link: string | null;
 }
 
@@ -63,7 +61,7 @@ export interface RssFeed {
 const USER_AGENT = "ICheerTOR/1.0 (student research project; procurement alerts)";
 const TIMEOUT_MS = 40_000;
 const MAX_ATTEMPTS = 3;
-/** Network and quota errors are worth waiting out. */
+/* Network and quota errors are worth waiting out. */
 const RETRYABLE = /\b(429|500|502|503|504)\b|fetch failed|ECONNRESET|ETIMEDOUT|aborted|timeout/i;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -80,7 +78,7 @@ function text(raw: string | undefined): string {
 
 const tag = (xml: string, name: string) => xml.match(new RegExp(`<${name}>([\\s\\S]*?)</${name}>`))?.[1];
 
-/** Parse the feed's XML (already decoded to a string). Pure — no I/O. */
+/* Parse the feed's XML (already decoded to a string). Pure — no I/O. */
 export function parseRss(xml: string, announceType: RssAnnounceType): RssFeed {
   const count = text(tag(xml, "countbyday"));
   const items: RssItem[] = [];
@@ -103,10 +101,8 @@ export function parseRss(xml: string, announceType: RssAnnounceType): RssFeed {
   return { announceType, countByDay: count && /^\d+$/.test(count) ? Number(count) : null, items };
 }
 
-/**
- * Fetch one feed. Retries quota and network errors with a long back-off
- * (30 s, 60 s) — the feed is shared by every agency's website.
- */
+/* Fetch one feed. Retries quota and network errors with a long back-off
+ * (30 s, 60 s) — the feed is shared by every agency's website. */
 export async function fetchRssFeed(
   announceType: RssAnnounceType,
   options: { deptId?: string; onRetry?: (attempt: number, waitMs: number, error: unknown) => void } = {},

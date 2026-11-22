@@ -1,5 +1,4 @@
-/**
- * Test TOR Match Alert Preparation Script
+/* Test TOR Match Alert Preparation Script
  *
  * Simulates finding matched users for a TOR record and previewing/dispatching
  * the resulting in-app and email notifications.
@@ -7,8 +6,7 @@
  * Usage:
  *   npx tsx scripts/test-match-alert.ts --dry-run                 # simulate on first available TOR
  *   npx tsx scripts/test-match-alert.ts --tor=<torId> --dry-run  # simulate for specific TOR
- *   npx tsx scripts/test-match-alert.ts --tor=<torId>            # dispatch alerts for real
- */
+ *   npx tsx scripts/test-match-alert.ts --tor=<torId>            # dispatch alerts for real */
 
 import { config } from "dotenv";
 config({ path: ".env" });

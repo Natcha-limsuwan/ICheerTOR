@@ -1,19 +1,17 @@
 import mongoose, { Schema, Model, Types } from "mongoose";
 
-/**
- * Server-side record of an authenticated session.
+/* Server-side record of an authenticated session.
  *
  * The JWT only carries `sub` (user id) and `sid` (this record). Every
  * authenticated request looks the session up, so logout, suspension,
  * deletion, idle timeout and absolute lifetime take effect immediately even
  * though the JWT itself is still correctly signed (threats T02, T03;
- * ASVS V7.3.1, V7.3.2, V7.4.1, V7.4.2).
- */
+ * ASVS V7.3.1, V7.3.2, V7.4.1, V7.4.2). */
 export interface IAuthSession {
-  /** 256-bit random id, also the JWT `jti`. */
+  /* 256-bit random id, also the JWT `jti`. */
   sid: string;
   userId: Types.ObjectId;
-  /** When the user signed in with Google for this session (step-up / re-auth checks). */
+  /* When the user signed in with Google for this session (step-up / re-auth checks). */
   authenticatedAt: Date;
   lastActivityAt: Date;
   absoluteExpiresAt: Date;

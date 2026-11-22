@@ -1,11 +1,9 @@
-/**
- * Lightweight i18n utility for Thai (primary) and English UI strings.
+/* Lightweight i18n utility for Thai (primary) and English UI strings.
  *
  * Usage:
  *   import { t } from "@/lib/utils/i18n";
  *   t("nav.home")        → "หน้าหลัก" (when locale is "th")
- *   t("nav.home", "en")  → "Home"
- */
+ *   t("nav.home", "en")  → "Home" */
 
 export type Locale = "th" | "en";
 
@@ -110,19 +108,17 @@ const dict: Record<string, Record<Locale, string>> = {
 
 let currentLocale: Locale = (process.env.NEXT_PUBLIC_DEFAULT_LOCALE as Locale) || "th";
 
-/** Get the current active locale. */
+/* Get the current active locale. */
 export function getLocale(): Locale {
   return currentLocale;
 }
 
-/** Set the active locale. */
+/* Set the active locale. */
 export function setLocale(locale: Locale): void {
   currentLocale = locale;
 }
 
-/**
- * Translate a key. Falls back to the key itself if not found.
- */
+/* Translate a key. Falls back to the key itself if not found. */
 export function t(key: string, locale?: Locale): string {
   const l = locale ?? currentLocale;
   return dict[key]?.[l] ?? dict[key]?.["en"] ?? key;

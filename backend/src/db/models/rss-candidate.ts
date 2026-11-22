@@ -1,31 +1,29 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
-/**
- * A project seen in the e-GP RSS feed whose title passed the software filter
+/* A project seen in the e-GP RSS feed whose title passed the software filter
  * with confidence. Only those are kept — the feed carries ~600 announcements
  * a day nationwide and nearly all are not software.
  *
  * The queue between the RSS poller and TORRecord: "new" until rss-ingest
- * has read its documents and created (or found) the record.
- */
+ * has read its documents and created (or found) the record. */
 export const RSS_CANDIDATE_STATUSES = ["new", "ingested", "skipped", "failed"] as const;
 export type RssCandidateStatus = (typeof RSS_CANDIDATE_STATUSES)[number];
 
 export interface IRssCandidate extends Document {
   projectNumber: string;
-  /** RSS type it was first seen under: B0 (public hearing draft) or D0 (invitation). */
+  /* RSS type it was first seen under: B0 (public hearing draft) or D0 (invitation). */
   announceType: string;
   title: string;
   method?: string;
   announceLabel?: string;
-  /** ISO date from the feed. */
+  /* ISO date from the feed. */
   pubDate?: string | null;
   firstSeenAt: Date;
   filterScore: number;
   filterReason: string;
   status: RssCandidateStatus;
   attempts: number;
-  /** Why it was skipped, or the last error. */
+  /* Why it was skipped, or the last error. */
   note?: string;
   torRecordId?: Types.ObjectId;
 }

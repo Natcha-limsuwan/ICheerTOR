@@ -1,21 +1,10 @@
-/**
- * End-to-end check of the ingestion pipeline.
- *
- * Covers the four things that must keep working, in the order they run:
- *
- *   1. software-filter   classifies titles correctly (offline, no network)
- *   2. egp2 API          still answers and still reports open projects
- *   3. phase-mapper      open vs closed is decided by contract status
- *   4. document chain    a stored project id still resolves to a real archive
- *
- * Stages 2-4 need the network; stage 4 also needs data in MongoDB, so run
- * ingest-egp2.ts first. Each stage is skipped rather than failed when its
- * prerequisite is missing, so the offline checks stay useful on their own.
+/* Check software classification, the egp2 API, phase mapping and document lookup.
+ * Stages 2–4 need network access; stage 4 also needs an ingested project in MongoDB.
+ * Missing prerequisites skip a stage. --offline runs the local checks only.
  *
  * Usage (in container):
  *   docker compose --profile tools run --rm tools npx tsx scripts/test-pipeline.ts
- *   ... npx tsx scripts/test-pipeline.ts --offline
- */
+ *   ... npx tsx scripts/test-pipeline.ts --offline */
 
 import { config } from "dotenv";
 config({ path: ".env" });
@@ -57,11 +46,9 @@ function skip(label: string, why: string) {
 
 /* ─── 1. Filter ───────────────────────────────────────────────────── */
 
-/**
- * Titles taken from live BMA data. The "false" group are all cases an earlier
+/* Titles taken from live BMA data. The "false" group are all cases an earlier
  * flat keyword list got wrong, so they guard against that regression coming
- * back when keywords are next tuned.
- */
+ * back when keywords are next tuned. */
 const FILTER_CASES: Array<[string, boolean]> = [
   ["ประกวดราคาซื้อยา dextran ๗๐ ๑๐๐ mg/๑๐๐ mL + hypromellose eye drop", false],
   ["โครงการก่อสร้างอุโมงค์ส่วนต่อขยายจากบึงหนองบอน ถึงคลองประเวศบุรีรมย์", false],

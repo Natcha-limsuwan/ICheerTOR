@@ -1,15 +1,6 @@
-/**
- * TOR Match Alerter (PREPARATION SERVICE)
- *
- * This module is prepared to evaluate newly pulled/extracted TOR records
- * against active users' VendorProfiles and notify them via:
- *   1. In-App Notifications (Notification model)
- *   2. Email Alerts (Nodemailer via sendMatchAlertEmail)
- *
- * NOTE: As per architecture requirements, this service is prepared in advance
- * and is NOT hooked into automatic ingestion/cron triggers yet. It can be
- * executed manually or tested via `backend/scripts/test-match-alert.ts`.
- */
+/* Match new TORs against active company profiles and prepare in-app/email alerts.
+ * This service is not connected to automatic ingestion or cron triggers.
+ * Run it manually or through backend/scripts/test-match-alert.ts. */
 
 import { Types } from "mongoose";
 import { processingAllowed } from "../pdpa/processing-permission.js";
@@ -39,13 +30,13 @@ export interface MatchAlertEvaluation {
 }
 
 export interface TorMatchAlertOptions {
-  /** If true, evaluate matches but do NOT save notifications or send emails. */
+  /* If true, evaluate matches but do NOT save notifications or send emails. */
   dryRun?: boolean;
-  /** Minimum fit score (0.0 to 1.0) to qualify as a match. Defaults to 0.5. */
+  /* Minimum fit score (0.0 to 1.0) to qualify as a match. Defaults to 0.5. */
   minFitScore?: number;
-  /** Limit matching to a single user ID for testing. */
+  /* Limit matching to a single user ID for testing. */
   targetUserId?: string | Types.ObjectId;
-  /** Test seam for a mocked SMTP provider. */
+  /* Test seam for a mocked SMTP provider. */
   sendEmail?: typeof sendMatchAlertEmail;
 }
 
@@ -61,9 +52,7 @@ export interface TorMatchAlertSummary {
 
 /* ─── Core Matching & Alert Function ────────────────────────────────── */
 
-/**
- * Evaluate a single TOR against users and prepare/dispatch alerts.
- */
+/* Evaluate a single TOR against users and prepare/dispatch alerts. */
 export async function evaluateAndAlertForTor(
   torRecordId: string | Types.ObjectId,
   options: TorMatchAlertOptions = {},

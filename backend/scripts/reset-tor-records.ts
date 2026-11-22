@@ -1,5 +1,4 @@
-/**
- * Empty the torrecords collection so the next ingest starts clean.
+/* Empty the torrecords collection so the next ingest starts clean.
  *
  * Only torrecords — users, vendor profiles and everything else stay. Refuses
  * to run while bookmarks, notifications or corrections still point at TOR
@@ -11,8 +10,7 @@
  *   # delete, then rebuild indexes and re-ingest
  *   docker compose --profile tools run --rm tools npx tsx scripts/reset-tor-records.ts --apply
  *   docker compose --profile tools run --rm tools npm run db:sync-indexes
- *   docker compose --profile tools run --rm tools npm run ingest
- */
+ *   docker compose --profile tools run --rm tools npm run ingest */
 
 import { config } from "dotenv";
 config({ path: ".env" });

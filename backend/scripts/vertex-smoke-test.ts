@@ -1,19 +1,10 @@
-/**
- * Check that Vertex AI is set up correctly, one layer at a time.
- *
- *   1. config       .env has project / location / model, key file is readable
- *   2. text         a one-line prompt round-trips (auth, API enabled, model id)
- *   3. pdf          (--pdf=<projectNumber>) a real e-GP TOR goes through the
- *                   same chain the pipeline will use: archive → pick TOR →
- *                   Gemini. Nothing is written to disk or to MongoDB.
- *
- * Each failure prints what usually causes it, so a setup mistake is found at
- * the step that caused it rather than deep inside the extraction pipeline.
+/* Check Vertex configuration and a text request. --pdf=<projectNumber> also
+ * checks the live e-GP document chain and PDF extraction. Nothing is written to
+ * MongoDB or saved as a PDF.
  *
  * Usage (in container):
  *   docker compose --profile tools run --rm tools npx tsx scripts/vertex-smoke-test.ts
- *   docker compose --profile tools run --rm tools npx tsx scripts/vertex-smoke-test.ts --pdf=69049097411
- */
+ *   docker compose --profile tools run --rm tools npx tsx scripts/vertex-smoke-test.ts --pdf=69049097411 */
 
 import { config } from "dotenv";
 config({ path: ".env" });
@@ -33,7 +24,7 @@ import { pickDocument } from "../src/services/ingestion/document-picker";
 
 const pdfArg = process.argv.find((a) => a.startsWith("--pdf="))?.split("=")[1];
 
-/** Map the errors people actually hit during setup to what fixes them. */
+/* Map the errors people actually hit during setup to what fixes them. */
 function hint(error: unknown): string {
   const msg = error instanceof Error ? error.message : String(error);
   const express = getAuthMode() === "express";

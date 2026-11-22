@@ -1,15 +1,6 @@
-/**
- * Is the data pipeline running? One snapshot for the admin panel.
- *
- * Each stage fails quietly when nobody watches it: the RSS poller missed
- * nine days in October 2026 before anyone noticed, and records sat "failed"
- * on a teammate's misconfigured .env. This gathers what the stages already
- * record — RssPollState, IngestJob, ExtractionLog, TORRecord statuses — and
- * says in plain words what needs attention.
- *
- * assessHealth is pure (snapshot + clock → problems) so the rules are tested
- * without a database.
- */
+/* Build the admin health snapshot from RSS, ingestion and extraction records.
+ * assessHealth uses only the snapshot and clock so its rules can be tested
+ * without a database. */
 
 import TORRecord from "../db/models/tor-record";
 import ExtractionLog from "../db/models/extraction-log";
@@ -48,15 +39,15 @@ export interface PipelineSnapshot {
   } | null;
   extraction: {
     byStatus: Record<string, number>;
-    /** "pending" in an open phase — waiting for the model. */
+    /* "pending" in an open phase — waiting for the model. */
     waitingOpen: number;
-    /** "processing" whose lock has expired — a stopped run left it. */
+    /* "processing" whose lock has expired — a stopped run left it. */
     stuck: number;
     needsReview: number;
     needsCheck: number;
     lastExtractedAt: Date | null;
   };
-  /** ExtractionLog over the last 7 days. */
+  /* ExtractionLog over the last 7 days. */
   vertex7d: {
     calls: number;
     failures: number;
@@ -73,14 +64,14 @@ export interface PipelineHealth extends PipelineSnapshot {
 }
 
 const HOUR = 3600_000;
-/** The RSS window is 20 items; in office hours a 2-hour silence loses data. */
+/* The RSS window is 20 items; in office hours a 2-hour silence loses data. */
 const RSS_STALE_OFFICE_HOURS = 2 * HOUR;
-/** Any 3 days without a successful RSS poll means it is not scheduled at all. */
+/* Any 3 days without a successful RSS poll means it is not scheduled at all. */
 const RSS_STALE_ANY = 72 * HOUR;
 const EGP2_STALE = 26 * HOUR;
 const EXTRACTION_STALE = 24 * HOUR;
 
-/** Mon–Fri 08:30–17:00 Bangkok — when announcements are published. */
+/* Mon–Fri 08:30–17:00 Bangkok — when announcements are published. */
 export function isOfficeHours(now: Date): boolean {
   const bkk = new Date(now.getTime() + 7 * HOUR);
   const day = bkk.getUTCDay();

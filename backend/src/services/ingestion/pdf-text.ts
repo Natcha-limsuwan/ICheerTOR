@@ -1,28 +1,18 @@
-/**
- * Pull the text layer out of a PDF, when it has one.
- *
- * Agency-uploaded TORs are nearly always scans (no text at all), but the
- * e-GP generated bidding document (doc_*.pdf) is real text. Reading its
- * numbers from text instead of from an image removes OCR errors such as ๘
- * read as ๕ — see prompts/v3.ts.
- *
- * Lines are rebuilt from each text item's position rather than taken in
- * content-stream order. e-GP fills form values in a separate pass, so stream
- * order puts them at the end of the line ("ยืนราคาไม่น้อยกว่า วัน …๙๐");
- * sorting by position puts "๙๐" back where it is printed.
- */
+/* Extract the PDF text layer and rebuild lines from item positions.
+ * Scanned TORs may have no text layer. Generated doc_*.pdf forms usually do;
+ * position sorting puts separately written form values back into their lines. */
 
 import { getDocumentProxy } from "unpdf";
 
 export interface PdfText {
   pageCount: number;
-  /** One string per page, lines joined with "\n". */
+  /* One string per page, lines joined with "\n". */
   pages: string[];
-  /** Non-whitespace characters across all pages. */
+  /* Non-whitespace characters across all pages. */
   charCount: number;
-  /** True when there is enough readable text to use instead of the image. */
+  /* True when there is enough readable text to use instead of the image. */
   hasTextLayer: boolean;
-  /** Why hasTextLayer is what it is — for logs. */
+  /* Why hasTextLayer is what it is — for logs. */
   reason: string;
 }
 
@@ -34,12 +24,10 @@ interface Item {
   size: number;
 }
 
-/** Below this many characters per page the PDF is treated as a scan. */
+/* Below this many characters per page the PDF is treated as a scan. */
 const MIN_CHARS_PER_PAGE = 200;
-/**
- * Thai PDFs made with legacy fonts extract as Latin-1 look-alikes
- * ("ÊÓËÃѺ"). Above this share of such characters the text is garbage.
- */
+/* Thai PDFs made with legacy fonts extract as Latin-1 look-alikes
+ * ("ÊÓËÃѺ"). Above this share of such characters the text is garbage. */
 const MAX_MOJIBAKE_RATIO = 0.05;
 
 function buildLines(items: Item[]): string[] {

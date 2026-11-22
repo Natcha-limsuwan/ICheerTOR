@@ -1,7 +1,6 @@
 import { IParsedData, IRedFlag } from "../../db/models/tor-record";
 
-/**
- * Rule-based red flags. Deterministic — no model calls.
+/* Rule-based red flags. Deterministic — no model calls.
  *
  * Only serious problems, and only ones code can check: a flag users learn to
  * ignore is worse than none. The model's riskClauses are evidence, not
@@ -19,25 +18,24 @@ import { IParsedData, IRedFlag } from "../../db/models/tor-record";
  *
  * TOR/bidding-document conflicts (e.g. a penalty computed on the whole
  * contract value in one and on undelivered goods in the other) are shown
- * as documentConflicts, not here — BMA rules on those, it is not a lock-in.
- */
+ * as documentConflicts, not here — BMA rules on those, it is not a lock-in. */
 
 type Phase = "public_hearing" | "bidding" | "awarded" | "cancelled";
 
 export interface RedFlagContext {
   phase: Phase;
-  /** วงเงินงบประมาณ from egp2. Falls back to the document's own figure. */
+  /* วงเงินงบประมาณ from egp2. Falls back to the document's own figure. */
   budget?: number | null;
 }
 
-/** Past-work requirements above this share of the budget shut out bidders. */
+/* Past-work requirements above this share of the budget shut out bidders. */
 const MAX_WORK_SHARE = 0.5;
-/** Highest daily penalty the procurement regulation allows, in percent. */
+/* Highest daily penalty the procurement regulation allows, in percent. */
 const MAX_DAILY_PENALTY = 0.2;
 
 const DEALER_LETTER = /แต่งตั้ง.{0,20}ตัวแทนจำหน่าย|ตัวแทนจำหน่าย.{0,40}แต่งตั้ง/;
 const OR_EQUIVALENT = /เทียบเท่า|or equivalent/i;
-/** Renewing or maintaining an existing system has to name its products. */
+/* Renewing or maintaining an existing system has to name its products. */
 const EXISTING_SYSTEM_WORK = new Set(["license", "maintenance"]);
 
 const ACTION: Record<"comment" | "consider", string> = {
@@ -104,7 +102,7 @@ export function analyzeRedFlags(parsed: IParsedData, ctx: RedFlagContext): IRedF
   return flags;
 }
 
-/** "ร้อยละ ๐.๕๐ ... ต่อวัน" → 0.5. Null unless the clause is a daily rate. */
+/* "ร้อยละ ๐.๕๐ ... ต่อวัน" → 0.5. Null unless the clause is a daily rate. */
 export function dailyPenaltyPercent(text: string): number | null {
   const ascii = text.replace(/[๐-๙]/g, (d) => String("๐๑๒๓๔๕๖๗๘๙".indexOf(d)));
   const m = /ร้อยละ\s*(\d+(?:\.\d+)?)/.exec(ascii);

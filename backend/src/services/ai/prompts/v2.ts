@@ -1,5 +1,4 @@
-/**
- * V2 extraction prompt — one pass over the TOR PDF for everything we need.
+/* V2 extraction prompt — one pass over the TOR PDF for everything we need.
  *
  * What changed from v1:
  * - The schema is sent as responseSchema, so the reply is forced into shape
@@ -18,8 +17,7 @@
  * advises against lowering it for Gemini 3 (it can cause looping and worse
  * reasoning); determinism comes from the response schema instead. Thinking is
  * set low — extraction needs reading, not deep reasoning, and thinking tokens
- * are billed and slow (an 8-page TOR took ~50 s at the default level).
- */
+ * are billed and slow (an 8-page TOR took ~50 s at the default level). */
 
 import { ThinkingLevel, Type, type Schema } from "@google/genai";
 import type { ExtractionContext, ExtractionPrompt } from "./index";

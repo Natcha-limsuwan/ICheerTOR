@@ -1,12 +1,10 @@
 import mongoose from "mongoose";
 import { env } from "../config/env.js";
 
-/**
- * MongoDB connection singleton.
+/* MongoDB connection singleton.
  *
  * Caches the connection on `globalThis` to prevent creating
- * multiple connections during development hot-reloads.
- */
+ * multiple connections during development hot-reloads. */
 
 interface MongooseCache {
   conn: typeof mongoose | null;

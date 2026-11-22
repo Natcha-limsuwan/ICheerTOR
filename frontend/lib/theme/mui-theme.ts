@@ -2,14 +2,12 @@
 
 import { createTheme } from "@mui/material/styles";
 
-/**
- * MUI theme aligned with the DESIGN.md design system.
+/* MUI theme aligned with the DESIGN.md design system.
  *
  * Primary palette: Cobalt Blue #0047AB
  * Typography:      Inter (Google Font)
  * Border radius:   10px cards / 8px inputs
- * Spacing rhythm:  8px grid
- */
+ * Spacing rhythm:  8px grid */
 const muiTheme = createTheme({
   palette: {
     mode: "light",

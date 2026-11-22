@@ -1,8 +1,6 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
-/**
- * Immutable audit log of administrative actions.
- */
+/* Immutable audit log of administrative actions. */
 export interface IAdminActionLog extends Document {
   adminUserId: Types.ObjectId;
   targetUserId: Types.ObjectId;

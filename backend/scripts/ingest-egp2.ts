@@ -1,15 +1,6 @@
-/**
- * Ingest BMA software procurement that is still open, from egp2.bangkok.go.th.
- *
- * This replaces ingest-bma.ts. The govspending API it used only publishes step
- * 5 (signed contracts), so every record it returned was already awarded —
- * useless for a tool whose job is to tell a software house what it can still
- * bid on. egp2 publishes the draft and invitation stages, and is the only
- * source that carries a hearing deadline.
- *
- * Documents are NOT downloaded here. Only the e-GP project number is stored,
- * and the archive URL is resolved on demand when a user asks for it, per the
- * advisor's instruction not to keep PDFs locally.
+/* Import BMA procurement records from egp2.bangkok.go.th.
+ * Keep project identifiers and resolve document archives on demand; this script
+ *  does not download PDFs. The older govspending source only supplied awarded work.
  *
  * Usage (in container):
  *   # ดูสรุปว่าจะบันทึกอะไร โดยยังไม่เขียน DB
@@ -20,8 +11,7 @@
  *   ... npx tsx scripts/ingest-egp2.ts
  *   ... npx tsx scripts/ingest-egp2.ts --year=2570 --include-awarded
  *
- * PDPA: no bidder names or tax ids are read from this source.
- */
+ * PDPA: no bidder names or tax ids are read from this source. */
 
 import { config } from "dotenv";
 config({ path: ".env" });
@@ -47,26 +37,24 @@ const MONGODB_URI = process.env.MONGODB_URI;
 
 const argv = process.argv.slice(2);
 const dryRun = argv.includes("--dry-run");
-/** With --dry-run, print the full document instead of a summary line. */
+/* With --dry-run, print the full document instead of a summary line. */
 const showJson = argv.includes("--json");
 const includeAwarded = argv.includes("--include-awarded");
 const noNotify = argv.includes("--no-notify");
 const forceNotify = argv.includes("--force-notify");
 const yearArg = argv.find((a) => a.startsWith("--year="));
-/** Current budget year by default — earlier years are long since awarded. */
+/* Current budget year by default — earlier years are long since awarded. */
 const YEAR = Number(yearArg?.split("=")[1] ?? 2569);
 
-/**
- * Announcement stages worth scanning. The phase is NOT taken from here — a
+/* Announcement stages worth scanning. The phase is NOT taken from here — a
  * project keeps its invitation announcement long after the contract is signed,
- * so the contract status decides it (see phase-mapper.ts).
- */
+ * so the contract status decides it (see phase-mapper.ts). */
 const STAGES: Array<{ id: string; name: string }> = [
   { id: ANNOUNCE_TYPE.INVITATION, name: "ประกาศเชิญชวน" },
   { id: ANNOUNCE_TYPE.DRAFT_BIDDING, name: "ร่างเอกสารประกวดราคา" },
 ];
 
-/** Stable key for a project, so re-runs update rather than duplicate. */
+/* Stable key for a project, so re-runs update rather than duplicate. */
 // Shared with the e-GP RSS ingest, so both sources land on the same record.
 const dedupeHash = torDedupeHash;
 
@@ -317,11 +305,9 @@ async function main(): Promise<JobCounts | void> {
   };
 }
 
-/**
- * Every real run is recorded as an IngestJob, so the admin pipeline health
+/* Every real run is recorded as an IngestJob, so the admin pipeline health
  * shows when egp2 was last ingested and whether it worked. JOB_TRIGGER=cron
- * marks scheduled runs.
- */
+ * marks scheduled runs. */
 async function runWithJob(): Promise<void> {
   if (dryRun) {
     await main();

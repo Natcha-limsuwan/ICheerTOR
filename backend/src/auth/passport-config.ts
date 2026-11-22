@@ -8,12 +8,7 @@ type GoogleStrategyOptions = StrategyOptions & { pkce: boolean; store: CookieSta
 import { connectDB } from "../db/connection.js";
 import User from "../db/models/user.js";
 
-/**
- * Passport.js Google OAuth 2.0 strategy.
- *
- * On first sign-in the callback creates a User document in MongoDB.
- * Subsequent sign-ins retrieve the existing document.
- */
+/* Create the account on first Google sign-in; reuse it on later sign-ins. */
 passport.use(
   new GoogleStrategy(
     {

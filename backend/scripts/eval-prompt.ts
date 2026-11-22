@@ -1,5 +1,4 @@
-/**
- * Score an extraction prompt against hand-labelled TORs.
+/* Score an extraction prompt against hand-labelled TORs.
  *
  * Each gold file (eval/gold/<projectNumber>.json) is what a person read out of
  * one TOR. This fetches the same PDF from e-GP, runs the prompt, and compares
@@ -16,8 +15,7 @@
  *   ... npx tsx scripts/eval-prompt.ts --cached          # no API calls
  *   ... npx tsx scripts/eval-prompt.ts --verbose         # every mismatch
  *   ... npx tsx scripts/eval-prompt.ts --no-bidding-doc  # TOR only to the model
- *       (doc_ is still read in code); runs go to eval/runs/<version>-nodoc/
- */
+ *       (doc_ is still read in code); runs go to eval/runs/<version>-nodoc/ */
 
 import { config } from "dotenv";
 config({ path: ".env" });
@@ -46,7 +44,7 @@ const VERSION_NUM = Number(PROMPT_VERSION.replace(/\D/g, ""));
 const ONLY = arg("only");
 const CACHED = argv.includes("--cached");
 const VERBOSE = argv.includes("--verbose");
-/** Withhold the bidding document's text from the model, to measure what it adds. */
+/* Withhold the bidding document's text from the model, to measure what it adds. */
 const NO_BIDDING_DOC = argv.includes("--no-bidding-doc");
 
 const GOLD_DIR = path.resolve("eval/gold");
@@ -77,22 +75,20 @@ interface Gold {
   qualifications: GoldQualification[];
   evaluationMethod: string | null;
   evaluationWeights: Array<{ criterion: string; weight: number }>;
-  /** The price figure the TOR states, as printed — see priceKind. */
+  /* The price figure the TOR states, as printed — see priceKind. */
   medianPrice: number | null;
-  /**
-   * The NAME the TOR gives that figure: "budget" = it says วงเงินงบประมาณ,
+  /* The NAME the TOR gives that figure: "budget" = it says วงเงินงบประมาณ,
    * "median_price" = ราคากลาง. What the TOR says, not what the figure is:
    * BMA TORs call the reference price วงเงินงบประมาณ (the e-GP announcement
-   * shows it). Prices users see come from egp2 via resolve-prices.ts.
-   */
+   * shows it). Prices users see come from egp2 via resolve-prices.ts. */
   priceKind?: "budget" | "median_price" | null;
-  /** Bidding day, ISO date — null when the announcement leaves it blank. */
+  /* Bidding day, ISO date — null when the announcement leaves it blank. */
   submissionDate?: string | null;
-  /** @deprecated old name of submissionDate. */
+  /* @deprecated old name of submissionDate. */
   submissionDeadline?: string | null;
   warrantyMonths: number | null;
   riskClauses: Array<{ rawText: string; category: string; sourcePage: number | null }>;
-  /** Topics on which the TOR and the bidding document disagree (v3+). Shown, not scored. */
+  /* Topics on which the TOR and the bidding document disagree (v3+). Shown, not scored. */
   documentConflicts?: Array<{ topic: string; note?: string }>;
   notes?: string;
 }
@@ -101,7 +97,7 @@ interface Gold {
 
 const THAI_DIGITS = "๐๑๒๓๔๕๖๗๘๙";
 
-/** Normalise for fuzzy comparison: Thai digits, list numbering, spacing, punctuation. */
+/* Normalise for fuzzy comparison: Thai digits, list numbering, spacing, punctuation. */
 function norm(s: string): string {
   return s
     .replace(/[๐-๙]/g, (d) => String(THAI_DIGITS.indexOf(d)))
@@ -110,13 +106,11 @@ function norm(s: string): string {
     .replace(/[\s"'“”‘’(),.:;\-–—/]/g, "");
 }
 
-/**
- * Dice coefficient over character bigrams — tolerant of small copy differences.
+/* Dice coefficient over character bigrams — tolerant of small copy differences.
  *
  * Clauses run to a paragraph, and a labeller and the model rarely cut them at
  * the same place. So when the shorter text is substantial and almost entirely
- * contained in the longer one, that counts as a match too.
- */
+ * contained in the longer one, that counts as a match too. */
 function similarity(a: string, b: string): number {
   const x = norm(a);
   const y = norm(b);
@@ -142,7 +136,7 @@ function similarity(a: string, b: string): number {
 
 const MATCH_THRESHOLD = 0.55;
 
-/** Greedy one-to-one pairing by best similarity. */
+/* Greedy one-to-one pairing by best similarity. */
 function pair<G, P>(gold: G[], pred: P[], gText: (g: G) => string, pText: (p: P) => string) {
   const candidates: Array<{ gi: number; pi: number; s: number }> = [];
   gold.forEach((g, gi) =>
@@ -183,7 +177,7 @@ const setEq = (a: string[], b: string[]) => {
 const dateEq = (a: string | null, b: string | null) =>
   a === b || (a != null && b != null && a.slice(0, 10) === b.slice(0, 10));
 
-/** Tallies correct/total per field name across every TOR. */
+/* Tallies correct/total per field name across every TOR. */
 class Tally {
   private counts = new Map<string, { ok: number; n: number }>();
   readonly mismatches: string[] = [];
@@ -223,7 +217,7 @@ interface TorScore {
   projectNumber: string;
   qual: { gold: number; pred: number; matched: number; goldCore: number; matchedCore: number };
   risk: { gold: number; pred: number; matched: number };
-  /** Scalar fields the gold marks null (not in the document) but the model filled. */
+  /* Scalar fields the gold marks null (not in the document) but the model filled. */
   invented: string[];
   missedCriteria: string[];
   extraCriteria: string[];
@@ -351,17 +345,17 @@ interface RunRecord {
   durationMs: number;
   usage?: { input?: number; output?: number; thoughts?: number; total?: number };
   fileName: string;
-  /** Bidding document sent alongside (v3+), with how much of it was kept. */
+  /* Bidding document sent alongside (v3+), with how much of it was kept. */
   biddingDoc?: { fileName: string; chars: number; originalChars: number; sections: string[] } | null;
-  /** Budget figures the validator needs, kept so --cached can re-validate. */
+  /* Budget figures the validator needs, kept so --cached can re-validate. */
   validationContext?: { budget: number | null; medianPriceFromSource: number | null };
-  /** What the e-GP forms state, read in code (v4+). */
+  /* What the e-GP forms state, read in code (v4+). */
   facts?: ArchiveFacts | null;
-  /** The model's reply, before validation. */
+  /* The model's reply, before validation. */
   output: TorExtractionV2 | TorExtractionV3 | TorExtractionV4;
 }
 
-/** v3+ replies carry documentConflicts and are run through the validator. */
+/* v3+ replies carry documentConflicts and are run through the validator. */
 const isV3 = (o: TorExtractionV2 | TorExtractionV3 | TorExtractionV4): o is TorExtractionV3 | TorExtractionV4 =>
   "documentConflicts" in o;
 
@@ -400,7 +394,7 @@ async function runModel(gold: Gold): Promise<RunRecord> {
   };
 }
 
-/** Validated output for v3+ (what the pipeline would store); v2 as-is. */
+/* Validated output for v3+ (what the pipeline would store); v2 as-is. */
 function finalOutput(run: RunRecord): {
   output: TorExtractionV2 | TorExtractionV3 | TorExtractionV4;
   issues: ValidationIssue[];

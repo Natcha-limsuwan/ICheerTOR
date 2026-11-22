@@ -1,11 +1,9 @@
-/**
- * Structured security-event logging.
+/* Structured security-event logging.
  *
  * Every entry is a single JSON line, so attacker-controlled values (paths,
  * user agents, reasons) are escaped by JSON.stringify and cannot forge extra
  * log lines (log injection, ASVS V16.4.1). Never pass tokens, login codes or
- * OAuth state values in `fields`.
- */
+ * OAuth state values in `fields`. */
 
 export type SecurityEvent =
   | "login_success"

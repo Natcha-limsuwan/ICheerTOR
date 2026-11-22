@@ -21,29 +21,29 @@ export const QUALIFICATION_TYPES = [
 export type QualificationType = (typeof QUALIFICATION_TYPES)[number];
 
 export interface IQualification {
-  /** Clause number as printed, e.g. "2.12.1". */
+  /* Clause number as printed, e.g. "2.12.1". */
   clauseNumber?: string | null;
   criterion: string;
-  /** Number for thresholds (THB, years, head-count); text for stacks/certs. */
+  /* Number for thresholds (THB, years, head-count); text for stacks/certs. */
   minimumValue?: number | string;
   unit?: "THB" | "years" | "persons" | "text";
   type: QualificationType;
-  /** False for "preferred" criteria that add score but do not disqualify. */
+  /* False for "preferred" criteria that add score but do not disqualify. */
   isMandatory?: boolean;
-  /** Standard clause found in every BMA TOR (legal capacity, not bankrupt…). */
+  /* Standard clause found in every BMA TOR (legal capacity, not bankrupt…). */
   isBoilerplate?: boolean;
-  /** Items sharing a label are alternatives: meeting any one is enough. */
+  /* Items sharing a label are alternatives: meeting any one is enough. */
   alternativeGroup?: string | null;
-  /** contract_value only: past work must be for a government body. */
+  /* contract_value only: past work must be for a government body. */
   requiresGovernment?: boolean | null;
-  /** contract_value only: past work must be the same kind of work. */
+  /* contract_value only: past work must be the same kind of work. */
   sameTypeRequired?: boolean | null;
   requiredCerts?: string[];
-  /** Canonical technology/standard names, for tech_stack matching. */
+  /* Canonical technology/standard names, for tech_stack matching. */
   normalizedNames?: string[];
-  /** Which document the clause came from. */
+  /* Which document the clause came from. */
   source?: "bidding_doc" | "tor" | "both";
-  /** 1-based page in the TOR PDF, so users can check the original. */
+  /* 1-based page in the TOR PDF, so users can check the original. */
   sourcePage?: number;
   confidence: number;
 }
@@ -51,17 +51,15 @@ export interface IQualification {
 export interface IMedianPrice {
   value: number | null;
   confidence: number;
-  /** egp2 = the API (primary); announcement = e-GP announcement text, used
+  /* egp2 = the API (primary); announcement = e-GP announcement text, used
    *  when egp2 dropped digits; document = the TOR, read by AI. */
   source?: "egp2" | "announcement" | "document" | null;
 }
 
-/**
- * A price as the TOR states it, under the name the TOR uses — shown for
+/* A price as the TOR states it, under the name the TOR uses — shown for
  * comparison only. BMA TORs often call the reference price "วงเงินงบประมาณ",
  * so documentPrices.budget is frequently the ราคากลาง; the real budget is the
- * top-level budget (egp2).
- */
+ * top-level budget (egp2). */
 export interface IDocumentPrice {
   value: number | null;
   sourcePage?: number | null;
@@ -75,35 +73,33 @@ export interface INumberField {
 
 export type SubmissionDateStatus = "confirmed" | "pending";
 
-/**
- * e-bidding takes bids on one day inside a time window. Read in code from the
+/* e-bidding takes bids on one day inside a time window. Read in code from the
  * e-GP announcement, not by the model. "pending" = the announcement still
  * leaves the date blank (always so during public hearing) — show it as not
- * yet confirmed, and re-read later.
- */
+ * yet confirmed, and re-read later. */
 export interface ISubmissionDate {
-  /** ISO date, e.g. "2026-03-16". */
+  /* ISO date, e.g. "2026-03-16". */
   date: string | null;
-  /** "09:00", Bangkok time. */
+  /* "09:00", Bangkok time. */
   startTime: string | null;
   endTime: string | null;
-  /** End of the window — also copied to the top-level submissionDeadline. */
+  /* End of the window — also copied to the top-level submissionDeadline. */
   closesAt: Date | null;
   status: SubmissionDateStatus;
   rawText?: string | null;
-  /** File it was read from. */
+  /* File it was read from. */
   source?: string | null;
 }
 
 export interface IContractDuration extends INumberField {
-  /** The sentence the figure came from. */
+  /* The sentence the figure came from. */
   rawText?: string | null;
-  /** "bidding_doc" when read in code from clause 4.3, "ai" otherwise. */
+  /* "bidding_doc" when read in code from clause 4.3, "ai" otherwise. */
   source?: "bidding_doc" | "ai" | null;
 }
 
 export interface IDatePeriod {
-  /** ISO dates. */
+  /* ISO dates. */
   from: string;
   to: string;
   rawText?: string | null;
@@ -116,18 +112,18 @@ export interface IDatedSentence {
   source?: string | null;
 }
 
-/** All read in code from the e-GP announcement (archive-facts.ts). */
+/* All read in code from the e-GP announcement (archive-facts.ts). */
 export interface IKeyDates {
-  /** "final" = the announced invitation, "draft" = the public-hearing draft,
+  /* "final" = the announced invitation, "draft" = the public-hearing draft,
    *  whose forms leave the bid date blank — show "ยังไม่ประกาศวันยื่น". */
   documentStage?: "final" | "draft" | null;
-  /** ISO date of the announcement. */
+  /* ISO date of the announcement. */
   announcedDate?: string | null;
   submissionDate: ISubmissionDate;
-  /** Paying for the bid documents — after the bid day in BMA announcements;
+  /* Paying for the bid documents — after the bid day in BMA announcements;
    *  missing it can disqualify a bid. */
   documentFeePeriod?: IDatePeriod | null;
-  /** Every dated sentence in the announcement, named or not. */
+  /* Every dated sentence in the announcement, named or not. */
   announcementDates?: IDatedSentence[];
   contractDurationDays: IContractDuration;
   warrantyMonths: INumberField;
@@ -138,10 +134,8 @@ export interface IEvaluationCriteria extends IParsedField {
   weights?: Array<{ criterion: string; weight: number }>;
 }
 
-/**
- * The TOR and the e-GP bidding document disagree. Shown to users, never
- * resolved: the bidding document itself says BMA rules on conflicts.
- */
+/* The TOR and the e-GP bidding document disagree. Shown to users, never
+ * resolved: the bidding document itself says BMA rules on conflicts. */
 export interface IDocumentConflict {
   topic: string;
   torText: string;
@@ -185,10 +179,10 @@ export interface IParsedData {
   workType?: WorkType;
   scopeOfWork: IParsedField;
   qualifications: IQualification[];
-  /** Reference price. Seeded from egp2 with confidence 1 at ingest; the AI
+  /* Reference price. Seeded from egp2 with confidence 1 at ingest; the AI
    *  value only fills it when the source had none. */
   medianPrice: IMedianPrice;
-  /** Budget and reference price as the TOR states them — may differ from
+  /* Budget and reference price as the TOR states them — may differ from
    *  egp2's, which sometimes labels them the other way round. */
   documentPrices?: { budget: IDocumentPrice; medianPrice: IDocumentPrice };
   evaluationCriteria: IEvaluationCriteria;
@@ -196,47 +190,45 @@ export interface IParsedData {
   documentConflicts?: IDocumentConflict[];
   techRequirements?: ITechRequirement[];
   paymentTerms?: IPaymentTerm[];
-  /** LLM-suggested risky clauses — raw input for the rule-based redFlags,
+  /* LLM-suggested risky clauses — raw input for the rule-based redFlags,
    *  never shown to users as a verdict on their own. */
   riskClauses?: IRiskClause[];
 }
 
 export interface ISummary {
-  /** 3–5 sentence Thai overview. */
+  /* 3–5 sentence Thai overview. */
   overview: string;
   keyPoints: string[];
   deliverables: string[];
   confidence: number;
 }
 
-/** Bookkeeping for the AI extraction run that produced parsedData/summary. */
+/* Bookkeeping for the AI extraction run that produced parsedData/summary. */
 export interface IExtractionMeta {
   promptVersion?: string;
   modelVersion?: string;
   extractedAt?: Date;
-  /** Failed attempts since the last success; the queue stops retrying at a cap. */
+  /* Failed attempts since the last success; the queue stops retrying at a cap. */
   attempts: number;
-  /** Claim lock — a worker owns the record until this time passes. */
+  /* Claim lock — a worker owns the record until this time passes. */
   lockedUntil?: Date;
   lockOwner?: string;
-  /** Some field came back below AI_CONFIDENCE_THRESHOLD. */
+  /* Some field came back below AI_CONFIDENCE_THRESHOLD. */
   needsReview: boolean;
   durationMs?: number;
-  /** Why the record was skipped (no TOR in the archive, etc.). */
+  /* Why the record was skipped (no TOR in the archive, etc.). */
   skipReason?: string;
   inputTokens?: number;
   outputTokens?: number;
-  /** What validate-extraction corrected or wants a person to check. */
+  /* What validate-extraction corrected or wants a person to check. */
   issues?: Array<{ severity: "corrected" | "filled" | "review" | "info"; field: string; message: string }>;
 }
 
-/**
- * A file the extraction read. The PDF itself is never stored — only enough
- * to tell whether e-GP has since published a different one.
- */
+/* A file the extraction read. The PDF itself is never stored — only enough
+ * to tell whether e-GP has since published a different one. */
 export interface ISourceDocument {
   fileName: string;
-  /** "tor", "bidding_doc", "announcement". */
+  /* "tor", "bidding_doc", "announcement". */
   kind: string;
   sha256: string;
   sizeBytes: number;
@@ -251,26 +243,22 @@ export interface IRedFlag {
   ruleId: string;
 }
 
-/**
- * verified = an admin checked (and possibly corrected) the extraction.
+/* verified = an admin checked (and possibly corrected) the extraction.
  * outdated = the TOR was read again by the model after that, overwriting the
- * corrections — each correction is still in usercorrections.
- */
+ * corrections — each correction is still in usercorrections. */
 export interface ITorReview {
   status: "verified" | "outdated";
   reviewedBy?: string | null;
   reviewedAt?: Date | null;
   note?: string | null;
-  /** Fields the admin changed, e.g. "parsedData.qualifications". */
+  /* Fields the admin changed, e.g. "parsedData.qualifications". */
   editedFields: string[];
 }
 
 /* ─── Main interface ────────────────────────────────────────────────── */
 
-/**
- * "skipped" = nothing to parse (archive has no TOR, only contracts/bonds).
- * That is a normal outcome for awarded projects, not a failure to retry.
- */
+/* "skipped" = nothing to parse (archive has no TOR, only contracts/bonds).
+ * That is a normal outcome for awarded projects, not a failure to retry. */
 export const EXTRACTION_STATUSES = ["pending", "processing", "completed", "failed", "skipped"] as const;
 export type ExtractionStatus = (typeof EXTRACTION_STATUSES)[number];
 
@@ -287,10 +275,10 @@ export interface ITORRecord extends Document {
   awardDate?: Date;
   sourceUrl: string;
   officialPortalUrl?: string;
-  /** @deprecated PDFs are resolved on demand via /api/tor/:id/document and
+  /* @deprecated PDFs are resolved on demand via /api/tor/:id/document and
    *  never stored. Kept only for seed data and the current detail page. */
   pdfUrl?: string;
-  /** @deprecated See pdfUrl. */
+  /* @deprecated See pdfUrl. */
   pdfStoragePath?: string;
   parsedData: IParsedData;
   summary?: ISummary;
@@ -298,16 +286,16 @@ export interface ITORRecord extends Document {
   extractionStatus: ExtractionStatus;
   extractionError?: string;
   extraction: IExtractionMeta;
-  /** Every file the last extraction read: the TOR, bidding document, announcement. */
+  /* Every file the last extraction read: the TOR, bidding document, announcement. */
   sourceDocuments: ISourceDocument[];
-  /** Where egp2, the announcement and the TOR disagree (data-checks.ts) —
+  /* Where egp2, the announcement and the TOR disagree (data-checks.ts) —
    *  stored by the daily jobs; needsCheck is the admin review queue. */
   dataChecks?: DataChecks;
-  /** An admin checked the AI's reading against the TOR (admin tor-review). */
+  /* An admin checked the AI's reading against the TOR (admin tor-review). */
   review?: ITorReview;
   deduplicationHash: string;
   tags: string[];
-  /** Source-system fields kept for traceability and for resolving documents
+  /* Source-system fields kept for traceability and for resolving documents
    *  on demand — notably projectId, which is the key e-GP needs. */
   metadata?: ISourceMetadata;
   createdAt: Date;
@@ -315,32 +303,32 @@ export interface ITORRecord extends Document {
 }
 
 export interface ISourceMetadata {
-  /** e-GP project id — used to resolve the document archive when requested. */
+  /* e-GP project id — used to resolve the document archive when requested. */
   projectId?: string;
   projectType?: string;
   purchaseMethod?: string;
   sumPriceAgree?: number;
-  /** Company name of the winning bidder, when the project is already awarded. */
+  /* Company name of the winning bidder, when the project is already awarded. */
   winnerName?: string | null;
-  /** Why the software filter kept this record — needed to tune the keywords. */
+  /* Why the software filter kept this record — needed to tune the keywords. */
   filterScore?: number;
   filterReason?: string;
-  /** Which system this record came from, so mixed sources stay traceable.
+  /* Which system this record came from, so mixed sources stay traceable.
    *  egp-rss = the CGD e-GP RSS feed (nationwide, see egp-rss-client.ts). */
   source?: "egp2" | "govspending" | "egp-rss";
-  /** e-GP department code from the bidding document's file name ("3100…" = BMA). */
+  /* e-GP department code from the bidding document's file name ("3100…" = BMA). */
   deptCode?: string | null;
-  /** egp2's own GUID — needed to call its per-project endpoints. */
+  /* egp2's own GUID — needed to call its per-project endpoints. */
   egp2ProjectId?: string;
-  /** Announcement stage name, e.g. "ประกาศเชิญชวน". */
+  /* Announcement stage name, e.g. "ประกาศเชิญชวน". */
   announceType?: string;
-  /** Procuring agency group, e.g. "สำนักดิจิทัลกรุงเทพมหานคร". */
+  /* Procuring agency group, e.g. "สำนักดิจิทัลกรุงเทพมหานคร". */
   orgGroupName?: string;
-  /** Raw status text from egp2, e.g. "ระหว่างดำเนินการ". */
+  /* Raw status text from egp2, e.g. "ระหว่างดำเนินการ". */
   contractStatus?: string;
-  /** Title of the TOR under public hearing, when there is one. */
+  /* Title of the TOR under public hearing, when there is one. */
   torTitle?: string;
-  /** Why this record got its phase — auditable, since the phase decides
+  /* Why this record got its phase — auditable, since the phase decides
    *  whether a user is told they can still bid. */
   phaseReason?: string;
 }

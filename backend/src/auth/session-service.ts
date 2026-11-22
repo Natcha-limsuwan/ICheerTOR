@@ -33,7 +33,7 @@ export async function createLoginCode(userId: string, browserChallenge: string):
   return code;
 }
 
-/** Atomically consume a login code. Returns the user id, or null if unknown/used/expired. */
+/* Atomically consume a login code. Returns the user id, or null if unknown/used/expired. */
 export async function consumeLoginCode(code: unknown, browserVerifier: unknown): Promise<string | null> {
   if (typeof code !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(code)) return null;
   if (typeof browserVerifier !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(browserVerifier)) return null;
@@ -99,14 +99,8 @@ export type SessionCheck =
   | { ok: true; userId: string; sid: string; session: IAuthSession }
   | { ok: false; reason: SessionRejection; sid?: string; userId?: string };
 
-/**
- * Verify a bearer token and the server-side session behind it.
- *
- * Checks, in order: signature + algorithm + issuer + audience + exp/nbf,
- * session existence and ownership, revocation, absolute lifetime and
- * inactivity timeout. Valid activity slides lastActivityAt forward, but
- * never past absoluteExpiresAt.
- */
+/* Verify the JWT, then check session ownership, revocation and expiry.
+ * Activity refreshes the idle timestamp but never extends absolute expiry. */
 export async function validateSessionToken(token: string): Promise<SessionCheck> {
   let payload: JwtPayload;
   try {
@@ -157,7 +151,7 @@ export async function revokeSession(sid: string, reason: string): Promise<void> 
   );
 }
 
-/** End every active session of a user (logout-all, suspension, ban, deletion). */
+/* End every active session of a user (logout-all, suspension, ban, deletion). */
 export async function revokeUserSessions(userId: string, reason: string, session?: ClientSession): Promise<number> {
   const result = await AuthSession.updateMany(
     { userId: new Types.ObjectId(userId), revokedAt: null },

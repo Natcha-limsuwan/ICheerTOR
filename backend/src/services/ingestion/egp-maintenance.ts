@@ -1,15 +1,5 @@
-/**
- * e-GP's planned downtime page.
- *
- * During maintenance every e-GP host — the RSS feed, process5's archive and
- * download services — answers HTTP 200 with the same HTML notice instead of
- * its normal body, e.g. (22–24 Oct 2026):
- *   "แจ้งปิดระบบ e-GP ชั่วคราว … ปิดระบบชั่วคราว ในวันพฤหัสบดีที่ 22 ตุลาคม 2569
- *    ตั้งแต่ เวลา 18.00 น. - วันเสาร์ที่ 24 ตุลาคม 2569 เวลา 18.00 น. และจะเปิดใช้งาน
- *    อีกครั้งในวันเสาร์ที่ 24 ตุลาคม 2569 เวลา 18.01 น. เป็นต้นไป"
- * That is not a failure of ours or of the project: callers skip the round,
- * keep queued work queued, and say when e-GP comes back.
- */
+/* Detect e-GP maintenance notices returned as HTTP 200 HTML responses.
+ * Treat the notice as unavailable upstream data, not a valid feed or archive. */
 
 export class EgpMaintenanceError extends Error {
   constructor(public readonly notice: string) {
@@ -18,7 +8,7 @@ export class EgpMaintenanceError extends Error {
   }
 }
 
-/** Visible text of an HTML page: entities decoded, tags and whitespace collapsed. */
+/* Visible text of an HTML page: entities decoded, tags and whitespace collapsed. */
 function visibleText(html: string): string {
   return html
     .replace(/&#(\d+);/g, (_, n: string) => String.fromCharCode(Number(n)))
@@ -29,10 +19,8 @@ function visibleText(html: string): string {
     .trim();
 }
 
-/**
- * The maintenance notice when `body` is e-GP's downtime page, else null.
- * Cheap enough to run on any non-JSON, non-ZIP response.
- */
+/* The maintenance notice when `body` is e-GP's downtime page, else null.
+ * Cheap enough to run on any non-JSON, non-ZIP response. */
 export function maintenanceNotice(body: string): string | null {
   if (!/<html/i.test(body)) return null;
   const text = visibleText(body);
@@ -43,7 +31,7 @@ export function maintenanceNotice(body: string): string | null {
   return (reopen?.[1] ?? text.slice(0, 160)).trim();
 }
 
-/** Throw EgpMaintenanceError when `body` is the downtime page. */
+/* Throw EgpMaintenanceError when `body` is the downtime page. */
 export function assertNotMaintenance(body: string): void {
   const notice = maintenanceNotice(body);
   if (notice) throw new EgpMaintenanceError(notice);

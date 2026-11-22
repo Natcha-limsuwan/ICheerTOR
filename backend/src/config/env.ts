@@ -8,13 +8,13 @@ interface EnvConfig {
   NODE_ENV: string;
   MONGODB_URI: string;
   JWT_SECRET: string;
-  /** Re-authentication is required after this many minutes without API activity. */
+  /* Re-authentication is required after this many minutes without API activity. */
   SESSION_IDLE_TIMEOUT_MINUTES: number;
-  /** Absolute session lifetime (also the JWT exp), regardless of activity. */
+  /* Absolute session lifetime (also the JWT exp), regardless of activity. */
   SESSION_MAX_HOURS: number;
-  /** Express "trust proxy" hop count; set to 1 when running behind one reverse proxy. */
+  /* Express "trust proxy" hop count; set to 1 when running behind one reverse proxy. */
   TRUST_PROXY: number;
-  /** Requests per IP per 15 minutes across /api (default 300). */
+  /* Requests per IP per 15 minutes across /api (default 300). */
   RATE_LIMIT_API_MAX: number;
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
@@ -23,7 +23,7 @@ interface EnvConfig {
   FRONTEND_URL: string;
 
   // Vertex AI
-  /** Express-mode API key. When set, project/location/credentials are not used. */
+  /* Express-mode API key. When set, project/location/credentials are not used. */
   VERTEX_AI_API_KEY: string;
   VERTEX_AI_PROJECT_ID: string;
   VERTEX_AI_LOCATION: string;
@@ -45,7 +45,7 @@ interface EnvConfig {
   SCRAPER_RATE_LIMIT_MS: number;
 }
 
-/** Development-only fallback. assertSecureConfig() refuses it in production. */
+/* Development-only fallback. assertSecureConfig() refuses it in production. */
 const DEV_JWT_SECRET = "dev-secret-change-me";
 
 export const env: EnvConfig = {
@@ -92,13 +92,11 @@ export const env: EnvConfig = {
   SCRAPER_RATE_LIMIT_MS: parseInt(process.env.SCRAPER_RATE_LIMIT_MS ?? "2000", 10),
 };
 
-/**
- * Fail closed on insecure configuration (ASVS V13.3.1, threat T03/T23).
+/* Fail closed on insecure configuration (ASVS V13.3.1, threat T03/T23).
  *
  * In production the server refuses to start with a missing, default or short
  * JWT secret, missing OAuth/database credentials, or a non-HTTPS frontend.
- * In development it only warns so local setup keeps working.
- */
+ * In development it only warns so local setup keeps working. */
 export function assertSecureConfig(): void {
   const problems: string[] = [];
 

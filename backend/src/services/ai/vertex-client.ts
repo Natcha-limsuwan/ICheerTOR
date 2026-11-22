@@ -1,5 +1,4 @@
-/**
- * Shared Gemini client on Vertex AI.
+/* Shared Gemini client on Vertex AI.
  *
  * Uses the Google Gen AI SDK (@google/genai). The older @google-cloud/vertexai
  * SDK's VertexAI class was deprecated on 2025-06-24 and removed on 2026-06-24,
@@ -13,8 +12,7 @@
  *            Default Credentials (GOOGLE_APPLICATION_CREDENTIALS → service
  *            account key). Needs billing; for production.
  *
- * The API key wins when both are set, matching what the SDK itself does.
- */
+ * The API key wins when both are set, matching what the SDK itself does. */
 
 import { GoogleGenAI } from "@google/genai";
 import { env } from "../../config/env";
@@ -34,7 +32,7 @@ export function getAuthMode(): VertexAuthMode {
   return env.VERTEX_AI_API_KEY ? "express" : "project";
 }
 
-/** Throws VertexConfigError when a required setting is missing. */
+/* Throws VertexConfigError when a required setting is missing. */
 export function assertVertexConfigured(): void {
   const required =
     getAuthMode() === "express"
@@ -64,7 +62,7 @@ export function getVertexClient(): GoogleGenAI {
   return client;
 }
 
-/** Model id from env, e.g. the one shown in Model Garden. */
+/* Model id from env, e.g. the one shown in Model Garden. */
 export function getModelId(): string {
   assertVertexConfigured();
   return env.VERTEX_AI_MODEL;

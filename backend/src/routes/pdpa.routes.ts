@@ -20,7 +20,7 @@ router.use(authenticate, requireScope("pdpa:own"));
 
 // All personal-data operations act only on the session's own userId (threat T21).
 
-/** GET /api/pdpa/consent — Get current consent status. */
+/* GET /api/pdpa/consent — Get current consent status. */
 router.get("/consent", async (req: Request, res: Response) => {
   await connectDB();
 
@@ -41,7 +41,7 @@ router.get("/consent", async (req: Request, res: Response) => {
   apiSuccess(res, records);
 });
 
-/** POST /api/pdpa/consent — Grant or revoke consent. Body: { purpose, granted, scope? } */
+/* POST /api/pdpa/consent — Grant or revoke consent. Body: { purpose, granted, scope? } */
 router.post("/consent", validate({ body: consentBody }), async (req: Request, res: Response) => {
   await connectDB();
   const { purpose, granted, scope } = req.body as { purpose: string; granted: boolean; scope?: string };
@@ -59,15 +59,13 @@ router.post("/consent", validate({ body: consentBody }), async (req: Request, re
   apiSuccess(res, record, undefined, 201);
 });
 
-/**
- * POST /api/pdpa/delete — Delete the account.
+/* POST /api/pdpa/delete — Delete the account.
  * Requires a recent sign-in (a stolen long-lived session cannot delete the
  * account) and the account email typed again as confirmation.
  *
  * This is partial pseudonymisation completed immediately, not complete erasure,
  * and no later purge job exists. The response lists what is kept so it does not
- * promise more than the system does.
- */
+ * promise more than the system does. */
 router.post("/delete", sensitiveLimiter,requireRecentAuth(),validate({ body: deleteAccountBody }),
   async (req: Request, res: Response) => {
     await connectDB();
@@ -113,7 +111,7 @@ router.post("/delete", sensitiveLimiter,requireRecentAuth(),validate({ body: del
   },
 );
 
-/** GET /api/pdpa/export — Export all personal data of the caller. */
+/* GET /api/pdpa/export — Export all personal data of the caller. */
 router.get("/export", sensitiveLimiter, validate({ query: exportQuery }), 
   async (req: Request, res: Response) => {
   const data = await exportUserData(req.user!.id);

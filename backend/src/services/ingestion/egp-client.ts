@@ -1,5 +1,4 @@
-/**
- * Client for the e-GP document pipeline on process5.gprocurement.go.th.
+/* Client for the e-GP document pipeline on process5.gprocurement.go.th.
  *
  * The chain, verified end to end against real BMA projects:
  *   project_id  →  infoProcureDocAnnounZip(Temp)  →  zipId
@@ -21,8 +20,7 @@
  * to misread as the endpoint being closed. It is not: no login is required.
  *
  * PDPA: archives may contain documents naming individuals (bid bonds,
- * signatories). Extract only what is needed and filter before persisting.
- */
+ * signatories). Extract only what is needed and filter before persisting. */
 
 import { assertNotMaintenance } from "./egp-maintenance";
 import { procurementFetch } from "./safe-fetch.js";
@@ -31,7 +29,7 @@ const PROCESS5 = "https://process5.gprocurement.go.th";
 const APPROVAL_SERVICE = `${PROCESS5}/egp-approval-service/apv-common`;
 const UPLOAD_SERVICE = `${PROCESS5}/egp-upload-service/v1`;
 
-/** Any page under the e-GP web app satisfies the WAF's Referer check. */
+/* Any page under the e-GP web app satisfies the WAF's Referer check. */
 const REFERER = `${PROCESS5}/egp-agpc01-web/`;
 
 const UA =
@@ -40,7 +38,7 @@ const UA =
 
 const INFO_TIMEOUT_MS = 30_000;
 const DOWNLOAD_TIMEOUT_MS = 120_000;
-/** Archives run to a few MB; anything far larger is a red flag, not a TOR. */
+/* Archives run to a few MB; anything far larger is a red flag, not a TOR. */
 const MAX_ZIP_BYTES = 80 * 1024 * 1024;
 
 export class EgpError extends Error {
@@ -61,7 +59,7 @@ function baseHeaders(): Record<string, string> {
   };
 }
 
-/** The WAF answers with HTTP 200 and an HTML rejection page. */
+/* The WAF answers with HTTP 200 and an HTML rejection page. */
 function assertNotBlocked(body: string): void {
   assertNotMaintenance(body);
   if (/Request Rejected|support ID is/i.test(body)) {
@@ -81,15 +79,13 @@ const ZIP_INFO_ENDPOINT: Record<ArchiveStage, string> = {
 export interface ZipInfo {
   projectId: string;
   zipId: string;
-  /** e.g. "67119538991_28112567.zip" — carries the project id and post date. */
+  /* e.g. "67119538991_28112567.zip" — carries the project id and post date. */
   fileName: string | null;
   stage: ArchiveStage;
 }
 
-/**
- * Resolve a project id to the id of its document archive.
- * Returns null when the project has no published archive.
- */
+/* Resolve a project id to the id of its document archive.
+ * Returns null when the project has no published archive. */
 export async function getZipInfo(projectId: string, stage: ArchiveStage = "final"): Promise<ZipInfo | null> {
   const endpoint = ZIP_INFO_ENDPOINT[stage];
   const url = `${APPROVAL_SERVICE}/${endpoint}?projectId=${encodeURIComponent(projectId)}`;
@@ -128,7 +124,7 @@ export async function getZipInfo(projectId: string, stage: ArchiveStage = "final
   }
 }
 
-/** Download the document archive for a resolved zipId. */
+/* Download the document archive for a resolved zipId. */
 export async function downloadZip(zipId: string): Promise<Buffer> {
   const url = `${UPLOAD_SERVICE}/downloadFileTest?fileId=${encodeURIComponent(zipId)}`;
 
@@ -162,12 +158,12 @@ export async function downloadZip(zipId: string): Promise<Buffer> {
   }
 }
 
-/** The newest archive: the announced invitation, else the hearing draft. */
+/* The newest archive: the announced invitation, else the hearing draft. */
 export async function getLatestZipInfo(projectId: string): Promise<ZipInfo | null> {
   return (await getZipInfo(projectId, "final")) ?? (await getZipInfo(projectId, "draft"));
 }
 
-/** Convenience: project id straight to the newest archive's bytes. */
+/* Convenience: project id straight to the newest archive's bytes. */
 export async function fetchProjectArchive(
   projectId: string,
 ): Promise<{ info: ZipInfo; zip: Buffer } | null> {

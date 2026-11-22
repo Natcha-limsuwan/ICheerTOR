@@ -4,12 +4,10 @@ import { env } from "../../config/env";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 
-/**
- * "unknown" means the criterion could not be checked — the TOR value is
+/* "unknown" means the criterion could not be checked — the TOR value is
  * missing or unparseable, the type is not machine-checkable, or the profile
  * lacks the data. It is never counted as a pass: telling a team it qualifies
- * when we simply do not know is the failure this matcher must avoid.
- */
+ * when we simply do not know is the failure this matcher must avoid. */
 export type CriterionStatus = "pass" | "fail" | "unknown";
 
 export interface CriterionMatch {
@@ -21,24 +19,22 @@ export interface CriterionMatch {
   requiredValue: number | string | null;
   gap: number | string | null;
   bridgeable: boolean | null;
-  /** The AI extracted this criterion with low confidence — check the PDF. */
+  /* The AI extracted this criterion with low confidence — check the PDF. */
   lowConfidence: boolean;
-  /** Criteria sharing a label are alternatives: one pass satisfies the group. */
+  /* Criteria sharing a label are alternatives: one pass satisfies the group. */
   alternativeGroup: string | null;
-  /** Why the status is what it is, in Thai, for display. */
+  /* Why the status is what it is, in Thai, for display. */
   reason: string;
 }
 
-/**
- * Mandatory criteria are judged per requirement: an alternative group (e.g.
+/* Mandatory criteria are judged per requirement: an alternative group (e.g.
  * net worth OR registered capital OR deposit OR credit line) counts as one,
  * passing when any member passes and failing only when every member fails.
  *
  * - eligible:   every mandatory criterion passed
  * - ineligible: at least one mandatory criterion failed
  * - incomplete: nothing failed, but some mandatory criteria could not be checked
- * - unknown:    the TOR has no extracted qualifications yet
- */
+ * - unknown:    the TOR has no extracted qualifications yet */
 export type OverallStatus = "eligible" | "ineligible" | "incomplete" | "unknown";
 
 export type MatchDimension = "experience" | "technology" | "personnel" | "capacity" | "preference";
@@ -54,46 +50,40 @@ export interface MatchContext {
 
 export interface MatchBreakdownItem {
   label: string;
-  /** Relative contribution to the fit score before inapplicable dimensions are removed. */
+  /* Relative contribution to the fit score before inapplicable dimensions are removed. */
   weight: number;
-  /** 0–1, or null when the vendor profile has no evidence for this dimension. */
+  /* 0–1, or null when the vendor profile has no evidence for this dimension. */
   score: number | null;
-  /** 0–1: how much of this dimension could be checked from available evidence. */
+  /* 0–1: how much of this dimension could be checked from available evidence. */
   coverage: number;
-  /** False means this TOR does not ask for anything in this dimension. */
+  /* False means this TOR does not ask for anything in this dimension. */
   applicable: boolean;
   reasons: string[];
 }
 
 export interface MatchResult {
   overallStatus: OverallStatus;
-  /** Explicit alias used by newer clients; overallStatus remains for compatibility. */
+  /* Explicit alias used by newer clients; overallStatus remains for compatibility. */
   eligibilityStatus: OverallStatus;
-  /**
-   * Conservative 0–1 fit score. Unknown evidence contributes a neutral 0.5,
-   * so one known pass can never masquerade as a 100% match.
-   */
+  /* Conservative 0–1 fit score. Unknown evidence contributes a neutral 0.5,
+   * so one known pass can never masquerade as a 100% match. */
   matchScore: number | null;
-  /** Alias for matchScore that makes the API meaning unambiguous. */
+  /* Alias for matchScore that makes the API meaning unambiguous. */
   fitScore: number | null;
-  /** Weighted proportion of the applicable fit evidence that could be checked. */
+  /* Weighted proportion of the applicable fit evidence that could be checked. */
   dataCoverage: number;
   breakdown: Record<MatchDimension, MatchBreakdownItem>;
   counts: { pass: number; fail: number; unknown: number };
   criteria: CriterionMatch[];
-  /**
-   * Standard clauses every BMA TOR has (legal capacity, not bankrupt, e-GP
-   * registration…). Self-declared by the bidder, so not checked here.
-   */
+  /* Standard clauses every BMA TOR has (legal capacity, not bankrupt, e-GP
+   * registration…). Self-declared by the bidder, so not checked here. */
   standardClausesSkipped: number;
 }
 
 /* ─── Matcher ───────────────────────────────────────────────────────── */
 
-/**
- * Evaluate a vendor profile against TOR qualifications.
- * Returns per-criterion pass/fail/unknown with gap analysis.
- */
+/* Evaluate a vendor profile against TOR qualifications.
+ * Returns per-criterion pass/fail/unknown with gap analysis. */
 export function matchQualifications(
   profile: IVendorProfile,
   qualifications: IQualification[],
@@ -426,7 +416,7 @@ function clamp(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
-/** One status per requirement — an alternative group collapses to one. */
+/* One status per requirement — an alternative group collapses to one. */
 function requirementStatuses(mandatory: CriterionMatch[]): CriterionStatus[] {
   const groups = new Map<string, CriterionStatus[]>();
   const single: CriterionStatus[] = [];
@@ -464,7 +454,7 @@ function requiredNumber(q: IQualification): number | null {
     : null;
 }
 
-/** Compare a numeric threshold; `bridgeable` decides whether a gap is close enough to close. */
+/* Compare a numeric threshold; `bridgeable` decides whether a gap is close enough to close. */
 function compareNumber(
   required: number,
   profileValue: number,
@@ -533,11 +523,9 @@ function evaluateRegisteredCapital(profile: IVendorProfile, q: IQualification): 
   return compareNumber(required, profile.registeredCapital, (gap) => gap / required < 0.5, "บาท");
 }
 
-/**
- * Personnel criteria read like "ผู้จัดการโครงการ อย่างน้อย 1 คน". The role is
+/* Personnel criteria read like "ผู้จัดการโครงการ อย่างน้อย 1 คน". The role is
  * only in free text, so a profile role is matched by name inside the
- * criterion; with no role match the result is unknown rather than a guess.
- */
+ * criterion; with no role match the result is unknown rather than a guess. */
 function evaluatePersonnel(profile: IVendorProfile, q: IQualification): Evaluation {
   const required = requiredNumber(q);
   if (required === null) return unknown(q, "อ่านจำนวนบุคลากรขั้นต่ำจาก TOR ไม่ได้");

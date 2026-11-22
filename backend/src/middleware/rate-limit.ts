@@ -4,15 +4,9 @@ import { env } from "../config/env.js";
 import { logSecurityEvent } from "../utils/security-log.js";
 import { MongoRateLimitStore } from "./mongo-rate-limit-store.js";
 
-/**
- * Rate limits (threat T13; ASVS V2.4.1).
- *
- * MongoDB counters share fixed windows across replicas. A database failure
- * fails closed. Clients get 429 with RateLimit-* and Retry-After headers.
- *
- * Behind a reverse proxy, set TRUST_PROXY so req.ip is the real client IP
- * rather than the proxy's (ASVS V15.3.4).
- */
+/* Shared MongoDB fixed-window limits; database errors fail closed (T13; ASVS V2.4.1).
+ * Set TRUST_PROXY for the actual proxy setup so req.ip identifies the client
+ * correctly (ASVS V15.3.4). Rejected requests receive 429 and retry headers. */
 
 function onLimitReached(name: string) {
   return (req: Request, res: Response, _next: NextFunction, options: Options) => {
@@ -32,7 +26,7 @@ const common = {
   legacyHeaders: false,
 };
 
-/** Baseline for every /api request, keyed by client IP. */
+/* Baseline for every /api request, keyed by client IP. */
 export const apiLimiter = rateLimit({
   ...common,
   store: new MongoRateLimitStore("api"),
@@ -41,7 +35,7 @@ export const apiLimiter = rateLimit({
   handler: onLimitReached("api"),
 });
 
-/** Login start, OAuth callback and code exchange: slows automated login attempts. */
+/* Login start, OAuth callback and code exchange: slows automated login attempts. */
 export const authLimiter = rateLimit({
   ...common,
   store: new MongoRateLimitStore("auth"),
@@ -50,11 +44,9 @@ export const authLimiter = rateLimit({
   handler: onLimitReached("auth"),
 });
 
-/**
- * Expensive or sensitive per-user actions (data export, account deletion,
+/* Expensive or sensitive per-user actions (data export, account deletion,
  * e-GP document lookups). Must be mounted after authenticate() so the key is
- * the user id; falls back to the client IP otherwise.
- */
+ * the user id; falls back to the client IP otherwise. */
 export const sensitiveLimiter = rateLimit({
   ...common,
   store: new MongoRateLimitStore("sensitive"),

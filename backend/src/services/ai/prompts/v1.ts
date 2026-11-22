@@ -1,8 +1,6 @@
 import { ExtractionPrompt } from "./index";
 
-/**
- * V1 extraction prompt for Thai TOR PDF parsing.
- */
+/* V1 extraction prompt for Thai TOR PDF parsing. */
 export const promptV1: ExtractionPrompt = {
   version: "v1",
   systemInstruction: `You are an AI assistant that extracts structured information from Thai government procurement Terms of Reference (TOR) documents.
