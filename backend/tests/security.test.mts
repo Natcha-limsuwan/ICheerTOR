@@ -245,6 +245,12 @@ check("duplicate bookmark returns existing one (no duplicate)", dup.status === 2
 
 /* ═══ 7. Input validation, injection, mass assignment (T07, T08, T12) */
 group("Input validation and injection");
+const { buildTorSearchFilter } = await import("../src/services/search/tor-search.js");
+for (const value of [null, undefined, 123, ["software"], { $ne: null }]) {
+  assert.throws(() => buildTorSearchFilter(value), /q must be a string/);
+}
+check("search helper rejects non-string values at runtime", true);
+check("repeated search query key rejected", (await call("/tor?q=software&q=cloud", { token: tokAlice })).status === 400);
 check("NoSQL operator in body field rejected", (await call("/bookmarks", { method: "POST", token: tokAlice, json: { torRecordId: { $ne: null } } })).status === 400);
 check("unknown body field rejected (strict schema)", (await call("/bookmarks", { method: "POST", token: tokAlice, json: { torRecordId: torId.toString(), userId: bob._id.toString() } })).status === 400);
 check("malformed ObjectId → 400 not 500", (await call("/tor/not-an-id", { token: tokAlice })).status === 400);

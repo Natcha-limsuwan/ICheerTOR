@@ -80,14 +80,14 @@ router.post("/", validate({ body: bookmarkCreateBody }), async (req: Request, re
   await connectDB();
   const { torRecordId, notes } = req.body as { torRecordId: string; notes?: string };
 
-  if (!(await TORRecord.exists({ _id: torRecordId }))) {
+  if (!(await TORRecord.exists({ _id: { $eq: torRecordId } }))) {
     Errors.notFound(res, "TOR record not found");
     return;
   }
 
   // Atomic upsert: concurrent requests cannot create duplicates (threat T17).
   const bookmark = await Bookmark.findOneAndUpdate(
-    { userId: req.user!.id, torRecordId },
+    { userId: req.user!.id, torRecordId: { $eq: torRecordId } },
     { $setOnInsert: { userId: req.user!.id, torRecordId, notes } },
     { upsert: true, returnDocument: "after", includeResultMetadata: true },
   );
