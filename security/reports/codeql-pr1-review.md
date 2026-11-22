@@ -42,9 +42,25 @@ These changes are not evidence that the corresponding scanner alerts have closed
   MongoDB replica set. Classification: test-fixture flow, not a production file
   upload or arbitrary external destination.
 
-No alerts were dismissed and no scanner rules or severity gates were disabled.
-After committing and pushing the fixes, review the new CodeQL run and retain or
-dismiss remaining alerts only with the corresponding documented rationale.
+## Remote follow-up on 22 November 2026
+
+CodeQL analysis `2223404526` of PR merge revision
+`a1e8f3f5b45b458a55feeb27e9e8284286cbac4b` retained three alerts after
+the search and bookmark changes. Its complete SARIF dataflows were reviewed:
+
+- #20: cookie payload -> HMAC-SHA256 update; dismissed as `false positive`.
+- #21: `eval-prompt.ts` reads a gold fixture -> selects `gold.projectNumber` ->
+  `fetchProjectArchive` -> `getZipInfo` -> encoded `projectId` query parameter ->
+  allowlisted HTTPS procurement request. This intended lookup sends the project
+  identifier, not the fixture body; dismissed as `false positive` for this flow.
+- #22: reads route source -> extracts route names -> synthetic requests to the
+  owned loopback test server; dismissed as `used in tests`.
+
+Each disposition includes a rationale in GitHub. No scanner rules or severity
+gates were disabled. After triage, the PR CodeQL gate and all displayed build,
+lint, type, security-test, Semgrep, audit and SBOM checks passed. Dismissal is a
+review decision, not removal from SARIF or a claim that no vulnerabilities exist.
+The PR was not merged as part of this review.
 
 ## Local verification on 22 November 2026
 
@@ -58,4 +74,5 @@ dismiss remaining alerts only with the corresponding documented rationale.
 
 The suites use disposable synthetic databases and mocked external providers.
 No live SMTP/AI/Google verification is claimed by this run. CodeQL was not rerun
-locally; the CLI is not installed. The remote gate still needs a new analysis.
+locally; the CLI is not installed. The later remote analysis and triage are
+recorded above.
