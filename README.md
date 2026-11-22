@@ -244,27 +244,36 @@ See [CI/CD Pipeline](./ENV_SETUP_GUIDE.md#-cicd-pipeline-github-actions) and [Re
 
 See [ENV_SETUP_GUIDE.md](./ENV_SETUP_GUIDE.md) for a complete reference of all environment variables, where to get them, and minimum configuration for local development.
 
-## Security evidence for reviewers
+## Security Evidence — Start Here
 
 Recorded security reports are committed in [security/reports](security/reports/).
 Use the branch or commit identified in the submitted report when reviewing them.
 The reports can be inspected without running scans or connecting to a database.
 
+- **Overall review:** [FINAL-SECURITY-REVIEW.md](security/FINAL-SECURITY-REVIEW.md).
 - **ZAP DAST:** start with the [coverage manifest](security/reports/zap-comprehensive-manifest.json).
   HTML reports are available for [frontend](security/reports/zap-comprehensive-frontend.html),
   [user](security/reports/zap-comprehensive-user.html),
   [admin](security/reports/zap-comprehensive-admin.html),
   [developer](security/reports/zap-comprehensive-developer.html) and
   [anonymous](security/reports/zap-comprehensive-anonymous.html) scopes.
-  GitHub may display HTML source: download the file using **Raw / Download raw
-  file**, then open the downloaded `.html` in a browser. A `zap.zip` is not needed.
-- **CodeQL SAST:** inspect the [recorded SARIF](security/reports/codeql-final-fixed.sarif)
+- **Historical CodeQL analysis:** inspect the [recorded SARIF](security/reports/codeql-final-fixed.sarif)
   alongside its [historical triage](security/reports/codeql-final-triage.json).
-  The [PR #1 follow-up](security/reports/codeql-pr1-review.md) records later fixes,
-  verification and alert dispositions separately.
+- **Latest PR CodeQL review:** the [PR #1 follow-up](security/reports/codeql-pr1-review.md)
+  records later fixes, verification and alert dispositions separately. Check the
+  [GitHub PR checks](https://github.com/cooldog98/ICheerTOR/pull/1/checks) for remote execution status.
 - **Selected ASVS assessment:** see the [requirement-level review](security/reports/asvs-final-selected-review.csv).
 
-These are recorded results with their own dates, versions and limitations.
+**How to read the evidence:**
+
+- **HTML (`.html`):** formatted reports for reading in Chrome, Safari or another
+  browser. If GitHub shows source code, use **Download raw file** (or save the
+  **Raw** view), then open the downloaded file in a browser.
+- **JSON (`.json`):** structured evidence and scan metadata. View it on GitHub
+  or open it in VS Code; use **Format Document** if needed. Start with the
+  Markdown summaries and HTML reports, then consult JSON for supporting details.
+
+Reports retain their own execution dates, assessed versions and verification scope.
 Reading them does not execute a new scan. Dismissed alerts are documented review
 decisions, not evidence that the application has no vulnerabilities.
 
