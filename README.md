@@ -244,6 +244,30 @@ See [CI/CD Pipeline](./ENV_SETUP_GUIDE.md#-cicd-pipeline-github-actions) and [Re
 
 See [ENV_SETUP_GUIDE.md](./ENV_SETUP_GUIDE.md) for a complete reference of all environment variables, where to get them, and minimum configuration for local development.
 
+## Security evidence for reviewers
+
+Recorded security reports are committed in [security/reports](security/reports/).
+Use the branch or commit identified in the submitted report when reviewing them.
+The reports can be inspected without running scans or connecting to a database.
+
+- **ZAP DAST:** start with the [coverage manifest](security/reports/zap-comprehensive-manifest.json).
+  HTML reports are available for [frontend](security/reports/zap-comprehensive-frontend.html),
+  [user](security/reports/zap-comprehensive-user.html),
+  [admin](security/reports/zap-comprehensive-admin.html),
+  [developer](security/reports/zap-comprehensive-developer.html) and
+  [anonymous](security/reports/zap-comprehensive-anonymous.html) scopes.
+  GitHub may display HTML source: download the file using **Raw / Download raw
+  file**, then open the downloaded `.html` in a browser. A `zap.zip` is not needed.
+- **CodeQL SAST:** inspect the [recorded SARIF](security/reports/codeql-final-fixed.sarif)
+  alongside its [historical triage](security/reports/codeql-final-triage.json).
+  The [PR #1 follow-up](security/reports/codeql-pr1-review.md) records later fixes,
+  verification and alert dispositions separately.
+- **Selected ASVS assessment:** see the [requirement-level review](security/reports/asvs-final-selected-review.csv).
+
+These are recorded results with their own dates, versions and limitations.
+Reading them does not execute a new scan. Dismissed alerts are documented review
+decisions, not evidence that the application has no vulnerabilities.
+
 ## Optional live-provider verification
 
 These scripts are run manually and are not part of `npm run test:security`.
