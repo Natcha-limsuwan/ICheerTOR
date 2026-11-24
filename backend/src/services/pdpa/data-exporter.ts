@@ -5,6 +5,7 @@ import Bookmark from "../../db/models/bookmark";
 import Notification from "../../db/models/notification";
 import UserCorrection from "../../db/models/user-correction";
 import ConsentRecord from "../../db/models/consent-record";
+import AdminActionLog from "../../db/models/admin-action-log";
 
 /**
  * PDPA data exporter — aggregates all personal data for a user.
@@ -12,14 +13,19 @@ import ConsentRecord from "../../db/models/consent-record";
 export async function exportUserData(userId: string) {
   await connectDB();
 
-  const [user, profile, bookmarks, corrections, consentRecords, notifications] = await Promise.all([
-    User.findById(userId).select("-__v").lean(),
-    VendorProfile.findOne({ userId }).select("-__v").lean(),
-    Bookmark.find({ userId }).populate("torRecordId", "title agencyName").lean(),
-    UserCorrection.find({ userId }).lean(),
-    ConsentRecord.find({ userId }).sort({ createdAt: -1 }).lean(),
-    Notification.find({ userId }).sort({ createdAt: -1 }).limit(100).lean(),
-  ]);
+  const [user, profile, bookmarks, corrections, consentRecords, notifications, adminActionLogs] =
+    await Promise.all([
+      User.findById(userId).select("-__v").lean(),
+      VendorProfile.findOne({ userId }).select("-__v").lean(),
+      Bookmark.find({ userId }).populate("torRecordId", "title agencyName").select("-__v").lean(),
+      UserCorrection.find({ userId }).select("-__v").lean(),
+      ConsentRecord.find({ userId }).sort({ createdAt: -1 }).select("-__v").lean(),
+      Notification.find({ userId }).sort({ createdAt: -1 }).select("-__v").lean(),
+      AdminActionLog.find({ targetUserId: userId })
+        .sort({ createdAt: -1 })
+        .select("-__v -adminUserId")
+        .lean(),
+    ]);
 
   return {
     exportDate: new Date().toISOString(),
@@ -29,5 +35,6 @@ export async function exportUserData(userId: string) {
     corrections,
     consentRecords,
     notifications,
+    adminActionLogs,
   };
 }

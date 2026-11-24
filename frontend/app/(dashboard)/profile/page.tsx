@@ -16,6 +16,7 @@ import DialogActions from "@mui/material/DialogActions";
 import AddIcon from "@mui/icons-material/Add";
 import CheckIcon from "@mui/icons-material/Check";
 import SaveIcon from "@mui/icons-material/Save";
+import DownloadIcon from "@mui/icons-material/Download";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import Alert from "@mui/material/Alert";
@@ -133,6 +134,7 @@ export default function ProfilePage() {
   const [initialProfile, setInitialProfile] = useState<ProfileData | null>(null);
   const [isNew, setIsNew] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [newTech, setNewTech] = useState("");
   const [newCategory, setNewCategory] = useState("");
@@ -238,6 +240,39 @@ export default function ProfilePage() {
       document.removeEventListener("click", handleLinkClick, { capture: true });
     };
   }, [isDirty]);
+
+  const handleExportData = async () => {
+    setExporting(true);
+    setMessage(null);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api"}/pdpa/export?format=json`,
+        {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        },
+      );
+      if (!res.ok) {
+        throw new Error("Export failed");
+      }
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition");
+      const filenameMatch = disposition?.match(/filename="([^"]+)"/);
+      const filename = filenameMatch?.[1] ?? `icheertor-data-export-${Date.now()}.json`;
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setMessage({ type: "error", text: "ไม่สามารถส่งออกข้อมูลได้ กรุณาลองใหม่อีกครั้ง" });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleConfirmLeave = () => {
     setShowLeaveDialog(false);
@@ -932,9 +967,18 @@ export default function ProfilePage() {
         <CardContent sx={{ p: 3 }}>
           <h2 className="text-lg font-semibold mb-3">ข้อมูลส่วนบุคคล (PDPA)</h2>
           <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-            ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล คุณมีสิทธิ์ดูข้อมูล และลบบัญชีของคุณ
+            ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล คุณมีสิทธิ์ดูข้อมูล ส่งออก และลบบัญชีของคุณ
           </p>
           <div className="flex flex-wrap gap-3">
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={handleExportData}
+              disabled={exporting}
+              size="small"
+            >
+              {exporting ? "กำลังส่งออกข้อมูล..." : "ส่งออกข้อมูล"}
+            </Button>
             <Button
               variant="outlined"
               color="error"
