@@ -6,6 +6,8 @@ import UserCorrection from "../db/models/user-correction.js";
 import VendorProfile from "../db/models/vendor-profile.js";
 import { matchQualifications } from "../services/matching/qualification-matcher.js";
 import { estimateBid } from "../services/matching/bid-estimator.js";
+import { analyseBid, BidAnalysisUnavailableError } from "../services/ai/bid-analysis.js";
+import { VertexConfigError } from "../services/ai/vertex-client.js";
 import { resolveDownloadUrl } from "../services/ingestion/egp-document-url.js";
 import { bidWindow, displayPhase } from "../services/ingestion/data-checks.js";
 import { apiSuccess, Errors } from "../utils/api-response.js";
@@ -417,6 +419,100 @@ router.get("/:id/match", async (req: Request, res: Response) => {
   });
 
   apiSuccess(res, { torRecordId: req.params.id, ...result, bidEstimate });
+});
+
+/**
+ * Per-user cooldown for the AI analysis endpoint.
+ *
+ * Each call spends Vertex quota, which in express mode is metered per minute
+ * and shared by the extraction pipeline. Without this, holding down the button
+ * would starve ingestion. In-memory on purpose: one backend process today, and
+ * a cooldown that resets on deploy is an acceptable failure mode for a guard
+ * whose job is to stop accidental bursts rather than a determined attacker.
+ */
+const ANALYSIS_COOLDOWN_MS = 30_000;
+const lastAnalysisAt = new Map<string, number>();
+
+/**
+ * POST /api/tor/:id/bid-analysis — AI second opinion on the bid estimate.
+ *
+ * Separate from GET /match on purpose: /match is rendered on every page view
+ * and must stay free and instant, while this costs quota and only runs when
+ * the user presses the button.
+ */
+router.post("/:id/bid-analysis", async (req: Request, res: Response) => {
+  await connectDB();
+
+  const userId = req.user!.id;
+  const previous = lastAnalysisAt.get(userId);
+  if (previous && Date.now() - previous < ANALYSIS_COOLDOWN_MS) {
+    const waitS = Math.ceil((ANALYSIS_COOLDOWN_MS - (Date.now() - previous)) / 1000);
+    res.status(429).json({ success: false, error: `กรุณารออีก ${waitS} วินาทีก่อนวิเคราะห์ใหม่` });
+    return;
+  }
+
+  const profile = await VendorProfile.findOne({ userId });
+  if (!profile) {
+    Errors.badRequest(res, "ต้องกรอกโปรไฟล์บริษัทก่อนจึงจะวิเคราะห์ได้");
+    return;
+  }
+
+  const tor = await TORRecord.findById(req.params.id);
+  if (!tor) {
+    Errors.notFound(res, "TOR record not found");
+    return;
+  }
+
+  const match = matchQualifications(profile, tor.parsedData.qualifications, {
+    title: tor.title,
+    scopeOfWork: tor.summary?.overview ?? tor.parsedData.scopeOfWork?.content,
+    workType: tor.parsedData.workType,
+    budget: tor.budget ?? tor.medianPrice ?? tor.parsedData.medianPrice?.value,
+    contractDurationDays: tor.parsedData.keyDates?.contractDurationDays?.value,
+    techRequirements: tor.parsedData.techRequirements,
+  });
+
+  const estimate = estimateBid({
+    evaluationCriteria: tor.parsedData.evaluationCriteria,
+    budget: tor.budget,
+    medianPrice: tor.medianPrice ?? tor.parsedData.medianPrice?.value,
+    match,
+  });
+
+  // Reserve the slot before the call, not after: a request that times out has
+  // still spent the quota it was meant to protect.
+  lastAnalysisAt.set(userId, Date.now());
+
+  try {
+    const result = await analyseBid({
+      title: tor.title,
+      agencyName: tor.agencyName,
+      parsedData: tor.parsedData,
+      estimate,
+      match,
+    });
+    apiSuccess(res, {
+      torRecordId: req.params.id,
+      analysis: result.analysis,
+      meta: { model: result.model, durationMs: result.durationMs, usage: result.usage },
+    });
+  } catch (e) {
+    if (e instanceof BidAnalysisUnavailableError) {
+      Errors.badRequest(res, e.message);
+      return;
+    }
+    if (e instanceof VertexConfigError) {
+      res.status(503).json({ success: false, error: "ระบบ AI ยังไม่ได้ตั้งค่า กรุณาติดต่อผู้ดูแลระบบ" });
+      return;
+    }
+    const quota = /429|RESOURCE_EXHAUSTED|quota/i.test(String(e));
+    res.status(quota ? 429 : 502).json({
+      success: false,
+      error: quota
+        ? "โควตา AI เต็มชั่วคราว กรุณาลองใหม่ในอีกสักครู่"
+        : "วิเคราะห์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+    });
+  }
 });
 
 export default router;

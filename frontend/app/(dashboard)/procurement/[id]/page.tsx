@@ -10,6 +10,7 @@ import LightbulbOutlinedIcon from "@mui/icons-material/LightbulbOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
 import CalculateOutlinedIcon from "@mui/icons-material/CalculateOutlined";
+import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import ComputerOutlinedIcon from "@mui/icons-material/ComputerOutlined";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
@@ -56,6 +57,14 @@ type BidEstimate = {
   assumptions?: string[];
   warnings?: string[];
 };
+type BidAnalysis = {
+  verdict: string;
+  risks: Array<{ topic: string; detail: string; impact: "high" | "medium" | "low" }>;
+  opportunities: string[];
+  priceAdjustmentPercent: number;
+  priceAdjustmentReason: string;
+  confidence: "low" | "medium" | "high";
+};
 type BookmarkStatus = { bookmarked: boolean; bookmarkId: string | null };
 type DocumentResponse = { available: boolean; fileName?: string; downloadUrl?: string; message?: string };
 
@@ -95,6 +104,9 @@ export default function TORDetailPage() {
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [documentLoading, setDocumentLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<BidAnalysis | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const { showToast } = useToast();
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
@@ -110,6 +122,38 @@ export default function TORDetailPage() {
       setBookmarkId(bookmark?.bookmarked ? bookmark.bookmarkId : null);
     }).catch(() => setTor(null));
   }, [id]);
+
+
+  /**
+   * Ask the backend for an AI reading of the bid estimate.
+   *
+   * Explicitly user-triggered: it spends Vertex quota, so it must never run as
+   * part of loading the page. The deterministic estimate stays on screen
+   * throughout, including when this fails.
+   */
+  const runAnalysis = async () => {
+    const token = getToken();
+    if (!token) {
+      showToast("กรุณาเข้าสู่ระบบก่อนใช้งาน", "warning");
+      return;
+    }
+    setAnalysisLoading(true);
+    setAnalysisError(null);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+    try {
+      const response = await fetch(`${apiUrl}/tor/${id}/bid-analysis`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error?.message ?? result.error ?? "วิเคราะห์ไม่สำเร็จ");
+      setAnalysis(result.data?.analysis ?? null);
+    } catch (error) {
+      setAnalysisError(error instanceof Error ? error.message : "วิเคราะห์ไม่สำเร็จ");
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
 
   const toggleBookmark = async () => {
     const token = getToken();
@@ -220,7 +264,7 @@ export default function TORDetailPage() {
       <section className="detail-panel"><Title icon={<FactCheckOutlinedIcon />}>คุณสมบัติผู้ยื่นข้อเสนอ</Title><Qualifications items={specific} empty="ไม่พบเงื่อนไขเฉพาะโครงการ" />{standard.length ? <details className="mt-5 rounded-xl bg-slate-50 p-4"><summary className="cursor-pointer font-semibold">เงื่อนไขทั่วไปตามระเบียบ ({standard.length} ข้อ)</summary><Qualifications items={standard} /></details> : null}</section>
       {(parsed?.keyDates?.submissionDate?.date || parsed?.keyDates?.documentFeePeriod || parsed?.keyDates?.contractDurationDays?.value != null || parsed?.keyDates?.warrantyMonths?.value != null) && <section className="detail-panel"><Title icon={<CalendarMonthOutlinedIcon />}>กำหนดการและระยะเวลาโครงการ</Title><div className="grid gap-3 sm:grid-cols-2"><Row label="วันยื่นข้อเสนอ" value={parsed?.keyDates?.submissionDate?.date ? `${date(parsed.keyDates.submissionDate.date)} ${parsed.keyDates.submissionDate.startTime ?? ""}–${parsed.keyDates.submissionDate.endTime ?? ""}` : undefined} /><Row label="ช่วงซื้อเอกสาร" value={parsed?.keyDates?.documentFeePeriod ? `${date(parsed.keyDates.documentFeePeriod.from)} – ${date(parsed.keyDates.documentFeePeriod.to)}` : undefined} /><Row label="ระยะเวลาดำเนินงาน" value={parsed?.keyDates?.contractDurationDays?.value != null ? `${parsed.keyDates.contractDurationDays.value} วัน` : undefined} /><Row label="ระยะเวลารับประกัน" value={parsed?.keyDates?.warrantyMonths?.value != null ? `${parsed.keyDates.warrantyMonths.value} เดือน` : undefined} /></div></section>}
       <section className="detail-panel"><Title icon={<BarChartOutlinedIcon />}>เกณฑ์การประเมิน</Title><p className="whitespace-pre-wrap text-sm leading-7 text-slate-600">{parsed?.evaluationCriteria?.content ?? "ยังไม่มีรายละเอียดเกณฑ์การประเมิน"}</p>{parsed?.evaluationCriteria?.weights?.map((item) => <div key={item.criterion} className="mt-3"><div className="flex justify-between text-sm"><span>{item.criterion}</span><strong>{item.weight}%</strong></div><div className="mt-1 h-2 rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#0759be]" style={{ width: `${item.weight}%` }} /></div></div>)}</section>
-      {match?.bidEstimate && <BidEstimatePanel estimate={match.bidEstimate} />}
+      {match?.bidEstimate && <BidEstimatePanel estimate={match.bidEstimate} analysis={analysis} loading={analysisLoading} error={analysisError} onAnalyse={runAnalysis} />}
       {parsed?.paymentTerms?.length ? <section className="detail-panel"><Title icon={<ReceiptLongOutlinedIcon />}>เงื่อนไขการส่งมอบและชำระเงิน</Title>{parsed.paymentTerms.map((item) => <div key={item.installment} className="mb-3 rounded-xl bg-slate-50 p-4"><strong>งวดที่ {item.installment}{item.percent != null ? ` • ${item.percent}%` : ""}</strong><p className="mt-1 text-sm text-slate-600">{item.condition}</p></div>)}</section> : null}
     </main><aside className="space-y-6"><section className="detail-panel"><Title icon={<ReceiptLongOutlinedIcon />}>ข้อมูลการจัดซื้อจัดจ้าง</Title><Row label="ประเภทงาน" value={workType[parsed?.workType ?? ""]} /><Row label="ประเภทโครงการ" value={tor.metadata?.projectType} /><Row label="วิธีจัดซื้อ" value={tor.metadata?.purchaseMethod} /><Row label="ประเภทประกาศ" value={tor.metadata?.announceType} /><Row label="เลขที่โครงการ" value={tor.metadata?.projectId} /><Row label="สถานะ" value={tor.metadata?.contractStatus} /></section><section className="rounded-2xl border-l-4 border-red-600 bg-red-50 p-6"><Title icon={<FlagOutlinedIcon />}>การวิเคราะห์ความเสี่ยง</Title>{tor.redFlags?.length ? tor.redFlags.map((item) => <div key={item.reason} className="mb-3 rounded-xl bg-white p-4 text-sm"><strong>{item.reason}</strong><p className="mt-2">{item.clauseText}</p>{item.recommendedAction && <p className="mt-2 text-red-700">คำแนะนำ: {item.recommendedAction}</p>}</div>) : <p className="text-sm text-emerald-700">ไม่พบความเสี่ยงที่ต้องแจ้งเตือน</p>}</section></aside></div>}
   </div>;
@@ -245,7 +289,15 @@ function DeadlineNotice({ label, deadline, remainingDays }: { label: string; dea
  * shown without its assumptions reads as advice. The scenarios, the assumption
  * list and the warnings are one unit — never render the numbers alone.
  */
-function BidEstimatePanel({ estimate }: { estimate: BidEstimate }) {
+type BidEstimatePanelProps = {
+  estimate: BidEstimate;
+  analysis: BidAnalysis | null;
+  loading: boolean;
+  error: string | null;
+  onAnalyse: () => void;
+};
+
+function BidEstimatePanel({ estimate, analysis, loading, error, onAnalyse }: BidEstimatePanelProps) {
   if (!estimate.applicable) {
     return <section className="detail-panel"><Title icon={<CalculateOutlinedIcon />}>ประมาณการราคาที่ควรเสนอ</Title><p className="text-sm leading-7 text-slate-600">{estimate.reason}</p></section>;
   }
@@ -268,7 +320,42 @@ function BidEstimatePanel({ estimate }: { estimate: BidEstimate }) {
     </div>
     {estimate.assumptions?.length ? <details className="mt-5 rounded-xl bg-slate-50 p-4"><summary className="cursor-pointer text-sm font-semibold">สมมติฐานที่ใช้คำนวณ</summary><ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-600">{estimate.assumptions.map((item) => <li key={item}>{item}</li>)}</ul></details> : null}
     {estimate.warnings?.length ? <ul className="mt-4 list-disc space-y-2 rounded-xl border-l-4 border-amber-500 bg-amber-50 py-4 pl-9 pr-4 text-sm text-amber-900">{estimate.warnings.map((item) => <li key={item}>{item}</li>)}</ul> : null}
+    <div className="mt-6 border-t border-slate-100 pt-5">
+      {!analysis && <p className="mb-3 text-sm text-slate-500">ตัวเลขด้านบนคำนวณจากสูตรโดยตรง ถ้าต้องการให้ AI อ่านขอบเขตงาน เงื่อนไขการจ่ายเงิน และความเสี่ยงประกอบด้วย กดปุ่มด้านล่าง</p>}
+      <button type="button" onClick={onAnalyse} disabled={loading} className="detail-action detail-action-outline cursor-pointer disabled:cursor-wait disabled:opacity-60"><AutoAwesomeOutlinedIcon fontSize="small" />{loading ? "กำลังวิเคราะห์..." : analysis ? "วิเคราะห์ใหม่อีกครั้ง" : "ให้ AI วิเคราะห์เชิงลึก"}</button>
+      {error && <p role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {analysis && <AiAnalysis analysis={analysis} estimate={estimate} />}
+    </div>
   </section>;
+}
+
+const impactStyle: Record<string, string> = {
+  high: "bg-red-100 text-red-800",
+  medium: "bg-amber-100 text-amber-800",
+  low: "bg-slate-200 text-slate-700",
+};
+const impactLabel: Record<string, string> = { high: "สูง", medium: "ปานกลาง", low: "ต่ำ" };
+const aiConfidenceLabel: Record<string, string> = { high: "สูง", medium: "ปานกลาง", low: "ต่ำ" };
+
+/**
+ * The model's reading of the estimate.
+ *
+ * Shown under the deterministic numbers, never instead of them: the suggested
+ * adjustment is expressed against the calculated mid-point so the reader can
+ * always see what was computed and what was opinion.
+ */
+function AiAnalysis({ analysis, estimate }: { analysis: BidAnalysis; estimate: BidEstimate }) {
+  const scenarios = estimate.scenarios ?? [];
+  const mid = scenarios.length ? scenarios[Math.floor(scenarios.length / 2)].bid : null;
+  const adjusted = mid != null ? Math.floor((mid * (1 + analysis.priceAdjustmentPercent / 100)) / 1000) * 1000 : null;
+  return <div className="mt-5 space-y-5 rounded-xl bg-slate-50 p-5">
+    <div className="flex flex-wrap items-center gap-3"><strong className="text-sm">ผลวิเคราะห์จาก AI</strong><span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">ความเชื่อมั่น{aiConfidenceLabel[analysis.confidence] ?? analysis.confidence}</span></div>
+    <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">{analysis.verdict}</p>
+    {mid != null && <div className="rounded-xl bg-white p-4"><p className="text-sm text-slate-500">AI แนะนำให้ปรับจากค่ากลางที่คำนวณได้ ({money(mid)})</p><p className="mt-1 text-lg font-bold text-slate-800">{analysis.priceAdjustmentPercent === 0 ? "ไม่ต้องปรับ" : `${analysis.priceAdjustmentPercent > 0 ? "+" : ""}${analysis.priceAdjustmentPercent}%`}{adjusted != null && analysis.priceAdjustmentPercent !== 0 ? ` → ${money(adjusted)}` : ""}</p><p className="mt-2 text-sm text-slate-600">{analysis.priceAdjustmentReason}</p></div>}
+    {analysis.risks?.length ? <div><p className="mb-2 text-sm font-semibold">ความเสี่ยงที่ควรพิจารณา</p><div className="space-y-2">{analysis.risks.map((item) => <div key={item.topic + item.detail} className="rounded-xl bg-white p-4"><div className="flex flex-wrap items-center gap-2"><strong className="text-sm">{item.topic}</strong><span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${impactStyle[item.impact] ?? impactStyle.low}`}>ผลกระทบ{impactLabel[item.impact] ?? item.impact}</span></div><p className="mt-2 text-sm text-slate-600">{item.detail}</p></div>)}</div></div> : null}
+    {analysis.opportunities?.length ? <div><p className="mb-2 text-sm font-semibold">สิ่งที่ทำได้เพื่อเพิ่มโอกาส</p><ul className="list-disc space-y-2 pl-5 text-sm text-slate-600">{analysis.opportunities.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}
+    <p className="text-xs text-slate-500">ผลวิเคราะห์นี้สร้างจากโมเดลภาษา อาจคลาดเคลื่อนได้ ใช้ประกอบการตัดสินใจเท่านั้น ไม่ใช่คำแนะนำให้เสนอราคา</p>
+  </div>;
 }
 function Stat({ label, value, note }: { label: string; value: string; note?: string }) { return <div className="detail-stat"><p>{label}</p><strong>{value}</strong>{note && <span>{note}</span>}</div>; }
 function MatchSummary({ match }: { match: MatchResult }) {
