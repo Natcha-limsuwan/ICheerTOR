@@ -326,11 +326,17 @@ function EvaluationWeights({ rows, rescaled, fallback }: {
     ? round(quality.reduce((sum, item) => sum + (item.earned ?? 0), 0))
     : null;
 
-  const weightBar = (item: { criterion: string; weight: number; stated: number }, nested: boolean) =>
-    <div key={item.criterion} className={nested ? "mt-3 pl-4" : "mt-3"}>
-      <div className="flex items-baseline justify-between gap-3 text-sm"><span className={nested ? "text-slate-600" : ""}>{item.criterion}{rescaled && item.stated !== item.weight ? <span className="ml-1 text-xs text-slate-400">(TOR เขียน {item.stated}%)</span> : null}</span><strong className="whitespace-nowrap">{item.weight}%</strong></div>
-      <div className="mt-1 h-2 rounded-full bg-slate-100"><div className={`h-full rounded-full ${nested ? "bg-[#6ba3e0]" : "bg-[#0759be]"}`} style={{ width: `${item.weight}%` }} /></div>
+  // A sub-criterion is shown as its share of the quality block, which is how
+  // the TOR states it, and its bar fills against that block rather than
+  // against 100. Scaled to the whole score, 6 out of 60 drew a sliver that
+  // said nothing about how much of the quality marks it carries.
+  const weightBar = (item: { criterion: string; weight: number; stated: number }, nested: boolean) => {
+    const shown = nested && qualityMax > 0 ? round((item.weight / qualityMax) * 100) : item.weight;
+    return <div key={item.criterion} className={nested ? "mt-3 pl-4" : "mt-3"}>
+      <div className="flex items-baseline justify-between gap-3 text-sm"><span className={nested ? "text-slate-600" : ""}>{item.criterion}{nested ? <span className="ml-1 text-xs text-slate-400">({round(item.weight)} คะแนนจาก {qualityMax})</span> : null}</span><strong className="whitespace-nowrap">{shown}%</strong></div>
+      <div className="mt-1 h-2 rounded-full bg-slate-100"><div className={`h-full rounded-full ${nested ? "bg-[#6ba3e0]" : "bg-[#0759be]"}`} style={{ width: `${shown}%` }} /></div>
     </div>;
+  };
 
   return <>
     <div className="mt-5">
@@ -340,7 +346,7 @@ function EvaluationWeights({ rows, rescaled, fallback }: {
         <div className="mt-1 h-2 rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#0759be]" style={{ width: `${qualityMax}%` }} /></div>
         {quality.length > 1 && quality.map((item) => weightBar(item, true))}
       </div>}
-      {rescaled && <p className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-xs leading-6 text-slate-500">TOR เขียนน้ำหนักหัวข้อย่อยเป็น % ของคะแนนคุณภาพ ระบบแปลงเป็นสัดส่วนจากคะแนนเต็ม 100 เพื่อให้เทียบกับคะแนนราคาได้โดยตรง</p>}
+      {quality.length > 1 && <p className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-xs leading-6 text-slate-500">หัวข้อย่อยแสดงเป็น % ของคะแนนด้านคุณภาพ ({qualityMax} คะแนน) ไม่ใช่ % ของคะแนนเต็ม 100{rescaled ? " — ตรงกับที่ TOR เขียนไว้" : ""}</p>}
     </div>
     {qualityEarned != null && <div className="mt-7 rounded-xl border border-slate-200 p-5">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
