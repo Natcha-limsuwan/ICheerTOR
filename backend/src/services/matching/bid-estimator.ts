@@ -164,7 +164,7 @@ const MIN_RATIO = 0.85;
  */
 function readWeights(
   criteria: IEvaluationCriteria | null | undefined,
-): { price: number; technical: number; fromDocument: boolean } | null {
+): { price: number; technical: number; fromDocument: boolean; weightsSuspect: boolean } | null {
   const rows = criteria?.weights ?? [];
   if (rows.length > 0) {
     let price = 0;
@@ -175,10 +175,24 @@ function readWeights(
       else technical += row.weight;
     }
     // Both halves must exist for the trade-off to mean anything.
-    if (price > 0 && technical > 0) return { price, technical, fromDocument: true };
+    if (price > 0 && technical > 0) {
+      // Rows should total 100. Real extractions sometimes list sub-criteria
+      // beside the headings they roll up into, which double-counts (one BMA
+      // maintenance TOR totals 140). Only the price:technical *ratio* drives
+      // the maths, so a skewed total still gives a usable answer, but it is no
+      // longer a figure read straight off the page — flag it so confidence
+      // drops and the user is told to check the document.
+      const total = price + technical;
+      return { price, technical, fromDocument: true, weightsSuspect: Math.abs(total - 100) > 1 };
+    }
   }
   if (criteria?.method === "price_performance") {
-    return { price: DEFAULT_PRICE_WEIGHT, technical: 100 - DEFAULT_PRICE_WEIGHT, fromDocument: false };
+    return {
+      price: DEFAULT_PRICE_WEIGHT,
+      technical: 100 - DEFAULT_PRICE_WEIGHT,
+      fromDocument: false,
+      weightsSuspect: false,
+    };
   }
   return null;
 }
@@ -209,16 +223,32 @@ export function estimateBid(input: BidEstimateInput): BidEstimate {
     };
   }
 
-  // ราคากลาง is the better anchor: it is the agency's own costing, whereas the
-  // budget is only a ceiling and is often rounded well above it.
-  const anchorValue = medianPrice && medianPrice > 0 ? medianPrice : budget && budget > 0 ? budget : null;
+  // ราคากลาง is normally the better anchor: it is the agency's own costing,
+  // whereas the budget is only a ceiling and is often rounded above it.
+  //
+  // But the two sometimes come the other way round — one live BMA TOR has a
+  // 19.85M reference price against a 16.96M budget. Anchoring on the reference
+  // price there would make every scenario clamp to the ceiling and report a
+  // "15% discount" that is really just the budget, which reads as advice to
+  // cut price when no such analysis happened. Anchor on whichever is lower so
+  // the percentages stay honest.
+  const hasMedian = medianPrice != null && medianPrice > 0;
+  const hasBudget = budget != null && budget > 0;
+  const anchorValue = hasMedian && hasBudget
+    ? Math.min(medianPrice, budget)
+    : hasMedian
+      ? medianPrice
+      : hasBudget
+        ? budget
+        : null;
   if (!anchorValue) {
     return {
       applicable: false,
       reason: "ยังไม่มีราคากลางหรือวงเงินงบประมาณของโครงการนี้ จึงไม่มีฐานให้คำนวณ",
     };
   }
-  const anchorKind: "median_price" | "budget" = medianPrice && medianPrice > 0 ? "median_price" : "budget";
+  const anchorKind: "median_price" | "budget" =
+    hasMedian && anchorValue === medianPrice ? "median_price" : "budget";
 
   if (match?.eligibilityStatus === "ineligible") {
     return {
@@ -288,7 +318,7 @@ export function estimateBid(input: BidEstimateInput): BidEstimate {
 
   const coverage = match?.dataCoverage ?? 0;
   const confidence: "low" | "medium" =
-    weights.fromDocument && fit !== null && coverage >= 0.6 ? "medium" : "low";
+    weights.fromDocument && !weights.weightsSuspect && fit !== null && coverage >= 0.6 ? "medium" : "low";
 
   const assumptions = [
     `อิง${anchorKind === "median_price" ? "ราคากลาง" : "วงเงินงบประมาณ"} ${anchorValue.toLocaleString("th-TH")} บาทเป็นฐาน`,
@@ -317,6 +347,12 @@ export function estimateBid(input: BidEstimateInput): BidEstimate {
   if (!weights.fromDocument) {
     warnings.push(
       `TOR ไม่ได้ระบุน้ำหนักคะแนน ระบบใช้ ${DEFAULT_PRICE_WEIGHT}/${100 - DEFAULT_PRICE_WEIGHT} เป็นค่าตั้งต้น`,
+    );
+  }
+  if (weights.weightsSuspect) {
+    warnings.push(
+      `น้ำหนักคะแนนที่อ่านได้รวมกันเป็น ${weights.price + weights.technical} ไม่ใช่ 100 ` +
+        "อาจอ่านหัวข้อย่อยซ้ำกับหัวข้อหลัก — ระบบใช้สัดส่วนราคาต่อเทคนิคคำนวณต่อได้ แต่ควรตรวจกับเอกสารจริง",
     );
   }
 
