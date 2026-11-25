@@ -82,24 +82,38 @@ JWT_EXPIRY=7d
 
 Used for **Google OAuth** sign-in via Passport.js.
 
+> [!IMPORTANT]
+> You **must** configure **Branding** under **Google Auth Platform** in Google Cloud Console — if Branding is left unconfigured, Google OAuth will refuse to run.
+
 **Where to get them:**
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/).
-2. Create a new project (or select an existing one).
-3. Navigate to **APIs & Services** → **Credentials**.
-4. Click **+ CREATE CREDENTIALS** → **OAuth client ID**.
-5. If prompted, configure the **OAuth consent screen** first:
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) and create a new project (e.g. `icheertor`) or select an existing one.
+2. Open **Google Auth Platform** (or **APIs & Services → OAuth consent screen**) and complete the initial setup if prompted.
+3. Navigate to **Google Auth Platform → Branding** ([direct link](https://console.cloud.google.com/auth/branding)) and configure the following fields for this project:
+   - **App information**
+     - **App name**: `ICheerTOR`
+     - **User support email**: Select your email address
+   - **App domain**
+     - **Application home page**: `https://github.com/Natcha-limsuwan/ICheerTOR`
+     - **Application privacy policy link**: `https://github.com/Natcha-limsuwan/ICheerTOR`
+     - **Application terms of service link**: `https://github.com/Natcha-limsuwan/ICheerTOR`
+   - **Authorized domains**
+     - **Authorized domain 1**: `github.com` (plus your production domain if deploying)
+   - Click **Save**.
+4. Navigate to **Google Auth Platform → Audience**:
    - User type: **External**
-   - Fill in app name, user support email, etc.
+   - If Publishing status is **Testing**, add your email (and teammates' emails) under **Test users** so they are allowed to sign in.
+5. Navigate to **Google Auth Platform → Data Access**:
    - Add scopes: `email`, `profile`, `openid`
-6. Back in Credentials, select **Web application** as the application type.
-7. Add **Authorized JavaScript origins**:
-   - `http://localhost:3000` (for local dev)
-   - `https://your-production-url.com` (for production)
-8. Add **Authorized redirect URIs**:
-   - `http://localhost:3001/api/auth/google/callback` (for local dev)
-   - `https://your-api-url.com/api/auth/google/callback` (for production)
-9. Click **Create** — copy the **Client ID** and **Client Secret**.
+6. Navigate to **Google Auth Platform → Clients** (or **APIs & Services → Credentials** → **+ CREATE CREDENTIALS → OAuth client ID**):
+   - Select **Web application** as the application type.
+   - Add **Authorized JavaScript origins**:
+     - `http://localhost:3000` (for local dev)
+     - `https://your-production-url.com` (for production)
+   - Add **Authorized redirect URIs**:
+     - `http://localhost:3001/api/auth/google/callback` (for local dev)
+     - `https://your-api-url.com/api/auth/google/callback` (for production)
+7. Click **Create** — copy the **Client ID** and **Client Secret**.
 
 ```env
 GOOGLE_CLIENT_ID=123456789012-abcdef.apps.googleusercontent.com
