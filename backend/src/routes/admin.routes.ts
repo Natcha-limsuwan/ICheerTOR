@@ -262,17 +262,25 @@ router.get("/tor-review", async (req: Request, res: Response) => {
       .sort({ "extraction.extractedAt": -1 })
       .skip((page - 1) * limit)
       .limit(limit)
-      .select("title agencyName phase submissionDeadline officialPortalUrl metadata.projectId parsedData extraction summary review")
+      .select(
+        "title agencyName phase submissionDeadline officialPortalUrl metadata.projectId " +
+          "parsedData extraction summary review dataChecks",
+      )
       .lean(),
     TORRecord.countDocuments(filter),
   ]);
 
   apiSuccess(
     res,
-    records.map(({ parsedData: _p, summary: _s, extraction, ...r }) => ({
+    records.map(({ parsedData: _p, summary: _s, extraction, dataChecks, ...r }) => ({
       ...r,
       extractedAt: extraction?.extractedAt ?? null,
-      uncertain: uncertainItems({ parsedData: _p, extraction, summary: _s } as never, threshold),
+      // True when the sources disagree, so the list can mark those rows.
+      hasConflicts: dataChecks?.needsCheck === true,
+      uncertain: uncertainItems(
+        { parsedData: _p, extraction, summary: _s, dataChecks } as never,
+        threshold,
+      ),
     })),
     { total, page, limit },
   );

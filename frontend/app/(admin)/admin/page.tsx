@@ -55,6 +55,7 @@ export default function AdminDashboardPage() {
   });
   const [recentActions, setRecentActions] = useState<RecentAction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pipelineStatus, setPipelineStatus] = useState<"ok" | "warning" | "error" | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -73,6 +74,12 @@ export default function AdminDashboardPage() {
             developerCount: users.filter((u: { role: string }) => u.role === "developer").length,
           });
         }
+
+        // Pipeline health for the status card
+        api
+          .get<{ status: "ok" | "warning" | "error" }>("/admin/pipeline/health")
+          .then((res) => setPipelineStatus(res.data.status))
+          .catch(() => setPipelineStatus(null));
 
         // Fetch recent actions
         const logsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api"}/admin/logs?limit=5`, { headers: { Authorization: `Bearer ${getToken()}` } });
@@ -95,7 +102,13 @@ export default function AdminDashboardPage() {
     { label: "Suspended", value: stats.suspendedUsers, icon: <BlockIcon />, color: "var(--color-warning)" },
     { label: "Developers", value: stats.developerCount, icon: <CodeIcon />, color: "#7C3AED" },
     { label: "Admins", value: stats.adminCount, icon: <AdminPanelSettingsIcon />, color: "var(--color-info)" },
-    { label: "AI Engine", value: "Healthy", icon: <SmartToyIcon />, color: "var(--color-success)" },
+    {
+      label: "สถานะระบบประมวลผล",
+      value: pipelineStatus === "ok" ? "ปกติ" : pipelineStatus === "warning" ? "มีคำเตือน" : pipelineStatus === "error" ? "มีปัญหา" : "—",
+      icon: <SmartToyIcon />,
+      color: pipelineStatus === "error" ? "var(--color-error)" : pipelineStatus === "warning" ? "var(--color-warning)" : "var(--color-success)",
+      href: "/admin/pipeline",
+    },
   ];
 
   return (
@@ -130,8 +143,9 @@ export default function AdminDashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {statCards.map((stat, i) => (
-          <Card key={i} sx={{ borderRadius: "var(--radius-card)" }}>
+        {statCards.map((stat, i) => {
+          const card = (
+          <Card key={i} sx={{ borderRadius: "var(--radius-card)", height: "100%" }}>
             <CardContent sx={{ p: 3 }}>
               <div className="flex items-center gap-3">
                 <div
@@ -147,7 +161,15 @@ export default function AdminDashboardPage() {
               </div>
             </CardContent>
           </Card>
-        ))}
+          );
+          return "href" in stat && stat.href ? (
+            <Link key={i} href={stat.href} className="no-underline text-inherit">
+              {card}
+            </Link>
+          ) : (
+            card
+          );
+        })}
       </div>
 
       {/* Quick Links */}

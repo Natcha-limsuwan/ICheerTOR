@@ -15,6 +15,20 @@ export interface IUser extends Document {
     email: boolean;
   };
   locale: "th" | "en";
+  /**
+   * Which guided tours this user has finished or dismissed.
+   *
+   * Stored per user rather than in the browser so the tour does not
+   * reappear on a second device, and does not vanish when site data is
+   * cleared. Keyed by tour id so a later tour can be added without
+   * re-showing the first one.
+   */
+  onboarding: {
+    /** Tour ids the user completed or dismissed, e.g. "welcome-v1". */
+    completedTours: string[];
+    /** When the user last finished or dismissed any tour. */
+    lastCompletedAt?: Date;
+  };
   roleAssignedBy?: Types.ObjectId;
   roleAssignedAt?: Date;
   lastLoginAt?: Date;
@@ -59,6 +73,10 @@ const UserSchema = new Schema<IUser>(
       email: { type: Boolean, default: true },
     },
     locale: { type: String, enum: ["th", "en"], default: "th" },
+    onboarding: {
+      completedTours: { type: [String], default: [] },
+      lastCompletedAt: { type: Date },
+    },
     roleAssignedBy: { type: Schema.Types.ObjectId, ref: "User" },
     roleAssignedAt: { type: Date },
     lastLoginAt: { type: Date },

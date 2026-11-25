@@ -17,6 +17,9 @@ interface NavItem {
   staffOnly?: boolean;
 }
 
+/** Stable hook for the onboarding tour — see lib/onboarding/tour-steps.ts. */
+const tourId = (href: string) => `nav-${href.replace(/^\//, "")}`;
+
 const navItems: NavItem[] = [
   { href: "/procurement", label: "จัดซื้อจัดจ้าง", labelEn: "Procurement", icon: <SearchIcon /> },
   { href: "/alerts", label: "การแจ้งเตือน", labelEn: "Alerts", icon: <NotificationsIcon /> },
@@ -42,6 +45,7 @@ export default function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                data-tour={tourId(item.href)}
                 className={`
                   flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
                   transition-colors no-underline

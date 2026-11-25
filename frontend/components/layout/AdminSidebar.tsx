@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import PeopleIcon from "@mui/icons-material/People";
 import HistoryIcon from "@mui/icons-material/History";
+import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
+import MonitorHeartOutlinedIcon from "@mui/icons-material/MonitorHeartOutlined";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import RadarIcon from "@mui/icons-material/Radar";
 import Chip from "@mui/material/Chip";
@@ -19,6 +21,8 @@ interface NavItem {
 const adminNavItems: NavItem[] = [
   { href: "/admin", label: "แดชบอร์ด", icon: <DashboardIcon /> },
   { href: "/admin/users", label: "จัดการผู้ใช้", icon: <PeopleIcon /> },
+  { href: "/admin/tor-review", label: "ตรวจทาน TOR", icon: <FactCheckOutlinedIcon /> },
+  { href: "/admin/pipeline", label: "สถานะระบบ", icon: <MonitorHeartOutlinedIcon /> },
   { href: "/admin/logs", label: "ประวัติการดำเนินการ", icon: <HistoryIcon /> },
 ];
 
