@@ -273,6 +273,6 @@ See [ENV_SETUP_GUIDE.md](./ENV_SETUP_GUIDE.md) for a complete reference of all e
 See [LICENSE](./LICENSE).
 
 ## DOCs
-[SRS](https://docs.google.com/document/d/19VEsorVbftIuu3L7tngOw4LMwipWvwKETarLarFZb44/edit?usp=sharing)
-[Backlog](https://docs.google.com/document/d/1iNvHugnSFOKauJRivVWzPXcwpgCjg5uHSMmJgZgHJAc/edit?usp=sharing)
+1. [SRS DOCs](https://docs.google.com/document/d/19VEsorVbftIuu3L7tngOw4LMwipWvwKETarLarFZb44/edit?usp=sharing)
+2. [Backlog DOCs](https://docs.google.com/document/d/1iNvHugnSFOKauJRivVWzPXcwpgCjg5uHSMmJgZgHJAc/edit?usp=sharing)
 
