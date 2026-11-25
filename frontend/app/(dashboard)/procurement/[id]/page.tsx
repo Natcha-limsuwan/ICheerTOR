@@ -51,7 +51,7 @@ type BidEstimate = {
   reason?: string;
   anchor?: { value: number; kind: "median_price" | "budget" };
   weights?: { price: number; technical: number };
-  weightRows?: Array<{ criterion: string; weight: number; stated: number; isPrice: boolean }>;
+  weightRows?: Array<{ criterion: string; weight: number; stated: number; isPrice: boolean; earned: number | null }>;
   rescaledSubCriteria?: boolean;
   technicalPoints?: number;
   scenarios?: BidScenario[];
@@ -292,43 +292,69 @@ function DeadlineNotice({ label, deadline, remainingDays }: { label: string; dea
  * list and the warnings are one unit — never render the numbers alone.
  */
 /**
- * The TOR's scoring weights, as shares of the full 100.
+ * The TOR's scoring criteria as points, with what the team is estimated to
+ * score on each.
+ *
+ * Each bar is scaled to its own maximum, not to 100, so a 15-point criterion
+ * and a 6-point one both read as "how much of this did we get". The points
+ * themselves carry the relative importance, which is why the numbers are
+ * shown as 9/15 rather than as percentages.
  *
  * Quality sub-criteria are frequently written as percentages of the quality
  * block rather than of the whole score — one BMA TOR lists eight rows of
- * "10%" and "15%" under a quality weight of 60. Drawn literally those bars
- * total 140 and say the wrong thing, so the backend rescales them and this
- * shows the real share with the printed figure beside it.
+ * "10%" and "15%" under a quality weight of 60. Taken literally those total
+ * 140, so the backend rescales them and the printed figure is shown beside
+ * the real one.
  *
  * Falls back to the raw extracted rows when no estimate is available (no
- * profile, or a lowest-price TOR), since showing the TOR's own numbers is
- * still better than showing nothing.
+ * profile, or a lowest-price TOR): the TOR's own numbers are still worth
+ * showing, just without a score against them.
  */
 function EvaluationWeights({ rows, rescaled, fallback }: {
-  rows?: Array<{ criterion: string; weight: number; stated: number; isPrice: boolean }>;
+  rows?: Array<{ criterion: string; weight: number; stated: number; isPrice: boolean; earned: number | null }>;
   rescaled?: boolean;
   fallback?: Array<{ criterion: string; weight: number }>;
 }) {
   const resolved = rows?.length
     ? rows
-    : fallback?.map((item) => ({ ...item, stated: item.weight, isPrice: false }));
+    : fallback?.map((item) => ({ ...item, stated: item.weight, isPrice: false, earned: null }));
   if (!resolved?.length) return null;
   const price = resolved.filter((item) => item.isPrice);
   const quality = resolved.filter((item) => !item.isPrice);
-  const qualityTotal = Math.round(quality.reduce((sum, item) => sum + item.weight, 0) * 10) / 10;
-  const bar = (item: { criterion: string; weight: number; stated: number }, nested: boolean) =>
-    <div key={item.criterion} className={nested ? "mt-3 pl-4" : "mt-3"}>
-      <div className="flex items-baseline justify-between gap-3 text-sm"><span className={nested ? "text-slate-600" : ""}>{item.criterion}</span><strong className="whitespace-nowrap">{item.weight}%{rescaled && item.stated !== item.weight ? <span className="ml-1 font-normal text-slate-400">(TOR เขียน {item.stated}%)</span> : null}</strong></div>
-      <div className="mt-1 h-2 rounded-full bg-slate-100"><div className={`h-full rounded-full ${nested ? "bg-[#6ba3e0]" : "bg-[#0759be]"}`} style={{ width: `${item.weight}%` }} /></div>
+  const round = (value: number) => Math.round(value * 10) / 10;
+  const qualityMax = round(quality.reduce((sum, item) => sum + item.weight, 0));
+  const scored = quality.filter((item) => item.earned != null);
+  const qualityEarned = scored.length === quality.length && quality.length > 0
+    ? round(quality.reduce((sum, item) => sum + (item.earned ?? 0), 0))
+    : null;
+
+  const row = (
+    item: { criterion: string; weight: number; stated: number; earned: number | null },
+    nested: boolean,
+  ) => {
+    const filled = item.earned != null ? Math.max(0, Math.min(1, item.earned / item.weight)) * 100 : 0;
+    return <div key={item.criterion} className={nested ? "mt-3 pl-4" : "mt-3"}>
+      <div className="flex items-baseline justify-between gap-3 text-sm">
+        <span className={nested ? "text-slate-600" : ""}>{item.criterion}{rescaled && item.stated !== item.weight ? <span className="ml-1 text-xs text-slate-400">(TOR เขียน {item.stated})</span> : null}</span>
+        <strong className="whitespace-nowrap">{item.earned != null ? `${item.earned}/${item.weight}` : item.weight} คะแนน</strong>
+      </div>
+      <div className="mt-1 h-2 rounded-full bg-slate-100">{item.earned != null && <div className={`h-full rounded-full ${nested ? "bg-[#6ba3e0]" : "bg-[#0759be]"}`} style={{ width: `${filled}%` }} />}</div>
     </div>;
+  };
+
   return <div className="mt-5">
-    {price.map((item) => bar(item, false))}
-    {quality.length > 0 && <div className="mt-4">
-      <div className="flex items-baseline justify-between gap-3 text-sm"><span className="font-semibold">คะแนนด้านคุณภาพ</span><strong>{qualityTotal}%</strong></div>
-      <div className="mt-1 h-2 rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#0759be]" style={{ width: `${qualityTotal}%` }} /></div>
-      {quality.length > 1 && quality.map((item) => bar(item, true))}
+    {price.map((item) => <div key={item.criterion} className="mt-3">
+      <div className="flex items-baseline justify-between gap-3 text-sm"><span>{item.criterion}</span><strong className="whitespace-nowrap">{item.weight} คะแนน</strong></div>
+      <div className="mt-1 h-2 rounded-full bg-slate-100" />
+      <p className="mt-1 text-xs text-slate-400">คะแนนส่วนนี้ขึ้นกับราคาที่เสนอ ไม่ได้มาจากโปรไฟล์</p>
+    </div>)}
+    {quality.length > 0 && <div className="mt-5">
+      <div className="flex items-baseline justify-between gap-3 text-sm"><span className="font-semibold">คะแนนด้านคุณภาพ</span><strong className="whitespace-nowrap">{qualityEarned != null ? `${qualityEarned}/${qualityMax}` : qualityMax} คะแนน</strong></div>
+      <div className="mt-1 h-2 rounded-full bg-slate-100">{qualityEarned != null && <div className="h-full rounded-full bg-[#0759be]" style={{ width: `${Math.max(0, Math.min(1, qualityEarned / qualityMax)) * 100}%` }} />}</div>
+      {quality.length > 1 && quality.map((item) => row(item, true))}
     </div>}
-    {rescaled && <p className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-xs leading-6 text-slate-500">TOR เขียนน้ำหนักหัวข้อย่อยเป็น % ของคะแนนคุณภาพ ระบบแปลงเป็นสัดส่วนจากคะแนนเต็ม 100 เพื่อให้เทียบกับคะแนนราคาได้โดยตรง</p>}
+    {rescaled && <p className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-xs leading-6 text-slate-500">TOR เขียนน้ำหนักหัวข้อย่อยเป็น % ของคะแนนคุณภาพ ระบบแปลงเป็นคะแนนจากคะแนนเต็ม 100 เพื่อให้เทียบกับคะแนนราคาได้โดยตรง</p>}
+    {qualityEarned != null && <p className="mt-3 text-xs leading-6 text-slate-500">คะแนนที่คาดว่าจะได้เป็นการประมาณจากโปรไฟล์ของทีมเทียบกับคุณสมบัติที่ TOR กำหนด ไม่ใช่คะแนนจริงจากคณะกรรมการ ซึ่งพิจารณาจากเอกสารข้อเสนอที่ยื่นจริง</p>}
   </div>;
 }
 

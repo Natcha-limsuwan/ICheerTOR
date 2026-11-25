@@ -110,11 +110,26 @@ export interface BidEstimate {
 /** One criterion after normalisation, for display beside the estimate. */
 export interface NormalisedWeightRow {
   criterion: string;
-  /** Share of the full 100, after any rescaling. */
+  /** Points this criterion is worth out of the full 100, after any rescaling. */
   weight: number;
   /** The figure printed in the TOR, which may be a share of the quality block. */
   stated: number;
   isPrice: boolean;
+  /**
+   * Estimated points the vendor would score on this criterion, out of
+   * `weight`. Null for the price row, which depends on the bid rather than the
+   * profile, and whenever there is no profile to judge from.
+   *
+   * This is the overall fit score applied to each criterion, NOT a per-
+   * criterion judgement: the matcher scores five generic dimensions
+   * (experience, technology, personnel, capacity, preference) against the
+   * TOR's qualification clauses, and those do not line up one-to-one with a
+   * committee's scoring sheet. Showing it per row makes the stakes legible —
+   * a 15-point criterion matters more than a 6-point one — but a low number
+   * here means "our evidence is thin for this TOR", never "the committee will
+   * score you 9 out of 15".
+   */
+  earned: number | null;
 }
 
 export interface NormalisedWeights {
@@ -232,13 +247,21 @@ export function readWeights(
         weightsSuspect: !subCriteriaScale && Math.abs(total - 100) > 1,
         rescaledSubCriteria: subCriteriaScale,
         rows: [
-          ...priceRows.map((r) => ({ criterion: r.criterion, weight: r.weight, stated: r.weight, isPrice: true })),
+          ...priceRows.map((r) => ({
+            criterion: r.criterion,
+            weight: r.weight,
+            stated: r.weight,
+            isPrice: true,
+            // Price points depend on the bid, not the profile.
+            earned: null,
+          })),
           ...qualityRows.map((r) => ({
             criterion: r.criterion,
             // Rounded for display only; `technical` above stays exact.
             weight: Math.round(r.weight * factor * 10) / 10,
             stated: r.weight,
             isPrice: false,
+            earned: null,
           })),
         ],
       };
@@ -425,7 +448,13 @@ export function estimateBid(input: BidEstimateInput): BidEstimate {
     anchor: { value: anchorValue, kind: anchorKind },
     ceiling,
     weights: { price: weights.price, technical: weights.technical },
-    weightRows: weights.rows,
+    weightRows: weights.rows.map((row) =>
+      row.isPrice || fit === null
+        ? row
+        // Same ratio on every quality row — see the note on `earned`. Rounded
+        // to one decimal so a 15-point criterion reads as 9.3, not 9.299999.
+        : { ...row, earned: Math.round(row.weight * technicalRatio * 10) / 10 },
+    ),
     rescaledSubCriteria: weights.rescaledSubCriteria,
     technicalRatio,
     technicalPoints,
