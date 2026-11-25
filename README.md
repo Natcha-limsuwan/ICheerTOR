@@ -28,7 +28,32 @@ The project is split into two services:
 - [Node.js](https://nodejs.org/) v20+
 - [npm](https://www.npmjs.com/) v10+
 - MongoDB (local or [Atlas](https://cloud.mongodb.com/))
-- Google OAuth credentials ([setup guide](./ENV_SETUP_GUIDE.md#2-authentication--passport--jwt))
+- Google OAuth credentials ([full setup guide](./ENV_SETUP_GUIDE.md#2-authentication--passport--jwt))
+
+### Google OAuth Setup (Google Cloud Console)
+
+> [!IMPORTANT]
+> You **must** configure **Google Auth Platform → Branding** in [Google Cloud Console](https://console.cloud.google.com/auth/branding) before Google Sign-In will work. Without Branding configured, Google OAuth login will fail to run.
+
+1. Open [Google Cloud Console → Google Auth Platform → Branding](https://console.cloud.google.com/auth/branding) (complete the initial overview prompt if this is a new project) and fill in:
+   - **App information**
+     - **App name**: `ICheerTOR`
+     - **User support email**: Select your Google account email
+   - **App domain**
+     - **Application home page**: `https://github.com/Natcha-limsuwan/ICheerTOR`
+     - **Application privacy policy link**: `https://github.com/Natcha-limsuwan/ICheerTOR`
+     - **Application terms of service link**: `https://github.com/Natcha-limsuwan/ICheerTOR`
+   - **Authorized domains**
+     - Add `github.com` (and your production domain if deploying)
+   - Click **Save**.
+2. Go to **Audience**:
+   - Set User Type to **External**.
+   - While in **Testing** mode, add the Google emails of everyone who needs to log in under **Test users** (or publish the app).
+3. Go to **Data Access** and ensure scopes include `openid`, `email`, and `profile`.
+4. Go to **Clients** → **+ Create Client** → **Web application**:
+   - **Authorized JavaScript origins**: `http://localhost:3000`
+   - **Authorized redirect URIs**: `http://localhost:3001/api/auth/google/callback`
+   - Copy the **Client ID** (`GOOGLE_CLIENT_ID`) and **Client Secret** (`GOOGLE_CLIENT_SECRET`) into `backend/.env`.
 
 ### Installation
 
