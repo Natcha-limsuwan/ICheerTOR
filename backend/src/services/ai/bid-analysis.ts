@@ -148,6 +148,13 @@ function buildUserPrompt(input: BidAnalysisInput): string {
   lines.push(`ราคาฐานที่ใช้คำนวณ: ${money(estimate.anchor?.value)} (${estimate.anchor?.kind === "median_price" ? "ราคากลาง" : "วงเงินงบประมาณ"})`);
   if (estimate.weights) {
     lines.push(`น้ำหนักคะแนน: ราคา ${estimate.weights.price} / เทคนิค ${estimate.weights.technical}`);
+    // The per-criterion split tells the model where technical points actually
+    // sit, so it can say which gap costs most rather than speaking generally.
+    const quality = (estimate.weightRows ?? []).filter((r) => !r.isPrice);
+    if (quality.length > 1) {
+      lines.push("หัวข้อย่อยด้านคุณภาพ (คิดเป็น % ของคะแนนเต็ม 100):");
+      for (const row of quality) lines.push(`  - ${row.criterion}: ${row.weight}`);
+    }
   }
   if (estimate.technicalPoints != null && estimate.weights) {
     lines.push(`คะแนนเทคนิคที่ระบบประมาณให้บริษัทนี้: ${estimate.technicalPoints.toFixed(1)} จาก ${estimate.weights.technical}`);

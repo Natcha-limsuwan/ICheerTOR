@@ -51,6 +51,8 @@ type BidEstimate = {
   reason?: string;
   anchor?: { value: number; kind: "median_price" | "budget" };
   weights?: { price: number; technical: number };
+  weightRows?: Array<{ criterion: string; weight: number; stated: number; isPrice: boolean }>;
+  rescaledSubCriteria?: boolean;
   technicalPoints?: number;
   scenarios?: BidScenario[];
   confidence?: "low" | "medium";
@@ -263,7 +265,7 @@ export default function TORDetailPage() {
       {(tor.summary?.deliverables?.length || parsed?.techRequirements?.length) && <section className="detail-panel"><Title icon={<ComputerOutlinedIcon />}>สิ่งส่งมอบและข้อกำหนดทางเทคนิค</Title>{tor.summary?.deliverables?.length ? <Pills items={tor.summary.deliverables} /> : null}{parsed?.techRequirements?.length ? <Pills items={parsed.techRequirements.map((item) => `${item.name}${item.isMandatory ? " • จำเป็น" : ""}`)} /> : null}</section>}
       <section className="detail-panel"><Title icon={<FactCheckOutlinedIcon />}>คุณสมบัติผู้ยื่นข้อเสนอ</Title><Qualifications items={specific} empty="ไม่พบเงื่อนไขเฉพาะโครงการ" />{standard.length ? <details className="mt-5 rounded-xl bg-slate-50 p-4"><summary className="cursor-pointer font-semibold">เงื่อนไขทั่วไปตามระเบียบ ({standard.length} ข้อ)</summary><Qualifications items={standard} /></details> : null}</section>
       {(parsed?.keyDates?.submissionDate?.date || parsed?.keyDates?.documentFeePeriod || parsed?.keyDates?.contractDurationDays?.value != null || parsed?.keyDates?.warrantyMonths?.value != null) && <section className="detail-panel"><Title icon={<CalendarMonthOutlinedIcon />}>กำหนดการและระยะเวลาโครงการ</Title><div className="grid gap-3 sm:grid-cols-2"><Row label="วันยื่นข้อเสนอ" value={parsed?.keyDates?.submissionDate?.date ? `${date(parsed.keyDates.submissionDate.date)} ${parsed.keyDates.submissionDate.startTime ?? ""}–${parsed.keyDates.submissionDate.endTime ?? ""}` : undefined} /><Row label="ช่วงซื้อเอกสาร" value={parsed?.keyDates?.documentFeePeriod ? `${date(parsed.keyDates.documentFeePeriod.from)} – ${date(parsed.keyDates.documentFeePeriod.to)}` : undefined} /><Row label="ระยะเวลาดำเนินงาน" value={parsed?.keyDates?.contractDurationDays?.value != null ? `${parsed.keyDates.contractDurationDays.value} วัน` : undefined} /><Row label="ระยะเวลารับประกัน" value={parsed?.keyDates?.warrantyMonths?.value != null ? `${parsed.keyDates.warrantyMonths.value} เดือน` : undefined} /></div></section>}
-      <section className="detail-panel"><Title icon={<BarChartOutlinedIcon />}>เกณฑ์การประเมิน</Title><p className="whitespace-pre-wrap text-sm leading-7 text-slate-600">{parsed?.evaluationCriteria?.content ?? "ยังไม่มีรายละเอียดเกณฑ์การประเมิน"}</p>{parsed?.evaluationCriteria?.weights?.map((item) => <div key={item.criterion} className="mt-3"><div className="flex justify-between text-sm"><span>{item.criterion}</span><strong>{item.weight}%</strong></div><div className="mt-1 h-2 rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#0759be]" style={{ width: `${item.weight}%` }} /></div></div>)}</section>
+      <section className="detail-panel"><Title icon={<BarChartOutlinedIcon />}>เกณฑ์การประเมิน</Title><p className="whitespace-pre-wrap text-sm leading-7 text-slate-600">{parsed?.evaluationCriteria?.content ?? "ยังไม่มีรายละเอียดเกณฑ์การประเมิน"}</p><EvaluationWeights rows={match?.bidEstimate?.weightRows} rescaled={match?.bidEstimate?.rescaledSubCriteria} fallback={parsed?.evaluationCriteria?.weights} /></section>
       {match?.bidEstimate && <BidEstimatePanel estimate={match.bidEstimate} analysis={analysis} loading={analysisLoading} error={analysisError} onAnalyse={runAnalysis} />}
       {parsed?.paymentTerms?.length ? <section className="detail-panel"><Title icon={<ReceiptLongOutlinedIcon />}>เงื่อนไขการส่งมอบและชำระเงิน</Title>{parsed.paymentTerms.map((item) => <div key={item.installment} className="mb-3 rounded-xl bg-slate-50 p-4"><strong>งวดที่ {item.installment}{item.percent != null ? ` • ${item.percent}%` : ""}</strong><p className="mt-1 text-sm text-slate-600">{item.condition}</p></div>)}</section> : null}
     </main><aside className="space-y-6"><section className="detail-panel"><Title icon={<ReceiptLongOutlinedIcon />}>ข้อมูลการจัดซื้อจัดจ้าง</Title><Row label="ประเภทงาน" value={workType[parsed?.workType ?? ""]} /><Row label="ประเภทโครงการ" value={tor.metadata?.projectType} /><Row label="วิธีจัดซื้อ" value={tor.metadata?.purchaseMethod} /><Row label="ประเภทประกาศ" value={tor.metadata?.announceType} /><Row label="เลขที่โครงการ" value={tor.metadata?.projectId} /><Row label="สถานะ" value={tor.metadata?.contractStatus} /></section><section className="rounded-2xl border-l-4 border-red-600 bg-red-50 p-6"><Title icon={<FlagOutlinedIcon />}>การวิเคราะห์ความเสี่ยง</Title>{tor.redFlags?.length ? tor.redFlags.map((item) => <div key={item.reason} className="mb-3 rounded-xl bg-white p-4 text-sm"><strong>{item.reason}</strong><p className="mt-2">{item.clauseText}</p>{item.recommendedAction && <p className="mt-2 text-red-700">คำแนะนำ: {item.recommendedAction}</p>}</div>) : <p className="text-sm text-emerald-700">ไม่พบความเสี่ยงที่ต้องแจ้งเตือน</p>}</section></aside></div>}
@@ -289,6 +291,47 @@ function DeadlineNotice({ label, deadline, remainingDays }: { label: string; dea
  * shown without its assumptions reads as advice. The scenarios, the assumption
  * list and the warnings are one unit — never render the numbers alone.
  */
+/**
+ * The TOR's scoring weights, as shares of the full 100.
+ *
+ * Quality sub-criteria are frequently written as percentages of the quality
+ * block rather than of the whole score — one BMA TOR lists eight rows of
+ * "10%" and "15%" under a quality weight of 60. Drawn literally those bars
+ * total 140 and say the wrong thing, so the backend rescales them and this
+ * shows the real share with the printed figure beside it.
+ *
+ * Falls back to the raw extracted rows when no estimate is available (no
+ * profile, or a lowest-price TOR), since showing the TOR's own numbers is
+ * still better than showing nothing.
+ */
+function EvaluationWeights({ rows, rescaled, fallback }: {
+  rows?: Array<{ criterion: string; weight: number; stated: number; isPrice: boolean }>;
+  rescaled?: boolean;
+  fallback?: Array<{ criterion: string; weight: number }>;
+}) {
+  const resolved = rows?.length
+    ? rows
+    : fallback?.map((item) => ({ ...item, stated: item.weight, isPrice: false }));
+  if (!resolved?.length) return null;
+  const price = resolved.filter((item) => item.isPrice);
+  const quality = resolved.filter((item) => !item.isPrice);
+  const qualityTotal = Math.round(quality.reduce((sum, item) => sum + item.weight, 0) * 10) / 10;
+  const bar = (item: { criterion: string; weight: number; stated: number }, nested: boolean) =>
+    <div key={item.criterion} className={nested ? "mt-3 pl-4" : "mt-3"}>
+      <div className="flex items-baseline justify-between gap-3 text-sm"><span className={nested ? "text-slate-600" : ""}>{item.criterion}</span><strong className="whitespace-nowrap">{item.weight}%{rescaled && item.stated !== item.weight ? <span className="ml-1 font-normal text-slate-400">(TOR เขียน {item.stated}%)</span> : null}</strong></div>
+      <div className="mt-1 h-2 rounded-full bg-slate-100"><div className={`h-full rounded-full ${nested ? "bg-[#6ba3e0]" : "bg-[#0759be]"}`} style={{ width: `${item.weight}%` }} /></div>
+    </div>;
+  return <div className="mt-5">
+    {price.map((item) => bar(item, false))}
+    {quality.length > 0 && <div className="mt-4">
+      <div className="flex items-baseline justify-between gap-3 text-sm"><span className="font-semibold">คะแนนด้านคุณภาพ</span><strong>{qualityTotal}%</strong></div>
+      <div className="mt-1 h-2 rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#0759be]" style={{ width: `${qualityTotal}%` }} /></div>
+      {quality.length > 1 && quality.map((item) => bar(item, true))}
+    </div>}
+    {rescaled && <p className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-xs leading-6 text-slate-500">TOR เขียนน้ำหนักหัวข้อย่อยเป็น % ของคะแนนคุณภาพ ระบบแปลงเป็นสัดส่วนจากคะแนนเต็ม 100 เพื่อให้เทียบกับคะแนนราคาได้โดยตรง</p>}
+  </div>;
+}
+
 type BidEstimatePanelProps = {
   estimate: BidEstimate;
   analysis: BidAnalysis | null;

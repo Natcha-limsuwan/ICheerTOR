@@ -81,6 +81,14 @@ export interface BidEstimate {
   /** Ceiling a bid must not exceed, when known. */
   ceiling?: number | null;
   weights?: { price: number; technical: number };
+  /**
+   * Every criterion as a share of the full 100, with the figure the TOR
+   * printed beside it. Lets the UI show sub-criteria honestly instead of
+   * rendering bars that add up to more than the whole.
+   */
+  weightRows?: NormalisedWeightRow[];
+  /** True when quality rows were percentages of the quality block, now rescaled. */
+  rescaledSubCriteria?: boolean;
   /** Our estimated technical score as a share of the technical weight (0–1). */
   technicalRatio?: number;
   /** Our estimated technical points out of the technical weight. */
@@ -98,6 +106,27 @@ export interface BidEstimate {
 }
 
 /* ─── Constants ─────────────────────────────────────────────────────── */
+
+/** One criterion after normalisation, for display beside the estimate. */
+export interface NormalisedWeightRow {
+  criterion: string;
+  /** Share of the full 100, after any rescaling. */
+  weight: number;
+  /** The figure printed in the TOR, which may be a share of the quality block. */
+  stated: number;
+  isPrice: boolean;
+}
+
+export interface NormalisedWeights {
+  price: number;
+  technical: number;
+  fromDocument: boolean;
+  /** Rows do not total 100 and we could not explain why — tell the user. */
+  weightsSuspect: boolean;
+  /** Quality rows were percentages of the quality block and have been rescaled. */
+  rescaledSubCriteria: boolean;
+  rows: NormalisedWeightRow[];
+}
 
 /** Marks a weight row as the price component; TORs word this many ways. */
 const PRICE_WEIGHT_PATTERN = /ราคา|price|ค่าเสนอ/i;
@@ -162,28 +191,57 @@ const MIN_RATIO = 0.85;
  * the price pattern counts as technical, so a TOR that spreads technique over
  * several rows still totals correctly.
  */
-function readWeights(
+export function readWeights(
   criteria: IEvaluationCriteria | null | undefined,
-): { price: number; technical: number; fromDocument: boolean; weightsSuspect: boolean } | null {
+): NormalisedWeights | null {
   const rows = criteria?.weights ?? [];
   if (rows.length > 0) {
-    let price = 0;
-    let technical = 0;
+    const priceRows: Array<{ criterion: string; weight: number }> = [];
+    const qualityRows: Array<{ criterion: string; weight: number }> = [];
     for (const row of rows) {
       if (!Number.isFinite(row.weight) || row.weight < 0) continue;
-      if (PRICE_WEIGHT_PATTERN.test(row.criterion)) price += row.weight;
-      else technical += row.weight;
+      (PRICE_WEIGHT_PATTERN.test(row.criterion) ? priceRows : qualityRows).push(row);
     }
+    const price = priceRows.reduce((s, r) => s + r.weight, 0);
+    const qualityRaw = qualityRows.reduce((s, r) => s + r.weight, 0);
+
     // Both halves must exist for the trade-off to mean anything.
-    if (price > 0 && technical > 0) {
-      // Rows should total 100. Real extractions sometimes list sub-criteria
-      // beside the headings they roll up into, which double-counts (one BMA
-      // maintenance TOR totals 140). Only the price:technical *ratio* drives
-      // the maths, so a skewed total still gives a usable answer, but it is no
-      // longer a figure read straight off the page — flag it so confidence
-      // drops and the user is told to check the document.
-      const total = price + technical;
-      return { price, technical, fromDocument: true, weightsSuspect: Math.abs(total - 100) > 1 };
+    if (price > 0 && qualityRaw > 0) {
+      const total = price + qualityRaw;
+
+      // Quality sub-criteria are often written as percentages *of the quality
+      // block*, not of the whole 100. One BMA maintenance TOR states "น้ำหนัก
+      // ราคา 40% และคุณภาพ 60%" and then lists eight quality rows that
+      // themselves sum to 100 — so each "10%" is 10% of 60, i.e. 6 real
+      // points. Read flat, those rows total 140 and overstate quality.
+      //
+      // The signature is precise: the price rows and the quality rows each
+      // look like a complete scale on their own (quality ≈ 100, and price +
+      // quality > 100). Rescale quality onto the points it actually carries,
+      // which is whatever is left after price.
+      const subCriteriaScale = Math.abs(qualityRaw - 100) <= 1 && total > 101 && price < 100;
+      const technical = subCriteriaScale ? 100 - price : qualityRaw;
+      const factor = subCriteriaScale ? technical / qualityRaw : 1;
+
+      return {
+        price,
+        technical,
+        fromDocument: true,
+        // A rescaled set is understood, not suspect. Anything else that misses
+        // 100 is a genuine extraction problem the user should check.
+        weightsSuspect: !subCriteriaScale && Math.abs(total - 100) > 1,
+        rescaledSubCriteria: subCriteriaScale,
+        rows: [
+          ...priceRows.map((r) => ({ criterion: r.criterion, weight: r.weight, stated: r.weight, isPrice: true })),
+          ...qualityRows.map((r) => ({
+            criterion: r.criterion,
+            // Rounded for display only; `technical` above stays exact.
+            weight: Math.round(r.weight * factor * 10) / 10,
+            stated: r.weight,
+            isPrice: false,
+          })),
+        ],
+      };
     }
   }
   if (criteria?.method === "price_performance") {
@@ -192,6 +250,8 @@ function readWeights(
       technical: 100 - DEFAULT_PRICE_WEIGHT,
       fromDocument: false,
       weightsSuspect: false,
+      rescaledSubCriteria: false,
+      rows: [],
     };
   }
   return null;
@@ -323,7 +383,11 @@ export function estimateBid(input: BidEstimateInput): BidEstimate {
   const assumptions = [
     `อิง${anchorKind === "median_price" ? "ราคากลาง" : "วงเงินงบประมาณ"} ${anchorValue.toLocaleString("th-TH")} บาทเป็นฐาน`,
     `คะแนนราคา ${weights.price} / คะแนนเทคนิค ${weights.technical}` +
-      (weights.fromDocument ? " (อ่านจาก TOR)" : " (ค่าตั้งต้น เพราะ TOR ไม่ได้ระบุน้ำหนัก)"),
+      (weights.fromDocument
+        ? weights.rescaledSubCriteria
+          ? " (อ่านจาก TOR — หัวข้อย่อยด้านคุณภาพคิดเป็น % ของคะแนนคุณภาพ ปรับเป็นสัดส่วนจาก 100 แล้ว)"
+          : " (อ่านจาก TOR)"
+        : " (ค่าตั้งต้น เพราะ TOR ไม่ได้ระบุน้ำหนัก)"),
     `ประมาณว่าบริษัทได้คะแนนเทคนิคราว ${technicalPoints.toFixed(1)} จาก ${weights.technical} คะแนน` +
       (fit === null ? " (ยังไม่มีโปรไฟล์ จึงใช้ค่ากลาง)" : ""),
     "สมมติว่าคู่แข่งเสนอราคาเท่ากับราคาฐาน และคิดคะแนนราคาแบบสัดส่วน (ราคาต่ำสุด ÷ ราคาที่เสนอ)",
@@ -361,6 +425,8 @@ export function estimateBid(input: BidEstimateInput): BidEstimate {
     anchor: { value: anchorValue, kind: anchorKind },
     ceiling,
     weights: { price: weights.price, technical: weights.technical },
+    weightRows: weights.rows,
+    rescaledSubCriteria: weights.rescaledSubCriteria,
     technicalRatio,
     technicalPoints,
     scenarios,
