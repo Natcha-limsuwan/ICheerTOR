@@ -9,6 +9,7 @@ import ApartmentOutlinedIcon from "@mui/icons-material/ApartmentOutlined";
 import LightbulbOutlinedIcon from "@mui/icons-material/LightbulbOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined";
+import CalculateOutlinedIcon from "@mui/icons-material/CalculateOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import ComputerOutlinedIcon from "@mui/icons-material/ComputerOutlined";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
@@ -41,6 +42,19 @@ type MatchResult = {
   eligibilityStatus: "eligible" | "ineligible" | "incomplete" | "unknown";
   counts: { pass: number; fail: number; unknown: number };
   breakdown: Record<MatchDimension, MatchBreakdownItem>;
+  bidEstimate?: BidEstimate;
+};
+type BidScenario = { id: "aggressive" | "balanced" | "conservative"; label: string; bid: number; discountPercent: number; description: string };
+type BidEstimate = {
+  applicable: boolean;
+  reason?: string;
+  anchor?: { value: number; kind: "median_price" | "budget" };
+  weights?: { price: number; technical: number };
+  technicalPoints?: number;
+  scenarios?: BidScenario[];
+  confidence?: "low" | "medium";
+  assumptions?: string[];
+  warnings?: string[];
 };
 type BookmarkStatus = { bookmarked: boolean; bookmarkId: string | null };
 type DocumentResponse = { available: boolean; fileName?: string; downloadUrl?: string; message?: string };
@@ -206,6 +220,7 @@ export default function TORDetailPage() {
       <section className="detail-panel"><Title icon={<FactCheckOutlinedIcon />}>คุณสมบัติผู้ยื่นข้อเสนอ</Title><Qualifications items={specific} empty="ไม่พบเงื่อนไขเฉพาะโครงการ" />{standard.length ? <details className="mt-5 rounded-xl bg-slate-50 p-4"><summary className="cursor-pointer font-semibold">เงื่อนไขทั่วไปตามระเบียบ ({standard.length} ข้อ)</summary><Qualifications items={standard} /></details> : null}</section>
       {(parsed?.keyDates?.submissionDate?.date || parsed?.keyDates?.documentFeePeriod || parsed?.keyDates?.contractDurationDays?.value != null || parsed?.keyDates?.warrantyMonths?.value != null) && <section className="detail-panel"><Title icon={<CalendarMonthOutlinedIcon />}>กำหนดการและระยะเวลาโครงการ</Title><div className="grid gap-3 sm:grid-cols-2"><Row label="วันยื่นข้อเสนอ" value={parsed?.keyDates?.submissionDate?.date ? `${date(parsed.keyDates.submissionDate.date)} ${parsed.keyDates.submissionDate.startTime ?? ""}–${parsed.keyDates.submissionDate.endTime ?? ""}` : undefined} /><Row label="ช่วงซื้อเอกสาร" value={parsed?.keyDates?.documentFeePeriod ? `${date(parsed.keyDates.documentFeePeriod.from)} – ${date(parsed.keyDates.documentFeePeriod.to)}` : undefined} /><Row label="ระยะเวลาดำเนินงาน" value={parsed?.keyDates?.contractDurationDays?.value != null ? `${parsed.keyDates.contractDurationDays.value} วัน` : undefined} /><Row label="ระยะเวลารับประกัน" value={parsed?.keyDates?.warrantyMonths?.value != null ? `${parsed.keyDates.warrantyMonths.value} เดือน` : undefined} /></div></section>}
       <section className="detail-panel"><Title icon={<BarChartOutlinedIcon />}>เกณฑ์การประเมิน</Title><p className="whitespace-pre-wrap text-sm leading-7 text-slate-600">{parsed?.evaluationCriteria?.content ?? "ยังไม่มีรายละเอียดเกณฑ์การประเมิน"}</p>{parsed?.evaluationCriteria?.weights?.map((item) => <div key={item.criterion} className="mt-3"><div className="flex justify-between text-sm"><span>{item.criterion}</span><strong>{item.weight}%</strong></div><div className="mt-1 h-2 rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#0759be]" style={{ width: `${item.weight}%` }} /></div></div>)}</section>
+      {match?.bidEstimate && <BidEstimatePanel estimate={match.bidEstimate} />}
       {parsed?.paymentTerms?.length ? <section className="detail-panel"><Title icon={<ReceiptLongOutlinedIcon />}>เงื่อนไขการส่งมอบและชำระเงิน</Title>{parsed.paymentTerms.map((item) => <div key={item.installment} className="mb-3 rounded-xl bg-slate-50 p-4"><strong>งวดที่ {item.installment}{item.percent != null ? ` • ${item.percent}%` : ""}</strong><p className="mt-1 text-sm text-slate-600">{item.condition}</p></div>)}</section> : null}
     </main><aside className="space-y-6"><section className="detail-panel"><Title icon={<ReceiptLongOutlinedIcon />}>ข้อมูลการจัดซื้อจัดจ้าง</Title><Row label="ประเภทงาน" value={workType[parsed?.workType ?? ""]} /><Row label="ประเภทโครงการ" value={tor.metadata?.projectType} /><Row label="วิธีจัดซื้อ" value={tor.metadata?.purchaseMethod} /><Row label="ประเภทประกาศ" value={tor.metadata?.announceType} /><Row label="เลขที่โครงการ" value={tor.metadata?.projectId} /><Row label="สถานะ" value={tor.metadata?.contractStatus} /></section><section className="rounded-2xl border-l-4 border-red-600 bg-red-50 p-6"><Title icon={<FlagOutlinedIcon />}>การวิเคราะห์ความเสี่ยง</Title>{tor.redFlags?.length ? tor.redFlags.map((item) => <div key={item.reason} className="mb-3 rounded-xl bg-white p-4 text-sm"><strong>{item.reason}</strong><p className="mt-2">{item.clauseText}</p>{item.recommendedAction && <p className="mt-2 text-red-700">คำแนะนำ: {item.recommendedAction}</p>}</div>) : <p className="text-sm text-emerald-700">ไม่พบความเสี่ยงที่ต้องแจ้งเตือน</p>}</section></aside></div>}
   </div>;
@@ -222,6 +237,38 @@ function DeadlineNotice({ label, deadline, remainingDays }: { label: string; dea
         : { message: `เหลือ ${remainingDays.toLocaleString("th-TH")} วัน`, className: "border-blue-200 bg-blue-50 text-blue-800" };
 
   return <div role="status" className={`mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border px-4 py-3 ${state.className}`}><NotificationsActiveOutlinedIcon fontSize="small" /><strong>{state.message}</strong><span className="text-sm opacity-80">{deadline ? `${label}: ${date(deadline)}` : label}</span></div>;
+}
+/**
+ * Suggested bid range for price-performance TORs.
+ *
+ * Deliberately verbose about its own limits: it shows a price, and a price
+ * shown without its assumptions reads as advice. The scenarios, the assumption
+ * list and the warnings are one unit — never render the numbers alone.
+ */
+function BidEstimatePanel({ estimate }: { estimate: BidEstimate }) {
+  if (!estimate.applicable) {
+    return <section className="detail-panel"><Title icon={<CalculateOutlinedIcon />}>ประมาณการราคาที่ควรเสนอ</Title><p className="text-sm leading-7 text-slate-600">{estimate.reason}</p></section>;
+  }
+  const scenarios = estimate.scenarios ?? [];
+  const low = scenarios.length ? scenarios[0].bid : null;
+  const high = scenarios.length ? scenarios[scenarios.length - 1].bid : null;
+  return <section className="detail-panel">
+    <Title icon={<CalculateOutlinedIcon />}>ประมาณการราคาที่ควรเสนอ</Title>
+    <div className="mb-5 flex flex-wrap items-center gap-3">
+      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${estimate.confidence === "medium" ? "bg-amber-100 text-amber-800" : "bg-slate-200 text-slate-700"}`}>ความเชื่อมั่น{estimate.confidence === "medium" ? "ปานกลาง" : "ต่ำ"}</span>
+      {estimate.weights && <span className="text-xs text-slate-500">น้ำหนักราคา {estimate.weights.price} / เทคนิค {estimate.weights.technical}</span>}
+      {estimate.technicalPoints != null && estimate.weights && <span className="text-xs text-slate-500">คะแนนเทคนิคที่ประมาณได้ {estimate.technicalPoints.toFixed(1)} / {estimate.weights.technical}</span>}
+    </div>
+    {low != null && high != null && <div className="mb-6 rounded-xl bg-slate-50 p-5"><p className="text-sm text-slate-500">ช่วงราคาโดยประมาณ</p><strong className="text-2xl text-slate-800">{money(low)}{low !== high ? ` – ${money(high)}` : ""}</strong></div>}
+    <div className="space-y-3">
+      {scenarios.map((item) => <div key={item.id} className="rounded-xl border border-slate-200 p-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2"><strong className="text-sm">{item.label}</strong><span className="text-lg font-bold text-[#0759be]">{money(item.bid)}<span className="ml-2 text-sm font-normal text-slate-500">{item.discountPercent > 0 ? `ต่ำกว่าฐาน ${item.discountPercent}%` : "เท่าราคาฐาน"}</span></span></div>
+        <p className="mt-2 text-sm text-slate-600">{item.description}</p>
+      </div>)}
+    </div>
+    {estimate.assumptions?.length ? <details className="mt-5 rounded-xl bg-slate-50 p-4"><summary className="cursor-pointer text-sm font-semibold">สมมติฐานที่ใช้คำนวณ</summary><ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-600">{estimate.assumptions.map((item) => <li key={item}>{item}</li>)}</ul></details> : null}
+    {estimate.warnings?.length ? <ul className="mt-4 list-disc space-y-2 rounded-xl border-l-4 border-amber-500 bg-amber-50 py-4 pl-9 pr-4 text-sm text-amber-900">{estimate.warnings.map((item) => <li key={item}>{item}</li>)}</ul> : null}
+  </section>;
 }
 function Stat({ label, value, note }: { label: string; value: string; note?: string }) { return <div className="detail-stat"><p>{label}</p><strong>{value}</strong>{note && <span>{note}</span>}</div>; }
 function MatchSummary({ match }: { match: MatchResult }) {

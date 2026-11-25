@@ -5,6 +5,7 @@ import TORSource from "../db/models/tor-source.js";
 import UserCorrection from "../db/models/user-correction.js";
 import VendorProfile from "../db/models/vendor-profile.js";
 import { matchQualifications } from "../services/matching/qualification-matcher.js";
+import { estimateBid } from "../services/matching/bid-estimator.js";
 import { resolveDownloadUrl } from "../services/ingestion/egp-document-url.js";
 import { bidWindow, displayPhase } from "../services/ingestion/data-checks.js";
 import { apiSuccess, Errors } from "../utils/api-response.js";
@@ -405,7 +406,17 @@ router.get("/:id/match", async (req: Request, res: Response) => {
     techRequirements: tor.parsedData.techRequirements,
   });
 
-  apiSuccess(res, { torRecordId: req.params.id, ...result });
+  // The bid estimate only means anything once the match is known, so it is
+  // computed here rather than in its own endpoint: the two are always read
+  // together and the matcher is the expensive half.
+  const bidEstimate = estimateBid({
+    evaluationCriteria: tor.parsedData.evaluationCriteria,
+    budget: tor.budget,
+    medianPrice: tor.medianPrice ?? tor.parsedData.medianPrice?.value,
+    match: result,
+  });
+
+  apiSuccess(res, { torRecordId: req.params.id, ...result, bidEstimate });
 });
 
 export default router;
