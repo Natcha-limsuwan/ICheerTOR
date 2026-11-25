@@ -1,4 +1,5 @@
 import AuthGuard from "@/components/auth/AuthGuard";
+import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import Sidebar from "@/components/layout/Sidebar";
 import TopBar from "@/components/layout/TopBar";
 
@@ -18,6 +19,7 @@ export default function DashboardLayout({
           </main>
         </div>
       </div>
+      <OnboardingTour />
     </AuthGuard>
   );
 }

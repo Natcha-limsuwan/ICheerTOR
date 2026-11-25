@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { restartTour } from "@/lib/onboarding/restart";
 import { useAuth } from "@/components/providers/AuthProvider";
 import RadarIcon from "@mui/icons-material/Radar";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
@@ -128,6 +129,14 @@ export default function TopBar() {
                   onClick={() => setAnchorEl(null)}
                 >
                   โปรไฟล์
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setAnchorEl(null);
+                    restartTour();
+                  }}
+                >
+                  ดูคำแนะนำการใช้งานอีกครั้ง
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
