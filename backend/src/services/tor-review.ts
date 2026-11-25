@@ -36,7 +36,8 @@ export interface UncertainItem {
   reason: string;
 }
 
-type Readable = Pick<ITORRecord, "parsedData" | "extraction" | "summary">;
+type Readable = Pick<ITORRecord, "parsedData" | "extraction" | "summary"> &
+  Partial<Pick<ITORRecord, "dataChecks">>;
 
 export function uncertainItems(r: Readable, threshold: number): UncertainItem[] {
   const items: UncertainItem[] = [];
@@ -46,6 +47,22 @@ export function uncertainItems(r: Readable, threshold: number): UncertainItem[] 
   for (const i of r.extraction?.issues ?? []) {
     if (i.severity !== "review") continue;
     items.push({ field: i.field, label: "ตัวตรวจสอบให้คนดู", value: null, confidence: null, reason: i.message });
+  }
+
+  // Source conflicts, so a record queued only by dataChecks still says why
+  // it is here instead of showing an empty reason list.
+  if (r.dataChecks?.needsCheck) {
+    const resolved = new Set(r.dataChecks.resolvedCodes ?? []);
+    for (const conflict of r.dataChecks.conflicts ?? []) {
+      if (conflict.severity !== "check" || resolved.has(conflict.code)) continue;
+      items.push({
+        field: `dataChecks.${conflict.code}`,
+        label: "ข้อมูลจากแหล่งต่างกันไม่ตรงกัน",
+        value: null,
+        confidence: null,
+        reason: conflict.message,
+      });
+    }
   }
   (p?.qualifications ?? []).forEach((q, idx) => {
     if (!low(q.confidence)) return;
@@ -71,7 +88,20 @@ export function uncertainItems(r: Readable, threshold: number): UncertainItem[] 
   return items;
 }
 
-/** Records with something uncertain that no admin has verified yet. */
+/**
+ * Records an admin still has to look at.
+ *
+ * Two different things can put a record here, and both end in the same
+ * action — a person opens it and decides — so they belong in one queue:
+ *
+ *  1. the model was unsure of its own reading (low confidence), and
+ *  2. the sources disagree (dataChecks.needsCheck), e.g. egp2 says the
+ *     bid is open while the announcement gives a date that has passed.
+ *
+ * Before these were combined, a conflict-only record appeared on the
+ * pipeline page but not in the review queue, so the count an admin saw
+ * depended on which page they opened.
+ */
 export function needsReviewFilter(threshold: number): Record<string, unknown> {
   return {
     extractionStatus: "completed",
@@ -81,6 +111,8 @@ export function needsReviewFilter(threshold: number): Record<string, unknown> {
       { "parsedData.qualifications.confidence": { $lt: threshold } },
       { "parsedData.scopeOfWork.confidence": { $lt: threshold } },
       { "parsedData.evaluationCriteria.confidence": { $lt: threshold } },
+      // Unresolved source conflicts — the pipeline page's "ข้อมูลไม่สอดคล้อง".
+      { "dataChecks.needsCheck": true },
     ],
   };
 }
